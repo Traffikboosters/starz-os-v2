@@ -12,10 +12,15 @@ export default function Dashboard() {
   const [deals, setDeals] = useState<any[]>([]);
 
   const fetchDeals = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("deals.pipeline")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     setDeals(data || []);
   };
@@ -61,6 +66,10 @@ export default function Dashboard() {
                   <p>${deal.value || 0}</p>
                 </div>
               ))}
+
+            {deals.filter((d) => d.stage === stage).length === 0 && (
+              <p className="text-sm text-gray-400">No deals</p>
+            )}
           </div>
         ))}
       </div>
