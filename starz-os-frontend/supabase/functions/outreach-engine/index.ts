@@ -1,208 +1,255 @@
 import { createClient } from "npm:@supabase/supabase-js@2.46.1";
 
-type OpenAIResponse = {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{
-      type?: string;
-      text?: string;
-    }>;
-  }>;
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-  error?: unknown;
+type QueueJob = {
+  id: number;
+  lead_id: string | null;
+  email: string;
+  lead_email: string | null;
+  subject: string | null;
+  status: string;
+  attempts: number | null;
+  max_attempts: number | null;
+  deal_score: number | null;
+  ai_score: number | null;
+  scheduled_for: string | null;
+  last_attempt_at: string | null;
+  next_retry_at: string | null;
+  created_at: string | null;
+  last_error: string | null;
 };
 
-function extractAiText(aiData: OpenAIResponse): string {
-  // 1) Preferred Responses API convenience field
-  if (typeof aiData?.output_text === "string" && aiData.output_text.trim().length > 0) {
-    return aiData.output_text.trim();
-  }
+const SCHEMA = "outreach";
+const QUEUE_TABLE = "outreach_queue";
+const STALE_MINUTES = 10;
+const FALLBACK_MAX_ATTEMPTS = 4;
 
-  // 2) Responses API structured output
-  const outputParts = aiData?.output ?? [];
-  const collected = outputParts
-    .flatMap((item) => item?.content ?? [])
-    .map((c) => (typeof c?.text === "string" ? c.text : ""))
-    .join("\n")
-    .trim();
-
-  if (collected.length > 0) return collected;
-
-  // 3) Chat Completions style fallback
-  const choiceContent = aiData?.choices?.[0]?.message?.content;
-  if (typeof choiceContent === "string" && choiceContent.trim().length > 0) {
-    return choiceContent.trim();
-  }
-
-  return "";
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
-Deno.serve(async () => {
-  console.log("🔥 OUTREACH ENGINE V4 RUNNING");
+// ═══════════════════════════════════════════════
+// 🧠 STEVE AI — Powered by Claude Sonnet
+// ═══════════════════════════════════════════════
+async function generateSteveMessage(
+  job: QueueJob,
+  anthropicApiKey: string
+): Promise<{ subject: string; htmlBody: string }> {
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const openAiKey = Deno.env.get("OPENAI_API_KEY");
-  const resendKey = Deno.env.get("RESEND_API_KEY");
+  const toEmail = job.lead_email ?? job.email;
+  const score = job.deal_score ?? job.ai_score ?? null;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return new Response(
-      JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
-  }
+  const leadContext = [
+    `Email: ${toEmail}`,
+    score ? `Lead score: ${score}/100` : null,
+    job.lead_id ? `Lead ID: ${job.lead_id}` : null,
+  ].filter(Boolean).join("\n");
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const prompt = `You are Steve, a Business Growth Expert at Traffik Boosters. You help businesses grow their revenue through professional web design, SEO, digital marketing, and business growth consulting.
+
+Your personality:
+- Professional and formal but warm
+- Confident without being pushy
+- Consultative — you lead with value, not a hard sell
+- You keep emails concise (150-200 words max)
+- You always end with a clear, low-pressure call to action
+
+Lead information:
+${leadContext}
+
+${score && score >= 80 ? "This is a HIGH SCORE lead — prioritize urgency and personalization." : ""}
+${score && score >= 50 && score < 80 ? "This is a MEDIUM SCORE lead — focus on value and education." : ""}
+${score && score < 50 ? "This is a LOWER SCORE lead — focus on awareness and soft introduction." : ""}
+
+Write a personalized cold outreach email from Steve to this lead. The email should:
+1. Open with a compelling, professional hook
+2. Briefly introduce Steve and Traffik Boosters
+3. Mention 1-2 specific services relevant to their business
+4. Include a soft call to action (schedule a quick call, reply to learn more)
+5. Sign off professionally as Steve from Traffik Boosters
+
+Respond ONLY in this exact JSON format with no other text:
+{
+  "subject": "email subject line here",
+  "body": "full email body here with line breaks as \\n"
+}`;
 
   try {
-    // 1) Get next pending job
-    const { data: jobs, error: fetchError } = await supabase
-      .schema("prospecting")
-      .from("outreach_logs")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(1);
-
-    if (fetchError) throw fetchError;
-
-    if (!jobs || jobs.length === 0) {
-      return new Response(JSON.stringify({ message: "No jobs" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const job = jobs[0];
-    console.log("📨 Processing job:", job.id);
-
-    // 2) Generate message
-    let message = "";
-
-    if (openAiKey) {
-      try {
-        const aiRes = await fetch("https://api.openai.com/v1/responses", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openAiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4.1-mini",
-            input: `Write a short, high-converting cold outreach email.
-
-Business: ${job.business_name || "local business"}
-Goal: Increase leads
-Tone: casual, confident, not salesy
-Length: under 80 words`,
-          }),
-        });
-
-        const aiData = (await aiRes.json()) as OpenAIResponse;
-        console.log("🧠 AI status:", aiRes.status);
-        console.log("🧠 AI RAW:", JSON.stringify(aiData));
-
-        if (aiRes.ok) {
-          message = extractAiText(aiData);
-        } else {
-          console.error("AI non-200 response:", aiData?.error ?? aiData);
-        }
-      } catch (aiError) {
-        console.error("AI ERROR:", aiError);
-      }
-    } else {
-      console.warn("OPENAI_API_KEY missing; using fallback message");
-    }
-
-    // 3) Fallback copy if AI empty
-    if (!message || message.length < 10) {
-      message = `Hey — I came across your business and noticed a few missed opportunities to bring in more leads.
-
-I put together a quick breakdown of what’s working right now in your market.
-
-Want me to send it over?`;
-    }
-
-    // 4) Send email
-    if (!resendKey) {
-      await supabase
-        .schema("prospecting")
-        .from("outreach_logs")
-        .update({
-          status: "failed",
-          error: "Missing RESEND_API_KEY",
-          attempts: (job.attempts || 0) + 1,
-        })
-        .eq("id", job.id);
-
-      return new Response(JSON.stringify({ error: "Missing RESEND_API_KEY" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const emailRes = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        from: "Traffik Boosters <steve@traffikboosters.com>",
-        to: job.to_email,
-        subject: job.subject || "Quick idea to increase your leads",
-        html: `<p>${message.replace(/\n/g, "<br/>")}</p>`,
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
       }),
     });
 
-    const emailData = await emailRes.json();
-    console.log("📬 Email status:", emailRes.status);
-    console.log("📬 Email response:", emailData);
-
-    if (!emailRes.ok) {
-      await supabase
-        .schema("prospecting")
-        .from("outreach_logs")
-        .update({
-          status: "failed",
-          error: JSON.stringify(emailData),
-          attempts: (job.attempts || 0) + 1,
-        })
-        .eq("id", job.id);
-
-      return new Response(JSON.stringify({ error: "Email failed", details: emailData }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Anthropic API error ${response.status}: ${errText}`);
     }
 
-    // 5) Success
+    const data = await response.json();
+    const text = data.content?.[0]?.text ?? "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    const subject = parsed.subject ?? "Growing Your Business with Traffik Boosters";
+    const body = parsed.body ?? "";
+
+    const htmlBody = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;font-size:15px;color:#222;line-height:1.7;max-width:600px;margin:0 auto;padding:20px;">
+  ${body.split("\n").map((line: string) =>
+      line.trim() === "" ? "<br/>" : `<p style="margin:0 0 12px 0;">${line}</p>`
+    ).join("")}
+  <br/>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>
+  <p style="font-size:13px;color:#888;margin:0;">
+    Traffik Boosters | Web Design · SEO · Digital Marketing · Business Growth<br/>
+    <a href="https://traffikboosters.com" style="color:#6366f1;text-decoration:none;">traffikboosters.com</a>
+  </p>
+</body>
+</html>`;
+
+    return { subject, htmlBody };
+
+  } catch (err) {
+    console.error("❌ Claude AI failed, using fallback:", err);
+
+    const fallbackHtml = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;font-size:15px;color:#222;line-height:1.7;max-width:600px;margin:0 auto;padding:20px;">
+  <p>Hello,</p>
+  <p>My name is Steve, and I'm a Business Growth Expert at Traffik Boosters.</p>
+  <p>We specialize in helping businesses grow through professional web design, SEO, targeted digital marketing, and proven business growth strategies.</p>
+  <p>I'd love to schedule a quick 15-minute call to explore how we can help drive more traffic and revenue to your business. Would you be open to connecting this week?</p>
+  <p>Best regards,<br/><strong>Steve</strong><br/>Business Growth Expert<br/>Traffik Boosters</p>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>
+  <p style="font-size:13px;color:#888;">Traffik Boosters | Web Design · SEO · Digital Marketing · Business Growth</p>
+</body>
+</html>`;
+
+    return {
+      subject: job.subject ?? "Growing Your Business — Traffik Boosters",
+      htmlBody: fallbackHtml,
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// 🚀 MAIN ENGINE
+// ═══════════════════════════════════════════════
+Deno.serve(async () => {
+  try {
+    const supabaseUrl     = Deno.env.get("SUPABASE_URL")!;
+    const serviceRole     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const resendApiKey    = Deno.env.get("RESEND_API_KEY")!;
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
+
+    const supabase = createClient(supabaseUrl, serviceRole);
+    const staleTime = new Date(Date.now() - STALE_MINUTES * 60 * 1000).toISOString();
+
+    // Reset stale processing jobs
     await supabase
-      .schema("prospecting")
-      .from("outreach_logs")
+      .schema(SCHEMA)
+      .from(QUEUE_TABLE)
+      .update({ status: "pending", last_error: "Reset from stale" })
+      .eq("status", "processing")
+      .lt("last_attempt_at", staleTime);
+
+    // Get next pending job
+    const { data: jobs, error: fetchError } = await supabase
+      .schema(SCHEMA)
+      .from(QUEUE_TABLE)
+      .select("*")
+      .eq("status", "pending")
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if (fetchError) throw fetchError;
+    if (!jobs || jobs.length === 0) {
+      return json({ message: "No pending jobs" }, 200);
+    }
+
+    const job: QueueJob = jobs[0];
+    const toEmail = job.lead_email ?? job.email;
+    console.log("🤖 Processing job:", job.id, "→", toEmail);
+
+    const attempts = (job.attempts ?? 0) + 1;
+    const now = new Date().toISOString();
+
+    // Claim job
+    const { data: claimed } = await supabase
+      .schema(SCHEMA)
+      .from(QUEUE_TABLE)
       .update({
-        status: "sent",
-        message,
-        sent_at: new Date().toISOString(),
-        error: null,
+        status: "processing",
+        attempts,
+        last_attempt_at: now,
+        last_error: null,
       })
+      .eq("id", job.id)
+      .eq("status", "pending")
+      .select("id");
+
+    if (!claimed || claimed.length === 0) {
+      return json({ message: "Already claimed" }, 200);
+    }
+
+    // 🧠 Generate personalized message with Steve AI
+    console.log("🧠 Steve AI generating message for:", toEmail);
+    const { subject, htmlBody } = await generateSteveMessage(job, anthropicApiKey);
+    console.log("✅ Steve AI subject:", subject);
+
+    // 📬 Send email via Resend
+    const emailRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Steve <steve@traffikboosters.com>",
+        to: [toEmail],
+        subject,
+        html: htmlBody,
+      }),
+    });
+
+    if (!emailRes.ok) {
+      const errorData = await emailRes.json().catch(() => ({}));
+      throw new Error((errorData as { message?: string })?.message ?? "Email send failed");
+    }
+
+    const emailData = await emailRes.json();
+    console.log("📨 Email sent! Resend ID:", (emailData as { id?: string })?.id);
+
+    // ✅ Mark as sent
+    await supabase
+      .schema(SCHEMA)
+      .from(QUEUE_TABLE)
+      .update({ status: "sent", last_attempt_at: now })
       .eq("id", job.id);
 
-    return new Response(JSON.stringify({ message: "Outreach sent", job_id: job.id }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+    return json({
+      success: true,
+      jobId: job.id,
+      email: toEmail,
+      subject,
     });
-  } catch (err) {
-    console.error("🔥 ENGINE ERROR:", err);
 
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+  } catch (err) {
+    console.error("❌ Engine error:", err);
+    return json({
+      error: err instanceof Error ? err.message : "Unknown error",
+    }, 500);
   }
 });
