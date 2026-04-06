@@ -166,64 +166,6 @@ export default function Dashboard(){
   if(!ready||loading)return(
     <div style={{minHeight:"100vh",background:bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>â˜…</div><p style={{color:txt3,fontFamily:"monospace",fontSize:13,letterSpacing:"0.1em"}}>LOADING STARZ-OS...</p></div>
-      {proposalModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setProposalModal(null)}>
-          <div style={{background:"#1a1a2e",borderRadius:12,padding:28,width:"100%",maxWidth:500,maxHeight:"88vh",overflowY:"auto",border:"1px solid rgba(255,107,53,0.3)"}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <div>
-                <div style={{color:"#ff6b35",fontWeight:900,fontSize:12,letterSpacing:1,marginBottom:4}}>SEND PROPOSAL</div>
-                <div style={{color:"#fff",fontWeight:700,fontSize:15}}>{proposalModal.business_name||proposalModal.name}</div>
-                <div style={{color:"#aaa",fontSize:12,marginTop:2}}>{proposalModal.email||"No email on file"}</div>
-              </div>
-              <button onClick={()=>setProposalModal(null)} style={{background:"none",border:"none",color:"#aaa",fontSize:18,cursor:"pointer",padding:4}}>X</button>
-            </div>
-            <div style={{marginBottom:16}}>
-              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Select Services</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                {["SEO","Google Ads","Website","Lead Gen","Content","Social Media","Analytics","Voice AI","AI/Automation"].map(s=>(
-                  <label key={s} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px",background:proposalServices.includes(s)?"rgba(255,107,53,0.15)":"rgba(255,255,255,0.04)",borderRadius:5,border:`1px solid ${proposalServices.includes(s)?"#ff6b35":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontSize:11,color:"#fff"}}>
-                    <input type="checkbox" checked={proposalServices.includes(s)} onChange={e=>{if(e.target.checked){setProposalServices([...proposalServices,s]);setProposalPrices({...proposalPrices,[s]:proposalPrices[s]||0});}else{setProposalServices(proposalServices.filter(x=>x!==s));const p={...proposalPrices};delete p[s];setProposalPrices(p);}}} style={{accentColor:"#ff6b35",marginRight:2}}/>
-                    {s}
-                  </label>
-                ))}
-              </div>
-            </div>
-            {proposalServices.length>0&&(
-              <div style={{marginBottom:16}}>
-                <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Monthly Price Per Service</div>
-                {proposalServices.map(s=>(
-                  <div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                    <div style={{color:"#ccc",fontSize:12,width:110,flexShrink:0}}>{s}</div>
-                    <span style={{color:"#666",fontSize:13}}>$</span>
-                    <input type="number" value={proposalPrices[s]||""} onChange={e=>setProposalPrices({...proposalPrices,[s]:parseInt(e.target.value)||0})} placeholder="0" style={{flex:1,padding:"5px 8px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:13}}/>
-                    <span style={{color:"#666",fontSize:11}}>/mo</span>
-                  </div>
-                ))}
-                <div style={{background:"rgba(255,107,53,0.1)",borderRadius:5,padding:"7px 10px",marginTop:6,display:"flex",justifyContent:"space-between"}}>
-                  <span style={{color:"#ff6b35",fontWeight:600,fontSize:12}}>Total Monthly</span>
-                  <span style={{color:"#ff6b35",fontWeight:700,fontSize:12}}>${Object.values(proposalPrices).reduce((a,b)=>Number(a)+Number(b),0).toLocaleString()}/mo</span>
-                </div>
-              </div>
-            )}
-            <div style={{marginBottom:14}}>
-              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Contract Term</div>
-              <select value={proposalTerm} onChange={e=>setProposalTerm(e.target.value)} style={{width:"100%",padding:"7px 10px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:13}}>
-                <option value="month-to-month">Month-to-month</option>
-                <option value="3-month">3 months</option>
-                <option value="6-month">6 months</option>
-                <option value="12-month">12 months</option>
-              </select>
-            </div>
-            <div style={{marginBottom:18}}>
-              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Conversation Notes (AI uses this)</div>
-              <textarea value={proposalNotes} onChange={e=>setProposalNotes(e.target.value)} placeholder="e.g. Client relies on referrals, wants more Google visibility..." rows={3} style={{width:"100%",padding:"8px 10px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
-            </div>
-            <button onClick={()=>sendProposal(proposalModal)} disabled={sendingProposal||proposalServices.length===0} style={{width:"100%",padding:"13px",background:sendingProposal||proposalServices.length===0?"#444":"#ff6b35",color:"#fff",border:"none",borderRadius:7,fontSize:14,fontWeight:700,cursor:sendingProposal||proposalServices.length===0?"not-allowed":"pointer",letterSpacing:0.5}}>
-              {sendingProposal ? "Generating & Sending..." : "Generate & Send Proposal"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -577,6 +519,64 @@ export default function Dashboard(){
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      {proposalModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setProposalModal(null)}>
+          <div style={{background:"#1a1a2e",borderRadius:12,padding:28,width:"100%",maxWidth:500,maxHeight:"88vh",overflowY:"auto",border:"1px solid rgba(255,107,53,0.3)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <div style={{color:"#ff6b35",fontWeight:900,fontSize:12,letterSpacing:1,marginBottom:4}}>SEND PROPOSAL</div>
+                <div style={{color:"#fff",fontWeight:700,fontSize:15}}>{proposalModal.business_name||proposalModal.name}</div>
+                <div style={{color:"#aaa",fontSize:12,marginTop:2}}>{proposalModal.email||"No email on file"}</div>
+              </div>
+              <button onClick={()=>setProposalModal(null)} style={{background:"none",border:"none",color:"#aaa",fontSize:18,cursor:"pointer",padding:4}}>X</button>
+            </div>
+            <div style={{marginBottom:16}}>
+              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Select Services</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                {["SEO","Google Ads","Website","Lead Gen","Content","Social Media","Analytics","Voice AI","AI/Automation"].map(s=>(
+                  <label key={s} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px",background:proposalServices.includes(s)?"rgba(255,107,53,0.15)":"rgba(255,255,255,0.04)",borderRadius:5,border:`1px solid ${proposalServices.includes(s)?"#ff6b35":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontSize:11,color:"#fff"}}>
+                    <input type="checkbox" checked={proposalServices.includes(s)} onChange={e=>{if(e.target.checked){setProposalServices([...proposalServices,s]);setProposalPrices({...proposalPrices,[s]:proposalPrices[s]||0});}else{setProposalServices(proposalServices.filter(x=>x!==s));const p={...proposalPrices};delete p[s];setProposalPrices(p);}}} style={{accentColor:"#ff6b35",marginRight:2}}/>
+                    {s}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {proposalServices.length>0&&(
+              <div style={{marginBottom:16}}>
+                <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Monthly Price Per Service</div>
+                {proposalServices.map(s=>(
+                  <div key={s} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                    <div style={{color:"#ccc",fontSize:12,width:110,flexShrink:0}}>{s}</div>
+                    <span style={{color:"#666",fontSize:13}}>$</span>
+                    <input type="number" value={proposalPrices[s]||""} onChange={e=>setProposalPrices({...proposalPrices,[s]:parseInt(e.target.value)||0})} placeholder="0" style={{flex:1,padding:"5px 8px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:13}}/>
+                    <span style={{color:"#666",fontSize:11}}>/mo</span>
+                  </div>
+                ))}
+                <div style={{background:"rgba(255,107,53,0.1)",borderRadius:5,padding:"7px 10px",marginTop:6,display:"flex",justifyContent:"space-between"}}>
+                  <span style={{color:"#ff6b35",fontWeight:600,fontSize:12}}>Total Monthly</span>
+                  <span style={{color:"#ff6b35",fontWeight:700,fontSize:12}}>${Object.values(proposalPrices).reduce((a,b)=>Number(a)+Number(b),0).toLocaleString()}/mo</span>
+                </div>
+              </div>
+            )}
+            <div style={{marginBottom:14}}>
+              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Contract Term</div>
+              <select value={proposalTerm} onChange={e=>setProposalTerm(e.target.value)} style={{width:"100%",padding:"7px 10px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:13}}>
+                <option value="month-to-month">Month-to-month</option>
+                <option value="3-month">3 months</option>
+                <option value="6-month">6 months</option>
+                <option value="12-month">12 months</option>
+              </select>
+            </div>
+            <div style={{marginBottom:18}}>
+              <div style={{color:"#aaa",fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Conversation Notes (AI uses this)</div>
+              <textarea value={proposalNotes} onChange={e=>setProposalNotes(e.target.value)} placeholder="e.g. Client relies on referrals, wants more Google visibility..." rows={3} style={{width:"100%",padding:"8px 10px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
+            </div>
+            <button onClick={()=>sendProposal(proposalModal)} disabled={sendingProposal||proposalServices.length===0} style={{width:"100%",padding:"13px",background:sendingProposal||proposalServices.length===0?"#444":"#ff6b35",color:"#fff",border:"none",borderRadius:7,fontSize:14,fontWeight:700,cursor:sendingProposal||proposalServices.length===0?"not-allowed":"pointer",letterSpacing:0.5}}>
+              {sendingProposal ? "Generating & Sending..." : "Generate & Send Proposal"}
+            </button>
           </div>
         </div>
       )}
