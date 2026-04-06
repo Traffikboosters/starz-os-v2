@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SVC_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTMyNTg5MiwiZXhwIjoyMDc2OTAxODkyfQ.VPnGM9so9Cp56GV6v6tafzKKs45eNUKpkpwD65Hn7PM";
+const SVC_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const FN_BASE = "https://szguizvpiiuiyugrjeks.supabase.co/functions/v1";
 const REST_BASE = "https://szguizvpiiuiyugrjeks.supabase.co/rest/v1";
 
