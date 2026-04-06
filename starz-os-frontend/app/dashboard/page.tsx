@@ -86,7 +86,7 @@ function DashboardInner(){
     setSteveRunning(false);
   };
   const parseN=(n:string|null)=>{try{return JSON.parse(n||"{}");}catch{return{};}};
-  const sendProposal=async(lead)=>{
+  const sendProposal=async(lead:any)=>{
     if(proposalServices.length===0){alert("Select at least one service.");return;}
     if(!lead.email){alert("No email on file for this lead.");return;}
     setSendingProposal(true);
