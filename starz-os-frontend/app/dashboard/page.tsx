@@ -91,10 +91,10 @@ export default function Dashboard(){
     if (!lead.email) { alert("No email on file for this lead."); return; }
     setSendingProposal(true);
     try {
-      const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-proposal`, {
+      const r = await fetch("/api/steve", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ lead_id: lead.id, services: proposalServices, prices: proposalPrices, term: proposalTerm, notes_override: proposalNotes }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fn: "generate-proposal", body: { lead_id: lead.id, services: proposalServices, prices: proposalPrices, term: proposalTerm, notes_override: proposalNotes } }),
       });
       const data = await r.json();
       if (data.success) {
