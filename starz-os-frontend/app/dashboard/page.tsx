@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic'
 // @ts-nocheck
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
@@ -14,7 +15,7 @@ type ActiveTab = "pipeline"|"revenue"|"leads"|"outreach"|"steve";
 function getLevel(d:Deal):"high"|"medium"|"low"{const v=d.interest_level??d.interest;if(!v)return"low";const s=String(v).toLowerCase();if(s==="high"||Number(v)>=7)return"high";if(s==="medium"||Number(v)>=4)return"medium";return"low";}
 function ago(ds:string|null):string{if(!ds)return"";const m=Math.floor((Date.now()-new Date(ds).getTime())/60000);if(m<2)return"just now";if(m<60)return m+"m ago";const h=Math.floor(m/60);if(h<24)return h+"h ago";const day=Math.floor(h/24);if(day<7)return day+"d ago";return Math.floor(day/7)+"w ago";}
 
-export default function Dashboard(){
+function DashboardInner(){
   const [deals,setDeals]=useState<Deal[]>([]);
   const [proposalModal, setProposalModal] = useState(null);
   const [proposalServices, setProposalServices] = useState([]);
@@ -68,7 +69,7 @@ export default function Dashboard(){
     steveAddLog("Enriching leads...","info");
     for(let i=0;i<6;i++){const e=await steveFn("lead-enrichment-engine");if(!e.enriched)break;steveAddLog(`Batch ${i+1}: ${e.enriched} enriched`,"success");}
     const r=await steveFn("lead-targeting-engine");
-    steveAddLog(`Routed â†’ Hot:${r.routed?.hot||0} Warm:${r.routed?.warm||0} Cold:${r.routed?.cold||0}`,"success");
+    steveAddLog(`Routed → Hot:${r.routed?.hot||0} Warm:${r.routed?.warm||0} Cold:${r.routed?.cold||0}`,"success");
     await loadSteveLeads();setSteveRunning(false);
   };
   const runSteveScrape=async()=>{
@@ -81,7 +82,7 @@ export default function Dashboard(){
   const runSteveOutreach=async()=>{
     setSteveRunning(true);steveAddLog("Sending outreach...","info");
     const r=await steveFn("outreach-ai-engine");
-    if(r.success)steveAddLog(`Sent to ${r.to} â€” "${r.subject}"`,"success");
+    if(r.success)steveAddLog(`Sent to ${r.to} – "${r.subject}"`,"success");
     else steveAddLog(r.message||r.error||"No jobs in queue","warn");
     setSteveRunning(false);
   };
@@ -108,7 +109,7 @@ export default function Dashboard(){
   const runRicoHandoff=async(leadId:string,businessName:string)=>{
     steveAddLog(`Handing off ${businessName} to Rico...`,"info");
     const r=await steveFn("rico-handoff",{lead_id:leadId});
-    if(r.handed_off>0)steveAddLog(`Rico handoff done: ${businessName} â†’ Deal + Work Order created`,"success");
+    if(r.handed_off>0)steveAddLog(`Rico handoff done: ${businessName} → Deal + Work Order created`,"success");
     else if(r.errors?.length>0)steveAddLog(`Handoff error: ${r.errors[0]?.error}`,"error");
     else steveAddLog(r.message||"Already handed off","warn");
     await loadSteveLeads();
@@ -160,12 +161,13 @@ export default function Dashboard(){
     {key:"pipeline" as ActiveTab,label:"Pipeline"},
     {key:"revenue"  as ActiveTab,label:"Revenue"},
     {key:"leads"    as ActiveTab,label:"Leads"},
-    {key:"outreach" as ActiveTab,label:"Outreach"},{key:"steve" as ActiveTab,label:"Steve BGE"},
+    {key:"outreach" as ActiveTab,label:"Outreach"},
+    {key:"steve"    as ActiveTab,label:"Steve BGE"},
   ];
 
   if(!ready||loading)return(
     <div style={{minHeight:"100vh",background:bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>â˜…</div><p style={{color:txt3,fontFamily:"monospace",fontSize:13,letterSpacing:"0.1em"}}>LOADING STARZ-OS...</p></div>
+      <div style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>☆</div><p style={{color:txt3,fontFamily:"monospace",fontSize:13,letterSpacing:"0.1em"}}>LOADING STARZ-OS...</p></div>
     </div>
   );
 
@@ -177,29 +179,22 @@ export default function Dashboard(){
         {!logoErr
           ?<img src={LOGO} alt="STARZ-OS" height={36} style={{objectFit:"contain",maxWidth:160}} onError={()=>setLogoErr(true)}/>
           :<div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:30,height:30,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15}}>â˜…</div>
+            <div style={{width:30,height:30,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15}}>☆</div>
             <span style={{fontSize:17,fontWeight:700,color:txt}}>STARZ-OS</span>
           </div>
         }
-
         <div style={{display:"flex",gap:4}}>
           {NAV_TABS.map(({key,label})=>(
-            <div key={key}
-              onClick={()=>setTab(key)}
-              style={{padding:"6px 14px",borderRadius:6,fontSize:13,cursor:"pointer",userSelect:"none",color:tab===key?navAC:txt2,background:tab===key?navABg:"transparent",transition:"all 0.15s"}}>
+            <div key={key} onClick={()=>setTab(key)} style={{padding:"6px 14px",borderRadius:6,fontSize:13,cursor:"pointer",userSelect:"none",color:tab===key?navAC:txt2,background:tab===key?navABg:"transparent",transition:"all 0.15s"}}>
               {label}
               {key==="pipeline"&&<span style={{background:bdgBg,color:navAC,fontSize:11,padding:"1px 7px",borderRadius:20,marginLeft:5}}>{totalDeals}</span>}
             </div>
           ))}
         </div>
-
         <div style={{display:"flex",gap:8}}>
-          <button onClick={toggle} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:dark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",cursor:"pointer",fontFamily:"inherit"}}>
-            {dark?"â˜€ï¸ Light":"ðŸŒ™ Dark"}
-          </button>
-          <button onClick={()=>router.push("/developer")} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:"transparent",cursor:"pointer",fontFamily:"inherit"}}>Developer</button><button onClick={logout} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:"transparent",cursor:"pointer",fontFamily:"inherit"}}>
-            Sign out
-          </button>
+          <button onClick={toggle} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:dark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",cursor:"pointer",fontFamily:"inherit"}}>{dark?"☀️ Light":"🌙 Dark"}</button>
+          <button onClick={()=>router.push("/developer")} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:"transparent",cursor:"pointer",fontFamily:"inherit"}}>Developer</button>
+          <button onClick={logout} style={{padding:"6px 14px",borderRadius:6,fontSize:13,color:txt2,border:`0.5px solid ${btnBdr}`,background:"transparent",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
         </div>
       </div>
 
@@ -220,12 +215,10 @@ export default function Dashboard(){
               </div>
             ))}
           </div>
-
           <div style={{padding:"14px 28px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{fontSize:11,color:txt3,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600}}>Live Pipeline</div>
-            <div style={{fontSize:11,color:dark?"#34d399":"#059669"}}>â— Realtime</div>
+            <div style={{fontSize:11,color:dark?"#34d399":"#059669"}}>● Realtime</div>
           </div>
-
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,padding:"0 20px 32px"}}>
             {STAGES.map(stage=>{
               const sd=deals.filter(d=>(d.stage??"new")===stage);
@@ -253,14 +246,14 @@ export default function Dashboard(){
                               style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:pillBg,color:pillC,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all 0.1s"}}
                               onMouseEnter={e=>{const el=e.currentTarget as HTMLButtonElement;el.style.background=pillHBg;el.style.color=pillHC;}}
                               onMouseLeave={e=>{const el=e.currentTarget as HTMLButtonElement;el.style.background=pillBg;el.style.color=pillC;}}>
-                              â†’ {s.replace("_"," ")}
+                              → {s.replace("_"," ")}
                             </button>
                           ))}
                         </div>
                       </div>
                     );
                   })}
-                  {sd.length===0&&<div style={{textAlign:"center",padding:"40px 10px",color:dark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.15)",fontSize:12}}><div style={{fontSize:20,marginBottom:8,opacity:0.4}}>â—‹</div>No deals</div>}
+                  {sd.length===0&&<div style={{textAlign:"center",padding:"40px 10px",color:dark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.15)",fontSize:12}}><div style={{fontSize:20,marginBottom:8,opacity:0.4}}>○</div>No deals</div>}
                 </div>
               );
             })}
@@ -275,7 +268,7 @@ export default function Dashboard(){
             {[
               {label:"Total Deals",value:`${totalDeals}`,sub:"Active pipeline",accent:navAC},
               {label:"Closed Lost",value:`${cls}`,sub:"Need reactivation",accent:dark?"#f472b6":"#db2777"},
-              {label:"Conversion Rate",value:`${convRate}%`,sub:"Outreach â†’ Closed",accent:dark?"#fbbf24":"#d97706"},
+              {label:"Conversion Rate",value:`${convRate}%`,sub:"Outreach → Closed",accent:dark?"#fbbf24":"#d97706"},
               {label:"Steve Emails",value:`${totalSent}`,sub:"AI-personalized",accent:dark?"#34d399":"#059669"},
             ].map(m=>(
               <div key={m.label} style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
@@ -285,7 +278,6 @@ export default function Dashboard(){
               </div>
             ))}
           </div>
-
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
             <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
               <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:16}}>Deals by stage</div>
@@ -303,7 +295,6 @@ export default function Dashboard(){
                 );
               })}
             </div>
-
             <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
               <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:16}}>Outreach performance</div>
               {[
@@ -323,7 +314,6 @@ export default function Dashboard(){
               ))}
             </div>
           </div>
-
           <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px",marginBottom:16}}>
             <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:20}}>Lead conversion funnel</div>
             <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>
@@ -346,7 +336,6 @@ export default function Dashboard(){
               })}
             </div>
           </div>
-
           {logs.length>0&&(
             <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
               <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:14}}>Recent Steve outreach</div>
@@ -354,7 +343,7 @@ export default function Dashboard(){
                 <div key={log.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<7?`0.5px solid ${divC}`:"none"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:12,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.to_email}</div>
-                    <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.subject??"â€”"}</div>
+                    <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.subject??"—"}</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0,marginLeft:12}}>
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:log.status==="sent"?(dark?"rgba(52,211,153,0.12)":"rgba(5,150,105,0.1)"):(dark?"rgba(251,191,36,0.12)":"rgba(217,119,6,0.1)"),color:log.status==="sent"?(dark?"#34d399":"#059669"):(dark?"#fbbf24":"#d97706")}}>{log.status}</span>
@@ -378,7 +367,7 @@ export default function Dashboard(){
                 <div key={deal.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<deals.length-1?`0.5px solid ${divC}`:"none"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:13,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{deal.lead_email??"No email"}</div>
-                    <div style={{fontSize:11,color:txt3,marginTop:2}}>{deal.notes??"â€”"}</div>
+                    <div style={{fontSize:11,color:txt3,marginTop:2}}>{deal.notes??"—"}</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginLeft:12}}>
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,fontWeight:600,background:is.bg,color:is.color}}>{lv}</span>
@@ -392,7 +381,42 @@ export default function Dashboard(){
           </div>
         </div>
       )}
-{/* STEVE BGE TAB */}
+
+      {/* OUTREACH TAB */}
+      {tab==="outreach"&&(
+        <div style={{padding:"20px 28px 32px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+            {[
+              {label:"Total Sent",value:totalSent,accent:navAC},
+              {label:"Reply Rate",value:`${replyRate}%`,accent:dark?"#34d399":"#059669"},
+              {label:"Interested",value:interested,accent:dark?"#f472b6":"#db2777"},
+            ].map(m=>(
+              <div key={m.label} style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
+                <div style={{fontSize:11,color:txt2,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>{m.label}</div>
+                <div style={{fontSize:28,fontWeight:700,color:m.accent,lineHeight:1}}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
+            <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:14}}>Steve&apos;s Outreach Log</div>
+            {logs.length===0&&<p style={{color:txt3,fontSize:13,textAlign:"center",padding:"40px 0"}}>No outreach logs yet</p>}
+            {logs.map((log,i)=>(
+              <div key={log.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<logs.length-1?`0.5px solid ${divC}`:"none"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.to_email}</div>
+                  <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:2}}>{log.subject??"—"}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0,marginLeft:12}}>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:log.status==="sent"?(dark?"rgba(52,211,153,0.12)":"rgba(5,150,105,0.1)"):(dark?"rgba(251,191,36,0.12)":"rgba(217,119,6,0.1)"),color:log.status==="sent"?(dark?"#34d399":"#059669"):(dark?"#fbbf24":"#d97706")}}>{log.status}</span>
+                  <span style={{fontSize:10,color:txt3}}>{ago(log.created_at??null)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* STEVE BGE TAB */}
       {tab==="steve"&&(
         <div style={{padding:"20px 28px 32px"}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:20}}>
@@ -404,9 +428,9 @@ export default function Dashboard(){
             ))}
           </div>
           <div style={{display:"flex",gap:8,marginBottom:20}}>
-            <button onClick={runStevePipeline} disabled={steveRunning} style={{padding:"8px 18px",background:steveRunning?"transparent":"#ff6b35",color:steveRunning?txt3:"#000",border:`0.5px solid ${steveRunning?bdr:"#ff6b35"}`,borderRadius:6,fontSize:12,fontWeight:700,cursor:steveRunning?"not-allowed":"pointer",fontFamily:"inherit"}}>{steveRunning?"Running...":"â–¶ Run Pipeline"}</button>
-            <button onClick={loadSteveLeads} style={{padding:"8px 16px",background:"transparent",color:txt2,border:`0.5px solid ${bdr}`,borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>â†º Refresh</button>
-            <button onClick={runSteveOutreach} disabled={steveRunning} style={{padding:"8px 16px",background:"transparent",color:"#818cf8",border:"0.5px solid rgba(129,140,248,0.3)",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>âœ‰ Send Outreach</button>
+            <button onClick={runStevePipeline} disabled={steveRunning} style={{padding:"8px 18px",background:steveRunning?"transparent":"#ff6b35",color:steveRunning?txt3:"#000",border:`0.5px solid ${steveRunning?bdr:"#ff6b35"}`,borderRadius:6,fontSize:12,fontWeight:700,cursor:steveRunning?"not-allowed":"pointer",fontFamily:"inherit"}}>{steveRunning?"Running...":"▶ Run Pipeline"}</button>
+            <button onClick={loadSteveLeads} style={{padding:"8px 16px",background:"transparent",color:txt2,border:`0.5px solid ${bdr}`,borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>↺ Refresh</button>
+            <button onClick={runSteveOutreach} disabled={steveRunning} style={{padding:"8px 16px",background:"transparent",color:"#818cf8",border:"0.5px solid rgba(129,140,248,0.3)",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✉ Send Outreach</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
             {([["HOT",steveLeads.filter((l:any)=>l.status==="Hot"),"#ff6b35"],["WARM",steveLeads.filter((l:any)=>l.status==="Handoff_Ready"),"#fbd23f"],["NURTURE",steveLeads.filter((l:any)=>l.status==="Nurture"),"#34d399"],["NEW",steveLeads.filter((l:any)=>l.status==="New"),"#666"]] as [string,any[],string][]).map(([label,arr,color])=>(
@@ -423,7 +447,10 @@ export default function Dashboard(){
                         <div style={{fontSize:10,color:txt3}}>{(lead.industry||"").toUpperCase()}</div>
                         {lead.score>0&&<div style={{fontSize:11,fontWeight:700,color:sScoreC(lead.score)}}>{lead.score}</div>}
                       </div>
-                      {lead.status==="Hot"&&<><button onClick={e=>{e.stopPropagation();runRicoHandoff(lead.id,lead.business_name||lead.name);}} style={{marginTop:6,width:"100%",padding:"4px 0",background:"rgba(255,107,53,0.15)",color:"#ff6b35",border:"0.5px solid rgba(255,107,53,0.4)",borderRadius:4,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Rico Handoff</button><button onClick={e=>{e.stopPropagation();setProposalModal(lead);setProposalServices([]);setProposalPrices({});setProposalNotes("");}} style={{marginTop:4,width:"100%",padding:"4px 0",background:"rgba(0,200,100,0.15)",color:"#00c864",border:"0.5px solid rgba(0,200,100,0.4)",borderRadius:4,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Send Proposal</button></>}
+                      {lead.status==="Hot"&&<>
+                        <button onClick={e=>{e.stopPropagation();runRicoHandoff(lead.id,lead.business_name||lead.name);}} style={{marginTop:6,width:"100%",padding:"4px 0",background:"rgba(255,107,53,0.15)",color:"#ff6b35",border:"0.5px solid rgba(255,107,53,0.4)",borderRadius:4,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Rico Handoff</button>
+                        <button onClick={e=>{e.stopPropagation();setProposalModal(lead);setProposalServices([]);setProposalPrices({});setProposalNotes("");}} style={{marginTop:4,width:"100%",padding:"4px 0",background:"rgba(0,200,100,0.15)",color:"#00c864",border:"0.5px solid rgba(0,200,100,0.4)",borderRadius:4,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Send Proposal</button>
+                      </>}
                     </div>
                   );})}
                 </div>
@@ -447,7 +474,7 @@ export default function Dashboard(){
                   </div>
                 ))}
               </div>
-              <button onClick={runSteveScrape} disabled={steveRunning} style={{width:"100%",padding:"9px",background:steveRunning?"transparent":"#ff6b35",color:steveRunning?txt3:"#000",border:`0.5px solid ${steveRunning?bdr:"#ff6b35"}`,borderRadius:6,fontSize:12,fontWeight:700,cursor:steveRunning?"not-allowed":"pointer",fontFamily:"inherit"}}>{steveRunning?"Scraping...":"â–¶ Scrape + Inject"}</button>
+              <button onClick={runSteveScrape} disabled={steveRunning} style={{width:"100%",padding:"9px",background:steveRunning?"transparent":"#ff6b35",color:steveRunning?txt3:"#000",border:`0.5px solid ${steveRunning?bdr:"#ff6b35"}`,borderRadius:6,fontSize:12,fontWeight:700,cursor:steveRunning?"not-allowed":"pointer",fontFamily:"inherit"}}>{steveRunning?"Scraping...":"▶ Scrape + Inject"}</button>
             </div>
             <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
               <div style={{fontSize:11,color:txt2,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600,marginBottom:14}}>Activity Log</div>
@@ -466,12 +493,12 @@ export default function Dashboard(){
               <div onClick={e=>e.stopPropagation()} style={{background:cardBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"24px",width:460,maxHeight:"80vh",overflowY:"auto"}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
                   <div style={{fontSize:15,fontWeight:700,color:txt}}>{steveSelected.business_name||steveSelected.name}</div>
-                  <button onClick={()=>setSteveSelected(null)} style={{background:"transparent",border:"none",color:txt3,cursor:"pointer",fontSize:16}}>âœ•</button>
+                  <button onClick={()=>setSteveSelected(null)} style={{background:"transparent",border:"none",color:txt3,cursor:"pointer",fontSize:16}}>✕</button>
                 </div>
                 {(()=>{const n=parseN(steveSelected.notes);return(
                   <div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-                      {([["Status",steveSelected.status],["Score",steveSelected.score||"â€”"],["Industry",steveSelected.industry||"â€”"],["Phone",steveSelected.phone||"â€”"],["Rating",`â˜… ${n.rating||"â€”"}`],["Reviews",n.review_count||0]] as [string,any][]).map(([k,v])=>(
+                      {([["Status",steveSelected.status],["Score",steveSelected.score||"—"],["Industry",steveSelected.industry||"—"],["Phone",steveSelected.phone||"—"],["Rating",`★ ${n.rating||"—"}`],["Reviews",n.review_count||0]] as [string,any][]).map(([k,v])=>(
                         <div key={k} style={{background:bg,borderRadius:6,padding:"8px 12px"}}>
                           <div style={{fontSize:9,color:txt3,letterSpacing:"0.08em",marginBottom:2}}>{k.toUpperCase()}</div>
                           <div style={{fontSize:13,fontWeight:600,color:txt}}>{String(v)}</div>
@@ -480,8 +507,8 @@ export default function Dashboard(){
                     </div>
                     {n.website&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:txt3,marginBottom:4}}>WEBSITE</div><a href={n.website} target="_blank" rel="noreferrer" style={{fontSize:12,color:navAC}}>{n.website}</a></div>}
                     {n.address&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:txt3,marginBottom:4}}>ADDRESS</div><div style={{fontSize:12,color:txt2}}>{n.address}</div></div>}
-                    {n.pain_points?.length>0&&<div style={{marginBottom:14}}><div style={{fontSize:10,color:txt3,marginBottom:6}}>PAIN POINTS</div>{n.pain_points.map((p:string,i:number)=><div key={i} style={{fontSize:12,color:"#ff6b35",marginBottom:3}}>â†’ {p}</div>)}</div>}
-                    {steveSelected.phone&&<a href={`tel:${steveSelected.phone}`} style={{display:"block",padding:"10px 0",background:"#ff6b35",color:"#000",borderRadius:6,fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none"}}>ðŸ“ž Call {steveSelected.phone}</a>}
+                    {n.pain_points?.length>0&&<div style={{marginBottom:14}}><div style={{fontSize:10,color:txt3,marginBottom:6}}>PAIN POINTS</div>{n.pain_points.map((p:string,i:number)=><div key={i} style={{fontSize:12,color:"#ff6b35",marginBottom:3}}>→ {p}</div>)}</div>}
+                    {steveSelected.phone&&<a href={`tel:${steveSelected.phone}`} style={{display:"block",padding:"10px 0",background:"#ff6b35",color:"#000",borderRadius:6,fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none"}}>📞 Call {steveSelected.phone}</a>}
                   </div>
                 );})()}
               </div>
@@ -489,39 +516,8 @@ export default function Dashboard(){
           )}
         </div>
       )}
-      {/* OUTREACH TAB */}
-      {tab==="outreach"&&(
-        <div style={{padding:"20px 28px 32px"}}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
-            {[
-              {label:"Total Sent",value:totalSent,accent:navAC},
-              {label:"Reply Rate",value:`${replyRate}%`,accent:dark?"#34d399":"#059669"},
-              {label:"Interested",value:interested,accent:dark?"#f472b6":"#db2777"},
-            ].map(m=>(
-              <div key={m.label} style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
-                <div style={{fontSize:11,color:txt2,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>{m.label}</div>
-                <div style={{fontSize:28,fontWeight:700,color:m.accent,lineHeight:1}}>{m.value}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{background:metBg,border:`0.5px solid ${bdr}`,borderRadius:10,padding:"16px 20px"}}>
-            <div style={{fontSize:12,color:txt2,textTransform:"uppercase",letterSpacing:"0.07em",fontWeight:600,marginBottom:14}}>Steve&apos;s Outreach Log</div>
-            {logs.length===0&&<p style={{color:txt3,fontSize:13,textAlign:"center",padding:"40px 0"}}>No outreach logs yet</p>}
-            {logs.map((log,i)=>(
-              <div key={log.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<logs.length-1?`0.5px solid ${divC}`:"none"}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.to_email}</div>
-                  <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:2}}>{log.subject??"â€”"}</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0,marginLeft:12}}>
-                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:log.status==="sent"?(dark?"rgba(52,211,153,0.12)":"rgba(5,150,105,0.1)"):(dark?"rgba(251,191,36,0.12)":"rgba(217,119,6,0.1)"),color:log.status==="sent"?(dark?"#34d399":"#059669"):(dark?"#fbbf24":"#d97706")}}>{log.status}</span>
-                  <span style={{fontSize:10,color:txt3}}>{ago(log.created_at??null)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
+      {/* PROPOSAL MODAL */}
       {proposalModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setProposalModal(null)}>
           <div style={{background:"#1a1a2e",borderRadius:12,padding:28,width:"100%",maxWidth:500,maxHeight:"88vh",overflowY:"auto",border:"1px solid rgba(255,107,53,0.3)"}} onClick={e=>e.stopPropagation()}>
@@ -575,11 +571,26 @@ export default function Dashboard(){
               <textarea value={proposalNotes} onChange={e=>setProposalNotes(e.target.value)} placeholder="e.g. Client relies on referrals, wants more Google visibility..." rows={3} style={{width:"100%",padding:"8px 10px",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:5,color:"#fff",fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
             </div>
             <button onClick={()=>sendProposal(proposalModal)} disabled={sendingProposal||proposalServices.length===0} style={{width:"100%",padding:"13px",background:sendingProposal||proposalServices.length===0?"#444":"#ff6b35",color:"#fff",border:"none",borderRadius:7,fontSize:14,fontWeight:700,cursor:sendingProposal||proposalServices.length===0?"not-allowed":"pointer",letterSpacing:0.5}}>
-              {sendingProposal ? "Generating & Sending..." : "Generate & Send Proposal"}
+              {sendingProposal?"Generating & Sending...":"Generate & Send Proposal"}
             </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function Dashboard(){
+  return(
+    <Suspense fallback={
+      <div style={{minHeight:"100vh",background:"#0a0a0f",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:12}}>☆</div>
+          <p style={{color:"rgba(255,255,255,0.2)",fontFamily:"monospace",fontSize:13,letterSpacing:"0.1em"}}>LOADING STARZ-OS...</p>
+        </div>
+      </div>
+    }>
+      <DashboardInner/>
+    </Suspense>
   );
 }
