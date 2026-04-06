@@ -19,7 +19,7 @@ function DashboardInner(){
   const [deals,setDeals]=useState<Deal[]>([]);
   const [proposalModal, setProposalModal] = useState<any>(null);
  const [proposalServices, setProposalServices] = useState<string[]>([]);
-  const [proposalPrices, setProposalPrices] = useState({});
+  const [proposalPrices, setProposalPrices] = useState<Record<string,number>>({});
   const [proposalNotes, setProposalNotes] = useState("");
   const [proposalTerm, setProposalTerm] = useState("month-to-month");
   const [sendingProposal, setSendingProposal] = useState(false);
