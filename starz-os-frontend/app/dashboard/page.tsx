@@ -17,7 +17,7 @@ function ago(ds:string|null):string{if(!ds)return"";const m=Math.floor((Date.now
 
 function DashboardInner(){
   const [deals,setDeals]=useState<Deal[]>([]);
-  const [proposalModal, setProposalModal] = useState(null);
+  const [proposalModal, setProposalModal] = useState<any>(null);
   const [proposalServices, setProposalServices] = useState([]);
   const [proposalPrices, setProposalPrices] = useState({});
   const [proposalNotes, setProposalNotes] = useState("");
