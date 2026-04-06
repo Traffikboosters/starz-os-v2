@@ -1,6 +1,6 @@
-﻿export const dynamic = 'force-dynamic'
+﻿"use client";
 // @ts-nocheck
-"use client";
+export const dynamic = 'force-dynamic'
 import { useEffect, useState, Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -35,7 +35,6 @@ function DashboardInner(){
   const [steveScrape,setSteveScrape]=useState({industry:"plumber",city:"Miami",state:"FL",limit:20});
   const [steveSelected,setSteveSelected]=useState<any>(null);
   const TENANT="00000000-0000-0000-0000-000000000301";
-  const FN_BASE="https://szguizvpiiuiyugrjeks.supabase.co/functions/v1";
   const SVC_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTMyNTg5MiwiZXhwIjoyMDc2OTAxODkyfQ.VPnGM9so9Cp56GV6v6tafzKKs45eNUKpkpwD65Hn7PM";
   const router=useRouter();
 
@@ -87,23 +86,16 @@ function DashboardInner(){
     setSteveRunning(false);
   };
   const parseN=(n:string|null)=>{try{return JSON.parse(n||"{}");}catch{return{};}};
-  const sendProposal = async (lead) => {
-    if (proposalServices.length === 0) { alert("Select at least one service."); return; }
-    if (!lead.email) { alert("No email on file for this lead."); return; }
+  const sendProposal=async(lead)=>{
+    if(proposalServices.length===0){alert("Select at least one service.");return;}
+    if(!lead.email){alert("No email on file for this lead.");return;}
     setSendingProposal(true);
-    try {
-      const r = await fetch("/api/steve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fn: "generate-proposal", body: { lead_id: lead.id, services: proposalServices, prices: proposalPrices, term: proposalTerm, notes_override: proposalNotes } }),
-      });
-      const data = await r.json();
-      if (data.success) {
-        steveAddLog(`Proposal ${data.proposal_id} sent to ${lead.business_name||lead.name}`, "success");
-        setProposalModal(null); setProposalServices([]); setProposalPrices({}); setProposalNotes("");
-        alert(`Proposal ${data.proposal_id} sent to ${data.sent_to}`);
-      } else { alert("Error: " + (data.error||"Unknown")); }
-    } catch(e) { alert("Error: " + e.message); }
+    try{
+      const r=await fetch("/api/steve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fn:"generate-proposal",body:{lead_id:lead.id,services:proposalServices,prices:proposalPrices,term:proposalTerm,notes_override:proposalNotes}})});
+      const data=await r.json();
+      if(data.success){steveAddLog(`Proposal ${data.proposal_id} sent to ${lead.business_name||lead.name}`,"success");setProposalModal(null);setProposalServices([]);setProposalPrices({});setProposalNotes("");alert(`Proposal ${data.proposal_id} sent to ${data.sent_to}`);}
+      else{alert("Error: "+(data.error||"Unknown"));}
+    }catch(e){alert("Error: "+e.message);}
     setSendingProposal(false);
   };
   const runRicoHandoff=async(leadId:string,businessName:string)=>{
@@ -518,7 +510,7 @@ function DashboardInner(){
       )}
 
       {/* PROPOSAL MODAL */}
-      {proposalModal && (
+      {proposalModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setProposalModal(null)}>
           <div style={{background:"#1a1a2e",borderRadius:12,padding:28,width:"100%",maxWidth:500,maxHeight:"88vh",overflowY:"auto",border:"1px solid rgba(255,107,53,0.3)"}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
