@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 // @ts-nocheck
 export const dynamic = 'force-dynamic'
 import { useEffect, useState, Suspense } from "react";
@@ -81,7 +81,7 @@ function DashboardInner(){
   const runSteveOutreach=async()=>{
     setSteveRunning(true);steveAddLog("Sending outreach...","info");
     const r=await steveFn("outreach-ai-engine");
-    if(r.success)steveAddLog(`Sent to ${r.to} – "${r.subject}"`,"success");
+    if(r.success)steveAddLog(`Sent to ${r.to} ï¿½ "${r.subject}"`,"success");
     else steveAddLog(r.message||r.error||"No jobs in queue","warn");
     setSteveRunning(false);
   };
@@ -335,7 +335,7 @@ function DashboardInner(){
                 <div key={log.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<7?`0.5px solid ${divC}`:"none"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:12,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.to_email}</div>
-                    <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.subject??"—"}</div>
+                    <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.subject??"ï¿½"}</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0,marginLeft:12}}>
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:log.status==="sent"?(dark?"rgba(52,211,153,0.12)":"rgba(5,150,105,0.1)"):(dark?"rgba(251,191,36,0.12)":"rgba(217,119,6,0.1)"),color:log.status==="sent"?(dark?"#34d399":"#059669"):(dark?"#fbbf24":"#d97706")}}>{log.status}</span>
@@ -359,7 +359,7 @@ function DashboardInner(){
                 <div key={deal.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<deals.length-1?`0.5px solid ${divC}`:"none"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:13,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{deal.lead_email??"No email"}</div>
-                    <div style={{fontSize:11,color:txt3,marginTop:2}}>{deal.notes??"—"}</div>
+                    <div style={{fontSize:11,color:txt3,marginTop:2}}>{deal.notes??"ï¿½"}</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginLeft:12}}>
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,fontWeight:600,background:is.bg,color:is.color}}>{lv}</span>
@@ -396,7 +396,7 @@ function DashboardInner(){
               <div key={log.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<logs.length-1?`0.5px solid ${divC}`:"none"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,color:txt,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{log.to_email}</div>
-                  <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:2}}>{log.subject??"—"}</div>
+                  <div style={{fontSize:11,color:txt3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:2}}>{log.subject??"ï¿½"}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0,marginLeft:12}}>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:log.status==="sent"?(dark?"rgba(52,211,153,0.12)":"rgba(5,150,105,0.1)"):(dark?"rgba(251,191,36,0.12)":"rgba(217,119,6,0.1)"),color:log.status==="sent"?(dark?"#34d399":"#059669"):(dark?"#fbbf24":"#d97706")}}>{log.status}</span>
@@ -490,7 +490,7 @@ function DashboardInner(){
                 {(()=>{const n=parseN(steveSelected.notes);return(
                   <div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-                      {([["Status",steveSelected.status],["Score",steveSelected.score||"—"],["Industry",steveSelected.industry||"—"],["Phone",steveSelected.phone||"—"],["Rating",`? ${n.rating||"—"}`],["Reviews",n.review_count||0]] as [string,any][]).map(([k,v])=>(
+                      {([["Status",steveSelected.status],["Score",steveSelected.score||"ï¿½"],["Industry",steveSelected.industry||"ï¿½"],["Phone",steveSelected.phone||"ï¿½"],["Rating",`? ${n.rating||"ï¿½"}`],["Reviews",n.review_count||0]] as [string,any][]).map(([k,v])=>(
                         <div key={k} style={{background:bg,borderRadius:6,padding:"8px 12px"}}>
                           <div style={{fontSize:9,color:txt3,letterSpacing:"0.08em",marginBottom:2}}>{k.toUpperCase()}</div>
                           <div style={{fontSize:13,fontWeight:600,color:txt}}>{String(v)}</div>
