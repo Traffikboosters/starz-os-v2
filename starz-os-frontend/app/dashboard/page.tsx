@@ -95,7 +95,7 @@ function DashboardInner(){
       const data=await r.json();
       if(data.success){steveAddLog(`Proposal ${data.proposal_id} sent to ${lead.business_name||lead.name}`,"success");setProposalModal(null);setProposalServices([]);setProposalPrices({});setProposalNotes("");alert(`Proposal ${data.proposal_id} sent to ${data.sent_to}`);}
       else{alert("Error: "+(data.error||"Unknown"));}
-    }catch(e){alert("Error: "+e.message);}
+    }catch(e:any){alert("Error: "+e.message);}
     setSendingProposal(false);
   };
   const runRicoHandoff=async(leadId:string,businessName:string)=>{
