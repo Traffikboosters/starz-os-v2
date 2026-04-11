@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ subject: "Welcome to Traffik Boosters, " + name + "!", html: "<p>Dear " + name + ",</p><p>Welcome to Traffik Boosters! Excited to have you join as " + role + ".</p><p>Log into STARZ-OS to get started.</p><p>Best,<br>Zara<br>HR Director</p>", text: "Dear " + name + ", Welcome to Traffik Boosters! Excited to have you as " + role + ". Log into STARZ-OS. Best, Zara, HR Director." });
   } catch (e) {
-    console.error("Zara error:", e.message);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("Zara error:", e instanceof Error ? e.message : String(e));
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
 }
