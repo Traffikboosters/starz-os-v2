@@ -20,7 +20,7 @@ export default function DialerPage() {
     const load = async () => {
       const { data } = await supabase.schema('crm').from('leads')
         .select('id, name, company_name, email, phone, revenue_tier, status')
-        .in('status', ['new','contacted','qualified'])
+        .in('status', ['nurturing','new','contacted','qualified','proposal_sent'])
         .not('phone', 'is', null)
         .order('created_at', { ascending: false })
         .limit(20)
