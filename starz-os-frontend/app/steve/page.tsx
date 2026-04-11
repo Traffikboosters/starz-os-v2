@@ -1,311 +1,530 @@
-// @ts-nocheck
-"use client";
-import { useState, useEffect, useCallback } from "react";
+'use client';
+import React from 'react';
 
-const SUPABASE_URL = "https://szguizvpiiuiyugrjeks.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTMyNTg5MiwiZXhwIjoyMDc2OTAxODkyfQ.VPnGM9so9Cp56GV6v6tafzKKs45eNUKpkpwD65Hn7PM";
-const FN_URL = "https://szguizvpiiuiyugrjeks.supabase.co/functions/v1";
-const TENANT = "00000000-0000-0000-0000-000000000301";
+import { useEffect, useState, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import Sidebar from '@/components/Sidebar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SteveChat } from '@/components/steve-chat';
+import { TrendingUp, Users, Target, Flame, AlertCircle, Loader2, BarChart3, PieChart, Activity, FileText } from 'lucide-react';
+import { getWorkOrders, getStatusColor, getPaymentStatusColor, type WorkOrder } from '@/lib/workOrders';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
-const api = async (path: string, opts: any = {}) => {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", ...opts.headers },
-    ...opts,
-  });
-  return r.json();
+// WorkOrders state added via patch
+const STEVE_AVATAR = 'https://szguizvpiiuiyugrjeks.supabase.co/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Steve.png';
+
+interface PipelineDeal {
+  id: string;
+  company: string | null;
+  lead_name: string | null;
+  stage: string | null;
+  interest_level: string | null;
+  source: string | null;
+  value: number | null;
+  created_at: string;
+  last_contacted_at: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+interface StageStats {
+  stage: string;
+  count: number;
+  high_interest: number;
+}
+
+const STAGE_COLORS: Record<string, string> = {
+  new: 'bg-white/10 text-white/50',
+  qualified: 'bg-cyan-500/20 text-cyan-400',
+  engaged: 'bg-blue-500/20 text-blue-400',
+  nurture: 'bg-yellow-500/20 text-yellow-400',
+  closed_lost: 'bg-red-500/20 text-red-400',
+  closed_won: 'bg-green-500/20 text-green-400',
 };
 
-const fn = async (name: string, body: any = {}) => {
-  const r = await fetch(`${FN_URL}/${name}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return r.json();
+const STAGE_BAR_COLORS: Record<string, string> = {
+  new: 'bg-white/20',
+  qualified: 'bg-cyan-500',
+  engaged: 'bg-blue-500',
+  nurture: 'bg-yellow-500',
+  closed_lost: 'bg-red-500',
+  closed_won: 'bg-green-500',
 };
 
-const parseNotes = (notes) => { try { return JSON.parse(notes || "{}"); } catch { return {}; } };
-const scoreColor = (s) => s >= 82 ? "#ff6b35" : s >= 62 ? "#ffd23f" : s >= 42 ? "#06ffa5" : "#666";
-const statusColor = (s) => ({ Hot:"#ff6b35", Handoff_Ready:"#ffd23f", Nurture:"#06ffa5", Disqualified:"#666", New:"#888", Contacted:"#818cf8", Enriched:"#60a5fa" }[s] || "#888");
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return 'Never';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
-export default function SteveDashboard() {
-  const [tab, setTab] = useState("pipeline");
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [log, setLog] = useState([]);
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [scrapeForm, setScrapeForm] = useState({ industry: "plumber", city: "Miami", state: "FL", limit: 20 });
-  const [stats, setStats] = useState({ total:0, hot:0, warm:0, cold:0, contacted:0 });
+function BarChartComponent({ stageStats }: { stageStats: StageStats[] }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<Chart | null>(null);
 
-  const addLog = (msg, type="info") => setLog(p => [{ msg, type, t: new Date().toLocaleTimeString() }, ...p.slice(0,19)]);
+  useEffect(() => {
+    if (!canvasRef.current || stageStats.length === 0) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const colors = stageStats.map((s) => {
+      const map: Record<string, string> = {
+        qualified: '#06b6d4', engaged: '#3b82f6', new: 'rgba(255,255,255,0.3)',
+        nurture: '#eab308', closed_lost: '#ef4444', closed_won: '#22c55e',
+      };
+      return map[s.stage] || 'rgba(255,255,255,0.2)';
+    });
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'bar',
+      data: {
+        labels: stageStats.map((s) => s.stage.replace('_', ' ')),
+        datasets: [{ label: 'Deals', data: stageStats.map((s) => s.count), backgroundColor: colors, borderRadius: 8, borderSkipped: false }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)', stepSize: 5 } },
+          x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)' } },
+        },
+      },
+    });
+    return () => { chartRef.current?.destroy(); };
+  }, [stageStats]);
 
-  const loadLeads = useCallback(async () => {
-    setLoading(true);
-    const data = await api(`leads?tenant_id=eq.${TENANT}&order=created_at.desc&limit=100`);
-    const arr = Array.isArray(data) ? data : (data.value || []);
-    setLeads(arr);
-    setStats({ total:arr.length, hot:arr.filter(l=>l.status==="Hot").length, warm:arr.filter(l=>l.status==="Handoff_Ready").length, cold:arr.filter(l=>l.status==="Nurture").length, contacted:arr.filter(l=>l.status==="Contacted").length });
-    setLoading(false);
+  return <canvas ref={canvasRef} />;
+}
+
+function DonutChartComponent({ deals }: { deals: PipelineDeal[] }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<Chart | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || deals.length === 0) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const high = deals.filter((d) => d.interest_level === 'high').length;
+    const low = deals.filter((d) => d.interest_level !== 'high').length;
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'doughnut',
+      data: {
+        labels: ['High Interest', 'Other'],
+        datasets: [{ data: [high, low], backgroundColor: ['#f97316', 'rgba(255,255,255,0.1)'], borderColor: ['#ea580c', 'rgba(255,255,255,0.05)'], borderWidth: 2 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.5)', padding: 16, font: { size: 11 } } } },
+        cutout: '70%',
+      },
+    });
+    return () => { chartRef.current?.destroy(); };
+  }, [deals]);
+
+  return <canvas ref={canvasRef} />;
+}
+
+function LineChartComponent({ deals }: { deals: PipelineDeal[] }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<Chart | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || deals.length === 0) return;
+    if (chartRef.current) chartRef.current.destroy();
+    const countsByDay: Record<string, number> = {};
+    deals.forEach((d) => {
+      const day = new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      countsByDay[day] = (countsByDay[day] || 0) + 1;
+    });
+    const sortedDays = Object.keys(countsByDay).slice(-14);
+    const counts = sortedDays.map((d) => countsByDay[d]);
+    const ctx = canvasRef.current.getContext('2d');
+    const gradient = ctx!.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(6,182,212,0.3)');
+    gradient.addColorStop(1, 'rgba(6,182,212,0)');
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'line',
+      data: {
+        labels: sortedDays,
+        datasets: [{ label: 'Deals Added', data: counts, borderColor: '#06b6d4', backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.4, pointBackgroundColor: '#06b6d4', pointRadius: 4, pointHoverRadius: 6 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)', stepSize: 1 } },
+          x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)', maxTicksLimit: 7 } },
+        },
+      },
+    });
+    return () => { chartRef.current?.destroy(); };
+  }, [deals]);
+
+  return <canvas ref={canvasRef} />;
+}
+
+
+function SteveWorkOrders() {
+  const [workOrders, setWorkOrders] = React.useState<WorkOrder[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    getWorkOrders().then((data) => {
+      setWorkOrders(data.filter((wo) => wo.status === 'active' || wo.status === 'probation' || wo.status === 'fulfilled'));
+      setLoading(false);
+    });
   }, []);
 
-  useEffect(() => { loadLeads(); }, [loadLeads]);
-
-  const runPipeline = async () => {
-    setRunning(true);
-    addLog("Starting enrichment...", "info");
-    for (let i = 0; i < 6; i++) {
-      const e = await fn("lead-enrichment-engine");
-      if (!e.enriched) break;
-      addLog(`Enriched batch ${i+1}: ${e.enriched} leads`, "success");
-    }
-    addLog("Routing leads...", "info");
-    const r = await fn("lead-targeting-engine");
-    addLog(`Routed → Hot: ${r.routed?.hot||0} | Warm: ${r.routed?.warm||0} | Cold: ${r.routed?.cold||0}`, "success");
-    await loadLeads();
-    setRunning(false);
-  };
-
-  const runScrape = async () => {
-    setRunning(true);
-    addLog(`Scraping ${scrapeForm.industry} in ${scrapeForm.city}...`, "info");
-    const r = await fn("lead-scraper", scrapeForm);
-    if (r.error) addLog(`Error: ${r.error}`, "error");
-    else addLog(`Scraped ${r.inserted} new leads (${r.skipped} skipped)`, "success");
-    await loadLeads();
-    setRunning(false);
-  };
-
-  const runOutreach = async () => {
-    setRunning(true);
-    addLog("Sending outreach...", "info");
-    const r = await fn("outreach-ai-engine");
-    if (r.success) addLog(`Sent to ${r.to} — "${r.subject}"`, "success");
-    else addLog(r.message || r.error || "No jobs in queue", "warn");
-    setRunning(false);
-  };
-
-  const hotLeads = leads.filter(l=>l.status==="Hot");
-  const warmLeads = leads.filter(l=>l.status==="Handoff_Ready");
-  const coldLeads = leads.filter(l=>l.status==="Nurture");
-  const newLeads = leads.filter(l=>l.status==="New");
+  if (loading) return <div className="py-8 text-center text-white/30 text-sm flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Loading...</div>;
+  if (workOrders.length === 0) return <div className="py-8 text-center text-white/20 text-sm">No closed deals converted to work orders yet</div>;
 
   return (
-    <div style={{ background:"#080810", minHeight:"100vh", fontFamily:"'DM Mono','Courier New',monospace", color:"#e0e0f0" }}>
-      <div style={{ borderBottom:"1px solid #1a1a2e", padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"#0a0a18" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#ff6b35,#ff3366)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700 }}>S</div>
-          <div>
-            <div style={{ fontSize:14, fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", color:"#ff6b35" }}>STEVE BGE</div>
-            <div style={{ fontSize:10, color:"#444", letterSpacing:"0.1em" }}>REVENUE COMMAND CENTER</div>
+    <div className="space-y-2">
+      {workOrders.map((wo) => (
+        <div key={wo.id} className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-xl hover:bg-white/[0.04] transition-colors">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{wo.business_name || wo.client_name}</p>
+            <p className="text-xs text-white/40 mt-0.5">{wo.service || wo.project_type || 'Service'} · {wo.proposal_id || '—'}</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(wo.status)}`}>{wo.status}</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getPaymentStatusColor(wo.payment_status)}`}>{wo.payment_status || '—'}</span>
+            <span className="text-sm text-white/60 font-medium">{wo.total_amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(wo.total_amount) : '—'}</span>
           </div>
         </div>
-        <div style={{ display:"flex", gap:8 }}>
-          <button onClick={runPipeline} disabled={running} style={{ padding:"7px 16px", background:running?"#1a1a2e":"#ff6b35", color:running?"#444":"#000", border:"none", borderRadius:4, fontSize:11, fontWeight:700, cursor:running?"not-allowed":"pointer", letterSpacing:"0.1em", fontFamily:"inherit" }}>{running?"RUNNING...":"▶ RUN PIPELINE"}</button>
-          <button onClick={loadLeads} style={{ padding:"7px 16px", background:"transparent", color:"#666", border:"1px solid #1a1a2e", borderRadius:4, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>↺ REFRESH</button>
-        </div>
-      </div>
+      ))}
+    </div>
+  );
+}
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:1, borderBottom:"1px solid #1a1a2e", background:"#1a1a2e" }}>
-        {[["TOTAL LEADS",stats.total,"#e0e0f0"],["HOT 🔥",stats.hot,"#ff6b35"],["WARM ⚡",stats.warm,"#ffd23f"],["NURTURE 🌱",stats.cold,"#06ffa5"],["CONTACTED",stats.contacted,"#818cf8"]].map(([label,value,color])=>(
-          <div key={label} style={{ background:"#080810", padding:"16px 20px", textAlign:"center" }}>
-            <div style={{ fontSize:28, fontWeight:700, color, lineHeight:1 }}>{loading?"—":value}</div>
-            <div style={{ fontSize:9, color:"#444", marginTop:4, letterSpacing:"0.12em" }}>{label}</div>
+export default function StevePage() {
+  const [deals, setDeals] = useState<PipelineDeal[]>([]);
+  const [stageStats, setStageStats] = useState<StageStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase
+          .schema('deals')
+          .from('pipeline')
+          .select('id, company, lead_name, stage, interest_level, source, value, created_at, last_contacted_at, email, phone')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (error) throw new Error(error.message);
+        setDeals(data || []);
+        const statsMap: Record<string, StageStats> = {};
+        (data || []).forEach((d) => {
+          const s = d.stage || 'unknown';
+          if (!statsMap[s]) statsMap[s] = { stage: s, count: 0, high_interest: 0 };
+          statsMap[s].count++;
+          if (d.interest_level === 'high') statsMap[s].high_interest++;
+        });
+        setStageStats(Object.values(statsMap).sort((a, b) => b.count - a.count));
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+    const sub = supabase
+      .channel('pipeline_steve')
+      .on('postgres_changes', { event: '*', schema: 'deals', table: 'pipeline' }, fetchData)
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, []);
+
+  const totalDeals = deals.length;
+  const highInterest = deals.filter((d) => d.interest_level === 'high').length;
+  const qualified = deals.filter((d) => d.stage === 'qualified').length;
+  const engaged = deals.filter((d) => d.stage === 'engaged').length;
+  const hotLeads = deals.filter((d) => d.interest_level === 'high').slice(0, 5);
+  const maxCount = Math.max(...stageStats.map((s) => s.count), 1);
+
+  return (
+    <div className="flex min-h-screen bg-[#0a0a0f]">
+      <Sidebar />
+      <main className="flex-1 overflow-auto p-8">
+
+        <header className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-teal-500/40 shadow-[0_0_20px_rgba(20,184,166,0.4)]">
+                <img src={STEVE_AVATAR} alt="Steve" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Steve BGE Dashboard</h2>
+                <p className="text-sm text-white/50 mt-0.5">Business Growth Expert • Sales Operations</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20">
+              <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+              <span className="text-xs text-teal-400 font-medium">Sales Engine Active</span>
+            </div>
           </div>
-        ))}
-      </div>
+        </header>
 
-      <div style={{ display:"flex", borderBottom:"1px solid #1a1a2e", background:"#0a0a18" }}>
-        {[["pipeline","PIPELINE"],["hot",`HOT (${stats.hot})`],["warm",`WARM (${stats.warm})`],["scraper","SCRAPER"],["log","ACTIVITY"]].map(([k,label])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{ padding:"12px 20px", background:"transparent", color:tab===k?"#ff6b35":"#444", border:"none", borderBottom:tab===k?"2px solid #ff6b35":"2px solid transparent", cursor:"pointer", fontSize:11, fontWeight:700, letterSpacing:"0.1em", fontFamily:"inherit" }}>{label}</button>
-        ))}
-      </div>
+        {error && (
+          <div className="mb-6 flex items-center gap-2 text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
 
-      <div style={{ padding:"20px 24px" }}>
-        {tab==="pipeline" && (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
-            {[["🔥 HOT",hotLeads,"#ff6b35","Auto-close → Rico"],["⚡ WARM",warmLeads,"#ffd23f","Human closer queue"],["🌱 NURTURE",coldLeads,"#06ffa5","Follow-up sequence"],["📥 NEW",newLeads,"#666","Awaiting enrichment"]].map(([label,arr,color,desc])=>(
-              <div key={label}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color, letterSpacing:"0.1em" }}>{label}</div>
-                  <div style={{ fontSize:10, color:"#444" }}>{arr.length}</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50">Total Pipeline</span>
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-cyan-400" />
                 </div>
-                <div style={{ fontSize:9, color:"#444", marginBottom:10, letterSpacing:"0.08em" }}>{desc}</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:480, overflowY:"auto" }}>
-                  {arr.map(lead=>{
-                    const n=parseNotes(lead.notes);
-                    return (
-                      <div key={lead.id} onClick={()=>setSelectedLead(lead)} style={{ background:"#0d0d1a", border:`1px solid ${color}22`, borderRadius:4, padding:"10px 12px", cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.borderColor=color} onMouseLeave={e=>e.currentTarget.style.borderColor=`${color}22`}>
-                        <div style={{ fontSize:12, fontWeight:600, color:"#e0e0f0", marginBottom:4, lineHeight:1.3 }}>{lead.business_name||lead.name}</div>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <div style={{ fontSize:10, color:"#444" }}>{lead.industry?.toUpperCase()}</div>
-                          {lead.score>0&&<div style={{ fontSize:11, fontWeight:700, color:scoreColor(lead.score) }}>{lead.score}</div>}
+              </div>
+              <div className="text-3xl font-bold text-white">{loading ? '—' : totalDeals}</div>
+              <p className="text-xs text-white/30 mt-1">Active deals</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50">High Interest</span>
+                <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-white">{loading ? '—' : highInterest}</div>
+              <p className="text-xs text-white/30 mt-1">Hot leads</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50">Qualified</span>
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-cyan-400" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-white">{loading ? '—' : qualified}</div>
+              <p className="text-xs text-white/30 mt-1">Ready to close</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-white/50">Engaged</span>
+                <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-blue-400" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-white">{loading ? '—' : engaged}</div>
+              <p className="text-xs text-white/30 mt-1">In conversation</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-cyan-400" />
+                Deals Added Over Time
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full text-white/30">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                ) : (
+                  <LineChartComponent deals={deals} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="w-4 h-4 text-orange-400" />
+                Interest Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full text-white/30">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                ) : (
+                  <DonutChartComponent deals={deals} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-cyan-400" />
+                Pipeline by Stage
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full text-white/30">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                ) : (
+                  <BarChartComponent stageStats={stageStats} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                  Hot Leads
+                </CardTitle>
+                <span className="text-xs text-white/30">{highInterest} high interest</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-white/30">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : hotLeads.length === 0 ? (
+                <div className="py-12 text-center text-white/20 text-sm">No hot leads found</div>
+              ) : (
+                <div className="space-y-3">
+                  {hotLeads.map((deal) => (
+                    <div key={deal.id} className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-xl hover:bg-white/[0.04] transition-colors">
+                      <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                        <Flame className="w-4 h-4 text-orange-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">{deal.company || deal.lead_name || 'Unknown'}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{deal.source || 'outreach'}</p>
+                      </div>
+                      <Badge className={STAGE_COLORS[deal.stage || ''] || 'bg-white/10 text-white/50'}>
+                        {deal.stage || 'unknown'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-cyan-400" />
+                Pipeline Stages
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-white/30">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {stageStats.map((s) => (
+                    <div key={s.stage}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-white/70 capitalize">{s.stage.replace('_', ' ')}</span>
+                        <div className="flex items-center gap-2">
+                          {s.high_interest > 0 && (
+                            <span className="text-xs text-orange-400">{s.high_interest} hot</span>
+                          )}
+                          <span className="text-sm font-semibold text-white">{s.count}</span>
                         </div>
-                        {n.review_count>0&&<div style={{ fontSize:9, color:"#333", marginTop:3 }}>★ {n.rating} · {n.review_count} reviews</div>}
                       </div>
-                    );
-                  })}
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${STAGE_BAR_COLORS[s.stage] || 'bg-white/20'}`}
+                          style={{ width: `${(s.count / maxCount) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-cyan-400" />
+                  All Pipeline Deals
+                </CardTitle>
+                <span className="text-xs text-white/30">{totalDeals} total</span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {tab==="hot" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <div style={{ fontSize:11, color:"#666", marginBottom:8, letterSpacing:"0.08em" }}>HOT LEADS — Score 82+ · Steve auto-closes · Routes to Rico on proposal</div>
-            {hotLeads.map(lead=>{
-              const n=parseNotes(lead.notes);
-              return (
-                <div key={lead.id} style={{ background:"#0d0d1a", border:"1px solid #ff6b3533", borderRadius:6, padding:"16px 20px" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
-                    <div>
-                      <div style={{ fontSize:15, fontWeight:700, color:"#e0e0f0", marginBottom:2 }}>{lead.business_name||lead.name}</div>
-                      <div style={{ fontSize:11, color:"#666" }}>{lead.phone||"No phone"} · {lead.industry?.toUpperCase()}</div>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      <div style={{ fontSize:24, fontWeight:700, color:"#ff6b35" }}>{lead.score}</div>
-                      <div style={{ fontSize:9, color:"#ff6b3588" }}>SCORE</div>
-                    </div>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
-                    {[["REVIEWS",n.review_count||0,"#e0e0f0"],["RATING",`★ ${n.rating||"—"}`,"#ffd23f"],["WEBSITE",n.website?"YES":"NONE",n.website?"#06ffa5":"#ff3366"]].map(([k,v,c])=>(
-                      <div key={k} style={{ background:"#080810", borderRadius:4, padding:"8px 10px" }}>
-                        <div style={{ fontSize:9, color:"#444", letterSpacing:"0.08em" }}>{k}</div>
-                        <div style={{ fontSize:14, fontWeight:700, color:c }}>{v}</div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-white/30">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : deals.length === 0 ? (
+                <div className="py-12 text-center text-white/20 text-sm">No deals found</div>
+              ) : (
+                <div className="space-y-2">
+                  {deals.map((deal) => (
+                    <div key={deal.id} className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-xl hover:bg-white/[0.04] transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{deal.company || deal.lead_name || 'Unknown'}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{deal.email || 'No email'} · {deal.source || 'outreach'}</p>
                       </div>
-                    ))}
-                  </div>
-                  {n.pain_points?.length>0&&(
-                    <div style={{ marginBottom:12 }}>
-                      <div style={{ fontSize:9, color:"#444", marginBottom:6 }}>PAIN POINTS</div>
-                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                        {n.pain_points.map((p,i)=><span key={i} style={{ fontSize:10, padding:"2px 8px", background:"#ff6b3511", color:"#ff6b35", borderRadius:3, border:"1px solid #ff6b3533" }}>{p}</span>)}
+                      <div className="flex items-center gap-3 shrink-0">
+                        {deal.interest_level === 'high' && <Flame className="w-3.5 h-3.5 text-orange-400" />}
+                        <Badge className={STAGE_COLORS[deal.stage || ''] || 'bg-white/10 text-white/50'}>
+                          {deal.stage || 'unknown'}
+                        </Badge>
+                        <span className="text-xs text-white/30 w-24 text-right">{formatDate(deal.created_at)}</span>
                       </div>
                     </div>
-                  )}
-                  <div style={{ background:"#080810", borderRadius:4, padding:"10px 12px", marginBottom:12, borderLeft:"2px solid #ff6b35" }}>
-                    <div style={{ fontSize:9, color:"#444", marginBottom:4 }}>SUGGESTED OPENER</div>
-                    <div style={{ fontSize:12, color:"#aaa", fontStyle:"italic", lineHeight:1.5 }}>"Hey {lead.business_name?.split(" ")[0]||"there"} — I noticed {n.review_count<50?`you only have ${n.review_count} reviews online`:n.website?"your online presence could be pulling in more leads":"you don't have a website"}. Are you currently getting enough calls each week, or are there gaps in your schedule?"</div>
-                  </div>
-                  <div style={{ display:"flex", gap:8 }}>
-                    {lead.phone&&<a href={`tel:${lead.phone}`} style={{ flex:1, padding:"8px 0", background:"#ff6b35", color:"#000", borderRadius:4, fontSize:11, fontWeight:700, textAlign:"center", textDecoration:"none" }}>📞 CALL NOW</a>}
-                    {n.website&&<a href={n.website} target="_blank" rel="noreferrer" style={{ padding:"8px 14px", background:"transparent", color:"#666", border:"1px solid #1a1a2e", borderRadius:4, fontSize:11, textDecoration:"none" }}>🌐</a>}
-                    <button onClick={runOutreach} style={{ padding:"8px 14px", background:"transparent", color:"#818cf8", border:"1px solid #818cf833", borderRadius:4, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>✉ OUTREACH</button>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab==="warm" && (
-          <div>
-            <div style={{ fontSize:11, color:"#666", marginBottom:16, letterSpacing:"0.08em" }}>WARM LEADS — Score 62-81 · Ready for human closer · 60% close probability</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10 }}>
-              {warmLeads.map(lead=>{
-                const n=parseNotes(lead.notes);
-                return (
-                  <div key={lead.id} style={{ background:"#0d0d1a", border:"1px solid #ffd23f22", borderRadius:6, padding:"14px 16px" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:700, color:"#e0e0f0", marginBottom:2 }}>{lead.business_name||lead.name}</div>
-                        <div style={{ fontSize:10, color:"#555" }}>{lead.phone||"No phone"} · {lead.industry?.toUpperCase()}</div>
-                      </div>
-                      <div style={{ fontSize:20, fontWeight:700, color:"#ffd23f" }}>{lead.score}</div>
-                    </div>
-                    <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
-                      {n.pain_points?.slice(0,2).map((p,i)=><span key={i} style={{ fontSize:9, padding:"2px 6px", background:"#ffd23f11", color:"#ffd23f", borderRadius:3 }}>{p}</span>)}
-                    </div>
-                    <div style={{ display:"flex", gap:4, fontSize:10, color:"#444", marginBottom:10 }}>
-                      <span>★ {n.rating||"—"}</span><span>·</span><span>{n.review_count||0} reviews</span><span>·</span>
-                      <span style={{ color:n.website?"#06ffa5":"#ff3366" }}>{n.website?"Has website":"No website"}</span>
-                    </div>
-                    <div style={{ display:"flex", gap:6 }}>
-                      {lead.phone&&<a href={`tel:${lead.phone}`} style={{ flex:1, padding:"6px 0", background:"#ffd23f", color:"#000", borderRadius:3, fontSize:10, fontWeight:700, textAlign:"center", textDecoration:"none" }}>📞 CALL</a>}
-                      <button onClick={runOutreach} style={{ padding:"6px 10px", background:"transparent", color:"#818cf8", border:"1px solid #818cf822", borderRadius:3, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>✉</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {tab==="scraper" && (
-          <div style={{ maxWidth:500 }}>
-            <div style={{ fontSize:11, color:"#666", marginBottom:20, letterSpacing:"0.08em" }}>GOOGLE MAPS SCRAPER — Pull real businesses into the pipeline</div>
-            <div style={{ background:"#0d0d1a", border:"1px solid #1a1a2e", borderRadius:6, padding:"20px" }}>
-              {[{label:"INDUSTRY",key:"industry",type:"select",options:["plumber","HVAC","roofing","electrician","landscaping","pest control","dentist","chiropractor","attorney","auto repair","cleaning"]},{label:"CITY",key:"city",type:"text"},{label:"STATE",key:"state",type:"text"},{label:"LIMIT",key:"limit",type:"number"}].map(f=>(
-                <div key={f.key} style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:9, color:"#444", letterSpacing:"0.12em", marginBottom:4 }}>{f.label}</div>
-                  {f.type==="select"?(
-                    <select value={scrapeForm[f.key]} onChange={e=>setScrapeForm(p=>({...p,[f.key]:e.target.value}))} style={{ width:"100%", background:"#080810", border:"1px solid #1a1a2e", color:"#e0e0f0", padding:"8px 10px", borderRadius:4, fontSize:12, fontFamily:"inherit" }}>
-                      {f.options.map(o=><option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ):(
-                    <input type={f.type} value={scrapeForm[f.key]} onChange={e=>setScrapeForm(p=>({...p,[f.key]:f.type==="number"?parseInt(e.target.value):e.target.value}))} style={{ width:"100%", background:"#080810", border:"1px solid #1a1a2e", color:"#e0e0f0", padding:"8px 10px", borderRadius:4, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }} />
-                  )}
-                </div>
-              ))}
-              <button onClick={runScrape} disabled={running} style={{ width:"100%", padding:"12px", background:running?"#1a1a2e":"#ff6b35", color:running?"#444":"#000", border:"none", borderRadius:4, fontSize:12, fontWeight:700, cursor:running?"not-allowed":"pointer", letterSpacing:"0.1em", fontFamily:"inherit" }}>{running?"SCRAPING...":"▶ SCRAPE + INJECT INTO PIPELINE"}</button>
-            </div>
-            <div style={{ marginTop:16, background:"#0d0d1a", border:"1px solid #1a1a2e", borderRadius:6, padding:"14px 16px" }}>
-              <div style={{ fontSize:9, color:"#444", letterSpacing:"0.12em", marginBottom:10 }}>QUICK TARGETS</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {[["plumber","Miami","FL"],["HVAC","Miami","FL"],["roofing","Miami","FL"],["dentist","Miami","FL"],["electrician","Miami","FL"],["attorney","Miami","FL"]].map(([ind,city,state])=>(
-                  <button key={ind} onClick={()=>setScrapeForm({industry:ind,city,state,limit:20})} style={{ padding:"4px 10px", background:"#1a1a2e", color:"#666", border:"1px solid #222", borderRadius:3, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>{ind}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab==="log" && (
-          <div>
-            <div style={{ fontSize:11, color:"#666", marginBottom:16 }}>ACTIVITY LOG</div>
-            <div style={{ background:"#0d0d1a", border:"1px solid #1a1a2e", borderRadius:6, padding:"16px", fontSize:12 }}>
-              {log.length===0&&<div style={{ color:"#333" }}>No activity yet. Run the pipeline to see logs.</div>}
-              {log.map((l,i)=>(
-                <div key={i} style={{ display:"flex", gap:12, marginBottom:8, color:l.type==="success"?"#06ffa5":l.type==="error"?"#ff3366":l.type==="warn"?"#ffd23f":"#666" }}>
-                  <span style={{ color:"#333", flexShrink:0 }}>{l.t}</span>
-                  <span>{l.msg}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {selectedLead&&(
-        <div onClick={()=>setSelectedLead(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:"#0d0d1a", border:"1px solid #ff6b3533", borderRadius:8, padding:"24px", width:480, maxHeight:"80vh", overflowY:"auto" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
-              <div style={{ fontSize:16, fontWeight:700 }}>{selectedLead.business_name||selectedLead.name}</div>
-              <button onClick={()=>setSelectedLead(null)} style={{ background:"transparent", border:"none", color:"#666", cursor:"pointer", fontSize:16 }}>✕</button>
-            </div>
-            {(()=>{
-              const n=parseNotes(selectedLead.notes);
-              return (
-                <div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
-                    {[["Status",selectedLead.status],["Score",selectedLead.score],["Industry",selectedLead.industry],["Phone",selectedLead.phone||"—"],["Rating",`★ ${n.rating||"—"}`],["Reviews",n.review_count||0]].map(([k,v])=>(
-                      <div key={k} style={{ background:"#080810", padding:"8px 10px", borderRadius:4 }}>
-                        <div style={{ fontSize:9, color:"#444" }}>{k.toUpperCase()}</div>
-                        <div style={{ fontSize:13, fontWeight:600, color:k==="Status"?statusColor(v):"#e0e0f0" }}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {n.website&&<div style={{ marginBottom:12 }}><div style={{ fontSize:9, color:"#444", marginBottom:4 }}>WEBSITE</div><a href={n.website} target="_blank" rel="noreferrer" style={{ fontSize:12, color:"#818cf8" }}>{n.website}</a></div>}
-                  {n.address&&<div style={{ marginBottom:12 }}><div style={{ fontSize:9, color:"#444", marginBottom:4 }}>ADDRESS</div><div style={{ fontSize:12, color:"#666" }}>{n.address}</div></div>}
-                  {n.pain_points?.length>0&&<div style={{ marginBottom:16 }}><div style={{ fontSize:9, color:"#444", marginBottom:6 }}>PAIN POINTS</div>{n.pain_points.map((p,i)=><div key={i} style={{ fontSize:12, color:"#ff6b35", marginBottom:4 }}>→ {p}</div>)}</div>}
-                  {selectedLead.phone&&<a href={`tel:${selectedLead.phone}`} style={{ display:"block", padding:"10px 0", background:"#ff6b35", color:"#000", borderRadius:4, fontSize:12, fontWeight:700, textAlign:"center", textDecoration:"none" }}>📞 CALL</a>}
-                </div>
-              );
-            })()}
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
+
+        
+          {/* Closed Deals - Work Orders */}
+          <Card className="lg:col-span-3 mt-6">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-green-400" />
+                  Closed Deals — Work Orders
+                </CardTitle>
+                <a href="/work-orders" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">View all →</a>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SteveWorkOrders />
+            </CardContent>
+          </Card>
+
+        <SteveChat />
+      </main>
     </div>
   );
 }
