@@ -32,11 +32,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname === '/login') {
-    // Fetch role and route accordingly
-    const { data: roleData } = await supabase
+    const { data: role, error: rpcError } = await supabase
       .rpc('get_user_role', { p_email: user.email });
 
-    const role = roleData ?? 'admin';
+    console.log('[middleware] user:', user.email, 'role:', role, 'error:', rpcError?.message);
 
     if (role === 'sales_rep') {
       return NextResponse.redirect(new URL('/portal/rep', request.url));
@@ -44,23 +43,19 @@ export async function middleware(request: NextRequest) {
     if (role === 'sales_contractor') {
       return NextResponse.redirect(new URL('/portal/contractor', request.url));
     }
-    // owner, admin, ai_agent → existing dashboard
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Protect portal routes by role
-  const path = request.nextUrl.pathname;
-
-  if (path.startsWith('/portal/rep') && user) {
-    const { data: roleData } = await supabase.rpc('get_user_role', { p_email: user.email });
-    if (!['sales_rep', 'sales_manager', 'admin', 'owner'].includes(roleData ?? '')) {
+  if (request.nextUrl.pathname.startsWith('/portal/rep') && user) {
+    const { data: role } = await supabase.rpc('get_user_role', { p_email: user.email });
+    if (!['sales_rep', 'sales_manager', 'admin', 'owner'].includes(role ?? '')) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
-  if (path.startsWith('/portal/contractor') && user) {
-    const { data: roleData } = await supabase.rpc('get_user_role', { p_email: user.email });
-    if (!['sales_contractor', 'sales_manager', 'admin', 'owner'].includes(roleData ?? '')) {
+  if (request.nextUrl.pathname.startsWith('/portal/contractor') && user) {
+    const { data: role } = await supabase.rpc('get_user_role', { p_email: user.email });
+    if (!['sales_contractor', 'sales_manager', 'admin', 'owner'].includes(role ?? '')) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
