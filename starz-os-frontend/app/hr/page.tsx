@@ -17,10 +17,10 @@ interface Document { id: string; doc_type: string | null; status: string | null;
 interface Invite { id: string; email: string; role_key: string | null; status: string | null; invited_at: string | null; }
 interface AuditLog { id: string; event_type: string; created_at: string; event_payload: Record<string, any> | null; }
 
-function fmt(d: string | null) { if (!d) return 'Ã¢â‚¬â€'; return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function fmt(d: string | null) { if (!d) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'; return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 function StatusBadge({ status }: { status: string | null }) {
   const c: Record<string, string> = { active: 'text-green-400 bg-green-400/10', inactive: 'text-gray-400 bg-gray-400/10', pending: 'text-yellow-400 bg-yellow-400/10', accepted: 'text-blue-400 bg-blue-400/10', rejected: 'text-red-400 bg-red-400/10' };
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${c[status?.toLowerCase() || ''] || 'text-gray-400 bg-gray-400/10'}`}>{status || 'Ã¢â‚¬â€'}</span>;
+  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${c[status?.toLowerCase() || ''] || 'text-gray-400 bg-gray-400/10'}`}>{status || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</span>;
 }
 
 export default function HRPortal() {
@@ -157,30 +157,6 @@ export default function HRPortal() {
     setEmailLoading(false);
   }
 
-  async function sendOnboardingEmail() {
-    if (!emailTarget || !generatedEmail) return;
-    setEmailLoading(true);
-    setSendError(null);
-    try {
-      const sb = createClient();
-      const { error } = await sb.rpc('enqueue_email', {
-        p_tenant: '00000000-0000-0000-0000-000000000301',
-        p_recipient: emailTarget.email,
-        p_subject: generatedEmail.subject,
-        p_html: generatedEmail.html,
-        p_text: generatedEmail.text,
-      }, { schema: 'ops' });
-      if (error) throw error;
-      setEmailSent(true);
-      // Log to HR audit
-      await sb.schema('hr').from('audit_logs').insert({
-        event_type: 'onboarding_email_sent',
-        event_payload: { to: emailTarget.email, name: emailTarget.full_name, subject: generatedEmail.subject, sent_by: 'Zara' }
-      });
-    } catch (e: any) {
-      setSendError(e.message || 'Failed to send email');
-    }
-    setEmailLoading(false);
   }
 
   function getUserRoles(userId: string) {
@@ -199,7 +175,7 @@ export default function HRPortal() {
         <img src={ZARA_AVATAR} alt="Zara" className="w-12 h-12 rounded-xl object-cover" onError={e => { e.currentTarget.style.display='none'; }} />
         <div>
           <h1 className="text-2xl font-bold">HR Portal</h1>
-          <p className="text-gray-400 text-sm">Managed by Zara Ã‚Â· HR Director AI</p>
+          <p className="text-gray-400 text-sm">Managed by Zara Ãƒâ€šÃ‚Â· HR Director AI</p>
         </div>
       </div>
 
@@ -209,7 +185,7 @@ export default function HRPortal() {
           { label: 'Total Staff', value: metrics.total, color: 'text-white' },
           { label: 'Active', value: metrics.active, color: 'text-green-400' },
           { label: 'Roles Configured', value: roles.length || 5, color: 'text-blue-400' },
-          { label: 'Compliance Rules', value: compliance.length || 'Ã¢â‚¬â€', color: 'text-orange-400' },
+          { label: 'Compliance Rules', value: compliance.length || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â', color: 'text-orange-400' },
         ].map(m => (
           <div key={m.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>
@@ -251,8 +227,8 @@ export default function HRPortal() {
                   <tbody className="divide-y divide-gray-800">
                     {users.filter(u => !q || u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)).map(u => (
                       <tr key={u.id} className="hover:bg-gray-900/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{u.full_name || 'Ã¢â‚¬â€'}</td>
-                        <td className="px-4 py-3 text-gray-400 text-xs">{u.email || 'Ã¢â‚¬â€'}</td>
+                        <td className="px-4 py-3 font-medium text-white">{u.full_name || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">{u.email || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {getUserRoles(u.id).map(r => (
@@ -315,7 +291,7 @@ export default function HRPortal() {
                       <tr key={c.id} className="hover:bg-gray-900/50 transition-colors">
                         <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-400/10 text-blue-400 rounded-lg text-xs font-bold">{c.state_code}</span></td>
                         <td className="px-4 py-3 text-gray-300 capitalize">{c.role_key}</td>
-                        <td className="px-4 py-3 text-gray-300">{c.min_wage ? `$${c.min_wage}/hr` : 'Ã¢â‚¬â€'}</td>
+                        <td className="px-4 py-3 text-gray-300">{c.min_wage ? `$${c.min_wage}/hr` : 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</td>
                         <td className="px-4 py-3">{c.requires_overtime_policy ? <span className="text-green-400 text-xs flex items-center gap-1"><CheckCircle className="w-3 h-3" />Required</span> : <span className="text-gray-500 text-xs">Not required</span>}</td>
                         <td className="px-4 py-3"><div className="flex flex-wrap gap-1">{(c.allowed_worker_types || []).map(t => <span key={t} className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-xs">{t}</span>)}</div></td>
                         <td className="px-4 py-3">{c.active ? <span className="text-green-400 text-xs">Active</span> : <span className="text-gray-500 text-xs">Inactive</span>}</td>
@@ -340,7 +316,7 @@ export default function HRPortal() {
                   <tbody className="divide-y divide-gray-800">
                     {documents.filter(d => !q || d.doc_type?.toLowerCase().includes(q)).map(d => (
                       <tr key={d.id} className="hover:bg-gray-900/50 transition-colors">
-                        <td className="px-4 py-3 text-white capitalize">{d.doc_type || 'Ã¢â‚¬â€'}</td>
+                        <td className="px-4 py-3 text-white capitalize">{d.doc_type || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</td>
                         <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                         <td className="px-4 py-3 text-gray-400 text-xs">{fmt(d.created_at)}</td>
                       </tr>
@@ -365,7 +341,7 @@ export default function HRPortal() {
                     {invites.filter(i => !q || i.email?.toLowerCase().includes(q) || i.role_key?.toLowerCase().includes(q)).map(i => (
                       <tr key={i.id} className="hover:bg-gray-900/50 transition-colors">
                         <td className="px-4 py-3 text-white">{i.email}</td>
-                        <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs bg-purple-400/10 text-purple-400 capitalize">{i.role_key || 'Ã¢â‚¬â€'}</span></td>
+                        <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs bg-purple-400/10 text-purple-400 capitalize">{i.role_key || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</span></td>
                         <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
                         <td className="px-4 py-3 text-gray-400 text-xs">{fmt(i.invited_at)}</td>
                       </tr>
@@ -412,9 +388,9 @@ export default function HRPortal() {
               <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png" alt="Zara" className="w-10 h-10 rounded-xl object-cover" />
               <div>
                 <h2 className="text-lg font-bold text-white">Send Onboarding Email</h2>
-                <p className="text-gray-400 text-sm">To: {emailTarget.full_name} Ã‚Â· {emailTarget.email}</p>
+                <p className="text-gray-400 text-sm">To: {emailTarget.full_name} Ãƒâ€šÃ‚Â· {emailTarget.email}</p>
               </div>
-              <button onClick={() => { setShowEmailModal(false); setGeneratedEmail(null); setEmailSent(false); setSendError(null); }} className="ml-auto text-gray-400 hover:text-white text-xl">Ã¢Å“â€¢</button>
+              <button onClick={() => { setShowEmailModal(false); setGeneratedEmail(null); setEmailSent(false); setSendError(null); }} className="ml-auto text-gray-400 hover:text-white text-xl">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
             </div>
 
             {emailSent ? (
@@ -469,9 +445,9 @@ export default function HRPortal() {
               <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png" alt="Zara" className="w-10 h-10 rounded-xl object-cover" />
               <div>
                 <h2 className="text-lg font-bold text-white">Send Onboarding Email</h2>
-                <p className="text-gray-400 text-sm">To: {emailTarget.full_name} Ã‚Â· {emailTarget.email}</p>
+                <p className="text-gray-400 text-sm">To: {emailTarget.full_name} Ãƒâ€šÃ‚Â· {emailTarget.email}</p>
               </div>
-              <button onClick={() => { setShowEmailModal(false); setGeneratedEmail(null); setEmailSent(false); setSendError(null); }} className="ml-auto text-gray-400 hover:text-white text-xl">Ã¢Å“â€¢</button>
+              <button onClick={() => { setShowEmailModal(false); setGeneratedEmail(null); setEmailSent(false); setSendError(null); }} className="ml-auto text-gray-400 hover:text-white text-xl">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
             </div>
 
             {emailSent ? (
