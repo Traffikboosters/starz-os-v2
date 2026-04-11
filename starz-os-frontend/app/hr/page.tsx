@@ -175,7 +175,7 @@ export default function HRPortal() {
         <img src={ZARA_AVATAR} alt="Zara" className="w-12 h-12 rounded-xl object-cover" onError={e => { e.currentTarget.style.display='none'; }} />
         <div>
           <h1 className="text-2xl font-bold">HR Portal</h1>
-          <p className="text-gray-400 text-sm">Managed by Zara Ãƒâ€šÃ‚Â· HR Director AI</p>
+          <p className="text-gray-400 text-sm">Managed by Zara - HR Director AI</p>
         </div>
       </div>
 
