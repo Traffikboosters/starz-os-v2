@@ -207,7 +207,7 @@ export default function StevePage() {
       try {
         const { data, error } = await supabase
           .schema('deals')
-          .from('pipeline')
+          .schema('deals').from('pipeline')
           .select('id, company, lead_name, stage, interest_level, source, value, created_at, last_contacted_at, email, phone')
           .order('created_at', { ascending: false })
           .limit(50);
