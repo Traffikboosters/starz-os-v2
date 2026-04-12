@@ -68,7 +68,7 @@ export default function ScraperEngine() {
   const loadLeads = useCallback(async () => {
     if (!tenantId) return;
     setLeadsLoading(true);
-    const { data } = await supabase.from('lead_sources').select('*').eq('tenant_id', tenantId).eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(500);
+    const { data } = await supabase.from('lead_sources').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(500);
     if (data) setLeads(data as LeadSource[]);
     setLeadsLoading(false);
   }, [campaignId, tenantId]);
@@ -158,7 +158,7 @@ export default function ScraperEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Unified Scraper Engine</h1>
-              <p className="text-sm text-white/40">One engine to rule them all — multi-source lead acquisition</p>
+              <p className="text-sm text-white/40">One engine to rule them all â€” multi-source lead acquisition</p>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <button onClick={() => { setMode('single'); setRunError(null); }} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${mode === 'single' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' : 'bg-white/5 text-white/30 border-white/10 hover:border-white/20'}`}>Single</button>
@@ -231,7 +231,7 @@ export default function ScraperEngine() {
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => setBulkKeywords(KEYWORDS)} className="text-xs text-cyan-400 hover:text-cyan-300">Select All</button>
-                        <span className="text-white/20">·</span>
+                        <span className="text-white/20">Â·</span>
                         <button onClick={() => setBulkKeywords([])} className="text-xs text-white/40 hover:text-white/60">Clear</button>
                       </div>
                     </div>
