@@ -1,15 +1,16 @@
 'use client';
 import Link from 'next/link';
-import { LayoutList, usePathname } from 'next/navigation';
-import { LayoutList, useAuth } from '@/lib/context/AuthProvider';
-import { LayoutList,
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthProvider';
+import {
   LayoutDashboard, Users, Phone, Code2, Settings,
-  TrendingUp, ClipboardList, LogOut, PhoneCall, FileText, UserCog, Search
+  TrendingUp, ClipboardList, LogOut, PhoneCall, FileText,
+  UserCog, Search, LayoutList
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard },
-  { name: 'CRM', href: '/crm', icon: LayoutList },
+  { name: 'CRM',         href: '/crm',         icon: LayoutList },
   { name: 'Leads',       href: '/leads',       icon: Users },
   { name: 'PowerDial',   href: '/powerdial',   icon: Phone },
   { name: 'Call Floor',  href: '/call-floor',  icon: PhoneCall },
@@ -32,7 +33,6 @@ export default function Sidebar() {
 
   return (
     <div className="flex flex-col w-60 min-h-screen bg-[#07070d] border-r border-white/[0.06] py-6 px-4 shrink-0">
-      {/* Logo */}
       <Link href="/dashboard">
         <div className="flex items-center gap-3 px-2 mb-4 hover:opacity-80 transition-opacity cursor-pointer">
           <div className="w-8 h-8 rounded-lg gradient-bg-cyan flex items-center justify-center">
@@ -45,17 +45,15 @@ export default function Sidebar() {
         </div>
       </Link>
 
-      {/* Back to Dashboard - shown on non-dashboard pages */}
       {!isDashboard && (
         <Link href="/dashboard">
           <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs">
-            <span>â†</span>
+            <span>←</span>
             <span>Back to Dashboard</span>
           </div>
         </Link>
       )}
 
-      {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -75,7 +73,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User + Sign Out */}
       <div className="mt-auto pt-4 border-t border-white/[0.06]">
         <div className="flex items-center gap-3 px-3 py-2.5">
           <div className="w-8 h-8 rounded-full gradient-bg-cyan flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
