@@ -29,7 +29,7 @@ export default function RepPortal() {
       <div style={{ background:'#0a0a0f', borderBottom:'1px solid #1a1a2e', padding:'0 32px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <span style={{ color:'#1D9E75', fontWeight:700, fontSize:12, letterSpacing:2 }}>STARZ-OS</span>
-          <span style={{ color:'#333' }}>·</span>
+          <span style={{ color:'#333' }}>&middot;</span>
           <span style={{ color:'#666', fontSize:13 }}>Sales Rep Portal</span>
           <span style={{ background:'#085041', color:'#5DCAA5', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:4, letterSpacing:1 }}>W-2</span>
         </div>
@@ -50,15 +50,15 @@ export default function RepPortal() {
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
           {[
-            { label:'My Leads',    icon:'👥', desc:'View and work assigned leads',    href:'/portal/rep/leads',    color:'#1D9E75' },
-            { label:'PowerDial',   icon:'📞', desc:'Call queue and dialer workspace', href:'/portal/rep/dialer',   color:'#534AB7' },
-            { label:'Pipeline',    icon:'📊', desc:'Your deal pipeline and stages',   href:'/portal/rep/pipeline', color:'#EF9F27' },
-            { label:'Tasks',       icon:'✅', desc:'Follow-ups and daily actions',    href:'/portal/rep/tasks',    color:'#5DCAA5' },
-            { label:'Proposals',   icon:'📄', desc:'Generate and track proposals',    href:'/portal/rep/proposals',color:'#1D9E75' },
-            { label:'My KPIs',     icon:'📈', desc:'Your performance dashboard',      href:'/portal/rep/kpis',     color:'#534AB7' },
-            { label:'Commission',  icon:'💰', desc:'Earnings and payroll summary',    href:'/portal/rep/commission',color:'#EF9F27' },
-            { label:'Training',    icon:'🎓', desc:'Scripts and certification hub',   href:'/portal/rep/training', color:'#5DCAA5' },
-            { label:'Email',       icon:'✉️',  desc:'Your inbox and lead threads',    href:'/portal/rep/email',    color:'#1D9E75' },
+            { label:'My Leads',   icon:'👥', desc:'View and work assigned leads',    href:'/portal/rep/leads',     color:'#1D9E75' },
+            { label:'PowerDial',  icon:'📞', desc:'Call queue and dialer workspace', href:'/portal/rep/dialer',    color:'#534AB7' },
+            { label:'Pipeline',   icon:'📊', desc:'Your deal pipeline and stages',   href:'/portal/rep/pipeline',  color:'#EF9F27' },
+            { label:'Tasks',      icon:'✅', desc:'Follow-ups and daily actions',    href:'/portal/rep/tasks',     color:'#5DCAA5' },
+            { label:'Proposals',  icon:'📄', desc:'Generate and track proposals',    href:'/portal/rep/proposals', color:'#1D9E75' },
+            { label:'My KPIs',    icon:'📈', desc:'Your performance dashboard',      href:'/portal/rep/kpis',      color:'#534AB7' },
+            { label:'Commission', icon:'💰', desc:'Earnings and payroll summary',    href:'/portal/rep/commission',color:'#EF9F27' },
+            { label:'Training',   icon:'🎓', desc:'Scripts and certification hub',   href:'/portal/rep/training',  color:'#5DCAA5' },
+            { label:'Email',      icon:'✉️', desc:'Your inbox and lead threads',     href:'/portal/rep/email',     color:'#1D9E75' },
           ].map(({ label, icon, desc, href, color }) => (
             <div key={label} onClick={() => router.push(href)}
               style={{ background:'#131320', border:'1px solid #1a1a2e', borderRadius:10, padding:'20px 22px', cursor:'pointer',
@@ -73,7 +73,7 @@ export default function RepPortal() {
         </div>
 
         <div style={{ background:'#131320', border:'1px solid #1a1a2e', borderRadius:10, padding:'20px 24px' }}>
-          <div style={{ fontSize:11, color:'#555', letterSpacing:1, textTransform:'uppercase', marginBottom:12 }}>Quick stats — today</div>
+          <div style={{ fontSize:11, color:'#555', letterSpacing:1, textTransform:'uppercase', marginBottom:12 }}>Quick stats - today</div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12 }}>
             {['Calls made','Connects','Appts set','Proposals','Closed'].map(label => (
               <div key={label} style={{ textAlign:'center' }}>
