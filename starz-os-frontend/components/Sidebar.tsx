@@ -1,33 +1,30 @@
 'use client';
-
 import Link from 'next/link';
-import { Search, usePathname } from 'next/navigation';
-import { Search, useAuth } from '@/lib/context/AuthProvider';
-import { Search,
-  LayoutDashboard, Users, Phone, Code2, Settings, Search,
-  TrendingUp, ClipboardList, LogOut, PhoneCall, FileText, UserCog
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthProvider';
+import {
+  LayoutDashboard, Users, Phone, Code2, Settings,
+  TrendingUp, ClipboardList, LogOut, PhoneCall, FileText, UserCog, Search
 } from 'lucide-react';
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
-  { name: 'PowerDial', href: '/powerdial', icon: Phone },
-  { name: 'Call Floor', href: '/call-floor', icon: PhoneCall },
-  { name: 'Steve BGE', href: '/steve', icon: TrendingUp },
-  { name: 'Rico BGE', href: '/rico', icon: ClipboardList },
-  { name: 'Work Orders', href: '/work-orders', icon: FileText },
-  { name: 'HR Portal', href: '/hr', icon: UserCog },
-  { name: 'Developers', href: '/developer', icon: Code2 },
-  { name: 'Scraper', href: '/scraper', icon: Search },
-  { name: 'Tasks', href: '/tasks', icon: ClipboardList },
-  { name: 'Scraper', href: '/scraper', icon: Search },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard',  href: '/dashboard',   icon: LayoutDashboard },
+  { name: 'Leads',      href: '/leads',        icon: Users },
+  { name: 'PowerDial',  href: '/powerdial',    icon: Phone },
+  { name: 'Call Floor', href: '/call-floor',   icon: PhoneCall },
+  { name: 'Steve BGE',  href: '/steve',        icon: TrendingUp },
+  { name: 'Rico BGE',   href: '/rico',         icon: ClipboardList },
+  { name: 'Work Orders',href: '/work-orders',  icon: FileText },
+  { name: 'HR Portal',  href: '/hr',           icon: UserCog },
+  { name: 'Scraper',    href: '/scraper',      icon: Search },
+  { name: 'Developers', href: '/developer',    icon: Code2 },
+  { name: 'Tasks',      href: '/tasks',        icon: ClipboardList },
+  { name: 'Settings',   href: '/settings',     icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-
   const displayName = user?.email?.split('@')[0] || 'User';
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -74,11 +71,7 @@ export default function Sidebar() {
             <p className="text-white text-xs font-medium truncate">{displayName}</p>
             <p className="text-white/30 text-xs truncate">{user?.email || ''}</p>
           </div>
-          <button
-            onClick={signOut}
-            title="Sign out"
-            className="text-white/20 hover:text-red-400 transition-colors"
-          >
+          <button onClick={signOut} title="Sign out" className="text-white/20 hover:text-red-400 transition-colors">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
