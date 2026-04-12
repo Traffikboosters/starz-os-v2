@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/context/AuthProvider';
 import {
-  LayoutDashboard, Users, Phone, Code2, Settings,
+  LayoutDashboard, Users, Phone, Code2, Settings, Search,
   TrendingUp, ClipboardList, LogOut, PhoneCall, FileText, UserCog
 } from 'lucide-react';
 
@@ -19,6 +19,7 @@ const navItems = [
   { name: 'HR Portal', href: '/hr', icon: UserCog },
   { name: 'Developers', href: '/developer', icon: Code2 },
   { name: 'Tasks', href: '/tasks', icon: ClipboardList },
+  { name: 'Scraper', href: '/scraper', icon: Search },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
