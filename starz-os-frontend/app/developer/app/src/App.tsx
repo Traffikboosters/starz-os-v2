@@ -7,7 +7,7 @@ import { EnginesPanel } from './components/EnginesPanel';
 import { TeamPanel } from './components/TeamPanel';
 import { DeliverablesPanel } from './components/DeliverablesPanel';
 import { DashboardPanel } from './components/DashboardPanel';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '../../../../components/ui/sonner';
 
 export type ViewType = 'dashboard' | 'workorders' | 'engines' | 'team' | 'deliverables';
 
