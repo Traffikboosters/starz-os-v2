@@ -212,7 +212,7 @@ export default function ScraperEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Unified Scraper Engine</h1>
-              <p className="text-sm text-white/40">One engine to rule them all — multi-source lead acquisition</p>
+              <p className="text-sm text-white/40">One engine to rule them all â€” multi-source lead acquisition</p>
             </div>
             <Badge className="ml-auto bg-cyan-500/10 text-cyan-400 border-cyan-500/30">v2.0</Badge>
           </div>
@@ -243,7 +243,7 @@ export default function ScraperEngine() {
                   <div>
                     <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Keyword / Niche</label>
                     <select className={ic} value={keyword} onChange={e => setKeyword(e.target.value)}
-                      style={{ appearance: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                      style={{ appearance: 'none', background: '#111218', color: 'white' }}>
                       <option value="">Select niche...</option>
                       {KEYWORDS.map(k => <option key={k} value={k}>{k}</option>)}
                       <option value="__custom">+ Custom keyword</option>
