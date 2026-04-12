@@ -110,7 +110,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
           <div>
             <h2 className="text-2xl font-bold text-white">Developers Dashboard</h2>
             <p className="text-sm text-white/50 mt-1">
-              Fulfillment Division â€¢ Powered by Rico, Technical Supervisor BGE
+              Fulfillment Division Ã¢â‚¬Â¢ Powered by Rico, Technical Supervisor BGE
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -183,8 +183,6 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                 </div>
               </div>
               <Button 
-                variant="ghost" 
-                size="sm" 
                 onClick={() => onNavigate('workorders')}
                 className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
               >
@@ -208,7 +206,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                       </Badge>
                     </div>
                     <p className="text-sm text-white mt-1">{wo.client}</p>
-                    <p className="text-xs text-white/50">{wo.type} â€¢ {wo.team} Team</p>
+                    <p className="text-xs text-white/50">{wo.type} Ã¢â‚¬Â¢ {wo.team} Team</p>
                   </div>
                   <div className="w-32">
                     <div className="flex items-center justify-between text-xs mb-1">
@@ -249,8 +247,6 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                 </div>
               </div>
               <Button 
-                variant="ghost" 
-                size="sm" 
                 onClick={() => onNavigate('engines')}
                 className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
               >
@@ -361,7 +357,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                 <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm text-white">Work Order WO-2025-0039 approaching deadline</p>
-                  <p className="text-xs text-white/50 mt-1">Due in 1 day â€¢ Ecommerce Plus</p>
+                  <p className="text-xs text-white/50 mt-1">Due in 1 day Ã¢â‚¬Â¢ Ecommerce Plus</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
