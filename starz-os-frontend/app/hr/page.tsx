@@ -188,7 +188,7 @@ export default function HRPortal() {
     <div className="min-h-screen bg-gray-950 text-white p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <img src={ZARA_AVATAR} alt="Zara" className="w-12 h-12 rounded-xl object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+        <img src={ZARA_AVATAR} alt="Zara" className="w-12 h-12 rounded-xl object-cover" onError={e => { e.currentTarget.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%237C3AED'/%3E%3Ctext x='24' y='30' text-anchor='middle' fill='white' font-size='18' font-weight='bold' font-family='Arial'%3EZ%3C/text%3E%3C/svg%3E`; }} />
         <div>
           <h1 className="text-2xl font-bold">HR Portal</h1>
           <p className="text-gray-400 text-sm">Managed by Zara - HR Director AI</p>
