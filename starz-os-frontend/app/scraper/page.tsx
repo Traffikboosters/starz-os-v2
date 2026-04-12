@@ -91,7 +91,16 @@ function StatusBadge({ status }: { status: ScraperRun['status'] }) {
 
 export default function ScraperEngine() {
   const supabase = createClient();
-  const [campaignId]                    = useState(() => uuidv4());
+  const [campaignId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('scraper_campaign_id');
+      if (stored) return stored;
+      const newId = uuidv4();
+      sessionStorage.setItem('scraper_campaign_id', newId);
+      return newId;
+    }
+    return uuidv4();
+  });
   const [campaignName, setCampaignName] = useState('');
   const [tenantId, setTenantId]         = useState('00000000-0000-0000-0000-000000000301');
   const [keyword, setKeyword]           = useState('');
@@ -218,7 +227,7 @@ export default function ScraperEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Unified Scraper Engine</h1>
-              <p className="text-sm text-white/40">One engine to rule them all Ã¢â‚¬â€ multi-source lead acquisition</p>
+              <p className="text-sm text-white/40">One engine to rule them all — multi-source lead acquisition</p>
             </div>
             <Badge className="ml-auto bg-cyan-500/10 text-cyan-400 border-cyan-500/30">v2.0</Badge>
           </div>
