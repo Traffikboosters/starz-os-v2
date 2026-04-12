@@ -110,7 +110,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
           <div>
             <h2 className="text-2xl font-bold text-white">Developers Dashboard</h2>
             <p className="text-sm text-white/50 mt-1">
-              Fulfillment Division • Powered by Rico, Technical Supervisor BGE
+              Fulfillment Division â€¢ Powered by Rico, Technical Supervisor BGE
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -140,7 +140,6 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                   <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge 
-                      variant="outline" 
                       className={`text-xs ${stat.change.startsWith('+') ? 'border-emerald-500/30 text-emerald-400' : 'border-red-500/30 text-red-400'}`}
                     >
                       <TrendingUp className="w-3 h-3 mr-1" />
@@ -209,7 +208,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                       </Badge>
                     </div>
                     <p className="text-sm text-white mt-1">{wo.client}</p>
-                    <p className="text-xs text-white/50">{wo.type} • {wo.team} Team</p>
+                    <p className="text-xs text-white/50">{wo.type} â€¢ {wo.team} Team</p>
                   </div>
                   <div className="w-32">
                     <div className="flex items-center justify-between text-xs mb-1">
@@ -362,7 +361,7 @@ export function DashboardPanel({ onNavigate }: DashboardPanelProps) {
                 <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm text-white">Work Order WO-2025-0039 approaching deadline</p>
-                  <p className="text-xs text-white/50 mt-1">Due in 1 day • Ecommerce Plus</p>
+                  <p className="text-xs text-white/50 mt-1">Due in 1 day â€¢ Ecommerce Plus</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
