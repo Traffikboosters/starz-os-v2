@@ -139,18 +139,24 @@ export default function ScraperEngine() {
   }, [campaignId, tenantId]);
 
   useEffect(() => {
-    if (activeRunId) {
-      pollRef.current = setInterval(() => {
-        loadRuns(activeRunId);
-        const active = runs.find(r => r.id === activeRunId);
+    if (!activeRunId) return;
+    if (pollRef.current) clearInterval(pollRef.current);
+    const activeRun = runs.find(r => r.id === activeRunId);
+    if (activeRun && ['completed', 'failed', 'partial'].includes(activeRun.status)) return;
+    pollRef.current = setInterval(async () => {
+      await loadRuns(activeRunId);
+      setRuns(prev => {
+        const active = prev.find(r => r.id === activeRunId);
         if (active && ['completed', 'failed', 'partial'].includes(active.status)) {
           clearInterval(pollRef.current!);
+          pollRef.current = null;
           loadLeads();
         }
-      }, 2500);
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [activeRunId, runs]);
+        return prev;
+      });
+    }, 2500);
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [activeRunId]);
 
   async function handleScrape(attempt = 0) {
     if (!effectiveKeyword || !location || !tenantId) {
@@ -212,7 +218,7 @@ export default function ScraperEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Unified Scraper Engine</h1>
-              <p className="text-sm text-white/40">One engine to rule them all â€” multi-source lead acquisition</p>
+              <p className="text-sm text-white/40">One engine to rule them all Ã¢â‚¬â€ multi-source lead acquisition</p>
             </div>
             <Badge className="ml-auto bg-cyan-500/10 text-cyan-400 border-cyan-500/30">v2.0</Badge>
           </div>
