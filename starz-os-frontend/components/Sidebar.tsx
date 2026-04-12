@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/context/AuthProvider';
-import {
+import { Search, usePathname } from 'next/navigation';
+import { Search, useAuth } from '@/lib/context/AuthProvider';
+import { Search,
   LayoutDashboard, Users, Phone, Code2, Settings, Search,
   TrendingUp, ClipboardList, LogOut, PhoneCall, FileText, UserCog
 } from 'lucide-react';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Work Orders', href: '/work-orders', icon: FileText },
   { name: 'HR Portal', href: '/hr', icon: UserCog },
   { name: 'Developers', href: '/developer', icon: Code2 },
+  { name: 'Scraper', href: '/scraper', icon: Search },
   { name: 'Tasks', href: '/tasks', icon: ClipboardList },
   { name: 'Scraper', href: '/scraper', icon: Search },
   { name: 'Settings', href: '/settings', icon: Settings },
