@@ -39,6 +39,15 @@ type SortField = 'business_name' | 'source' | 'phone' | 'website';
 type SortDir = 'asc' | 'desc';
 
 const SOURCES = ['google', 'yelp', 'facebook', 'linkedin', 'yellowpages', 'bbb'];
+
+const KEYWORDS = [
+  'Roofing', 'HVAC', 'Plumbing', 'Electrical', 'Dental', 'Legal / Law Firm',
+  'Chiropractic', 'Real Estate', 'Insurance', 'Auto Repair', 'Landscaping',
+  'Pest Control', 'Moving Company', 'Painting', 'Flooring', 'Solar',
+  'Accounting / CPA', 'Med Spa', 'Gym / Fitness', 'Restaurant', 'Home Remodeling',
+  'Garage Door', 'Pool Service', 'Tree Service', 'Carpet Cleaning',
+];
+
 const SOURCE_COLORS: Record<string, string> = {
   google:      'bg-blue-500/20 text-blue-400 border-blue-500/30',
   yelp:        'bg-red-500/20 text-red-400 border-red-500/30',
@@ -59,6 +68,12 @@ function elapsed(start: string, end: string | null) {
   if (sec < 60) return `${sec}s`;
   return `${Math.floor(sec / 60)}m ${sec % 60}s`;
 }
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
 function StatusBadge({ status }: { status: ScraperRun['status'] }) {
   const map = {
     running:   { cls: 'bg-yellow-500/20 text-yellow-400', icon: <Loader2 className="w-3 h-3 animate-spin" />,  label: 'Running'  },
@@ -76,36 +91,34 @@ function StatusBadge({ status }: { status: ScraperRun['status'] }) {
 
 export default function ScraperEngine() {
   const supabase = createClient();
-  const [campaignId, setCampaignId] = useState('');
-  const [tenantId, setTenantId]     = useState('00000000-0000-0000-0000-000000000301');
-  const [keyword, setKeyword]       = useState('');
-  const [location, setLocation]     = useState('');
-  const [sources, setSources]       = useState<string[]>(['google', 'yelp']);
-  const [running, setRunning]       = useState(false);
-  const [runError, setRunError]     = useState<string | null>(null);
+  const [campaignId]                    = useState(() => uuidv4());
+  const [campaignName, setCampaignName] = useState('');
+  const [tenantId, setTenantId]         = useState('00000000-0000-0000-0000-000000000301');
+  const [keyword, setKeyword]           = useState('');
+  const [customKeyword, setCustomKeyword] = useState('');
+  const [location, setLocation]         = useState('');
+  const [sources, setSources]           = useState<string[]>(['google', 'yelp']);
+  const [running, setRunning]           = useState(false);
+  const [runError, setRunError]         = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<ScraperResponse | null>(null);
   const [activeRunId, setActiveRunId]   = useState<string | null>(null);
   const [retryCount, setRetryCount]     = useState(0);
-  const [runs, setRuns]             = useState<ScraperRun[]>([]);
-  const [runLoading, setRunLoading] = useState(false);
-  const pollRef                     = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [leads, setLeads]           = useState<LeadSource[]>([]);
+  const [runs, setRuns]                 = useState<ScraperRun[]>([]);
+  const [runLoading, setRunLoading]     = useState(false);
+  const pollRef                         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [leads, setLeads]               = useState<LeadSource[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
-  const [sortField, setSortField]   = useState<SortField>('business_name');
-  const [sortDir, setSortDir]       = useState<SortDir>('asc');
+  const [sortField, setSortField]       = useState<SortField>('business_name');
+  const [sortDir, setSortDir]           = useState<SortDir>('asc');
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [campaigns, setCampaigns]   = useState<{ id: string; name: string }[]>([]);
 
-  useEffect(() => {
-    supabase.from('campaigns').select('id, name').order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setCampaigns(data); });
-  }, []);
+  const effectiveKeyword = keyword === '__custom' ? customKeyword : keyword;
 
   const loadRuns = useCallback(async (runId?: string) => {
     setRunLoading(true);
     let q = supabase.from('scraper_runs').select('*').eq('tenant_id', tenantId)
       .order('created_at', { ascending: false }).limit(20);
-    if (runId) q = q.eq('id', runId);
+    if (runId) q = (q as any).eq('id', runId);
     const { data } = await q;
     if (data) setRuns(prev => {
       const merged = [...(data as ScraperRun[])];
@@ -114,6 +127,16 @@ export default function ScraperEngine() {
     });
     setRunLoading(false);
   }, [tenantId]);
+
+  const loadLeads = useCallback(async () => {
+    if (!tenantId) return;
+    setLeadsLoading(true);
+    const { data } = await supabase.from('lead_sources').select('*')
+      .eq('tenant_id', tenantId).eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false }).limit(500);
+    if (data) setLeads(data as LeadSource[]);
+    setLeadsLoading(false);
+  }, [campaignId, tenantId]);
 
   useEffect(() => {
     if (activeRunId) {
@@ -129,21 +152,9 @@ export default function ScraperEngine() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [activeRunId, runs]);
 
-  const loadLeads = useCallback(async () => {
-    if (!campaignId || !tenantId) return;
-    setLeadsLoading(true);
-    const { data } = await supabase.from('lead_sources').select('*')
-      .eq('tenant_id', tenantId).eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false }).limit(500);
-    if (data) setLeads(data as LeadSource[]);
-    setLeadsLoading(false);
-  }, [campaignId, tenantId]);
-
-  useEffect(() => { loadLeads(); }, [campaignId, tenantId]);
-
   async function handleScrape(attempt = 0) {
-    if (!keyword || !location || !campaignId || !tenantId) {
-      setRunError('Fill in all fields before scraping.'); return;
+    if (!effectiveKeyword || !location || !tenantId) {
+      setRunError('Fill in keyword and location before scraping.'); return;
     }
     setRunning(true); setRunError(null); setLastResponse(null);
     try {
@@ -154,7 +165,7 @@ export default function ScraperEngine() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ campaign_id: campaignId, tenant_id: tenantId, keyword, location, sources }),
+          body: JSON.stringify({ campaign_id: campaignId, tenant_id: tenantId, keyword: effectiveKeyword, location, sources }),
         }
       );
       const payload: ScraperResponse = await res.json();
@@ -207,37 +218,51 @@ export default function ScraperEngine() {
           </div>
 
           <div className="grid grid-cols-[360px_1fr] gap-6 items-start">
-
             <div className="flex flex-col gap-4">
               <Card className="bg-gray-900 border-white/10">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xs font-medium text-white/40 uppercase tracking-wider">Target Parameters</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
+
+                  {/* Campaign Name */}
                   <div>
-                    <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Campaign</label>
-                    <select className={ic} value={campaignId} onChange={e => setCampaignId(e.target.value)}
-                      style={{ appearance: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                      <option value="">Select campaign...</option>
-                      {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      <option value="__manual">Enter manually</option>
-                    </select>
-                    {campaignId === '__manual' && (
-                      <input className={`${ic} mt-2`} placeholder="Campaign UUID" onChange={e => setCampaignId(e.target.value)} />
-                    )}
+                    <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Campaign Name</label>
+                    <input className={ic} value={campaignName} onChange={e => setCampaignName(e.target.value)}
+                      placeholder="e.g. Miami Roofers Q2 2025" />
+                    <p className="text-xs text-white/20 mt-1">ID: {campaignId.slice(0, 18)}...</p>
                   </div>
+
+                  {/* Tenant */}
                   <div>
                     <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Tenant ID</label>
-                    <input className={ic} value={tenantId} onChange={e => setTenantId(e.target.value)} placeholder="Tenant UUID" />
+                    <input className={ic} value={tenantId} onChange={e => setTenantId(e.target.value)} />
                   </div>
+
+                  {/* Keyword dropdown */}
                   <div>
-                    <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Keyword</label>
-                    <input className={ic} value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="e.g. plumbers, dentists, roofing..." />
+                    <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Keyword / Niche</label>
+                    <select className={ic} value={keyword} onChange={e => setKeyword(e.target.value)}
+                      style={{ appearance: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                      <option value="">Select niche...</option>
+                      {KEYWORDS.map(k => <option key={k} value={k}>{k}</option>)}
+                      <option value="__custom">+ Custom keyword</option>
+                    </select>
+                    {keyword === '__custom' && (
+                      <input className={`${ic} mt-2`} value={customKeyword}
+                        onChange={e => setCustomKeyword(e.target.value)}
+                        placeholder="Enter custom keyword..." />
+                    )}
                   </div>
+
+                  {/* Location */}
                   <div>
                     <label className="text-xs text-white/40 uppercase tracking-wider block mb-1.5">Location</label>
-                    <input className={ic} value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Miami FL, Chicago IL..." />
+                    <input className={ic} value={location} onChange={e => setLocation(e.target.value)}
+                      placeholder="e.g. Miami FL, Chicago IL..." />
                   </div>
+
+                  {/* Sources */}
                   <div>
                     <label className="text-xs text-white/40 uppercase tracking-wider block mb-2">Sources</label>
                     <div className="flex flex-wrap gap-2">
@@ -250,12 +275,14 @@ export default function ScraperEngine() {
                     </div>
                     <p className="text-xs text-white/20 mt-1.5">{sources.length} source{sources.length !== 1 ? 's' : ''} selected</p>
                   </div>
+
                   {runError && (
                     <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{runError}
                     </div>
                   )}
                   {retryCount > 0 && <p className="text-xs text-yellow-400 text-center">Retrying... attempt {retryCount}/2</p>}
+
                   <button onClick={() => handleScrape(0)} disabled={running}
                     className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${running ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10' : 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-gray-950 hover:from-cyan-400 hover:to-cyan-300 shadow-lg shadow-cyan-500/20'}`}>
                     {running ? <><Loader2 className="w-4 h-4 animate-spin" />Scraping...</> : <><Zap className="w-4 h-4" />Launch Scraper</>}
@@ -369,16 +396,15 @@ export default function ScraperEngine() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {!campaignId ? (
-                    <div className="text-center text-white/20 text-sm py-10 flex flex-col items-center gap-2">
-                      <Search className="w-8 h-8 text-white/10" />Select a campaign to view leads
-                    </div>
-                  ) : leadsLoading ? (
+                  {leadsLoading ? (
                     <div className="flex items-center justify-center py-10 gap-2 text-white/40 text-sm">
                       <Loader2 className="w-4 h-4 animate-spin" />Loading leads...
                     </div>
                   ) : displayedLeads.length === 0 ? (
-                    <div className="text-center text-white/20 text-sm py-10">No leads found. Run a scrape to populate results.</div>
+                    <div className="text-center text-white/20 text-sm py-10 flex flex-col items-center gap-2">
+                      <Search className="w-8 h-8 text-white/10" />
+                      Run a scrape to populate lead results
+                    </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
