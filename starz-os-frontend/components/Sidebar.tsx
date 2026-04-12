@@ -8,18 +8,18 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { name: 'Dashboard',  href: '/dashboard',   icon: LayoutDashboard },
-  { name: 'Leads',      href: '/leads',        icon: Users },
-  { name: 'PowerDial',  href: '/powerdial',    icon: Phone },
-  { name: 'Call Floor', href: '/call-floor',   icon: PhoneCall },
-  { name: 'Steve BGE',  href: '/steve',        icon: TrendingUp },
-  { name: 'Rico BGE',   href: '/rico',         icon: ClipboardList },
-  { name: 'Work Orders',href: '/work-orders',  icon: FileText },
-  { name: 'HR Portal',  href: '/hr',           icon: UserCog },
-  { name: 'Scraper',    href: '/scraper',      icon: Search },
-  { name: 'Developers', href: '/developer',    icon: Code2 },
-  { name: 'Tasks',      href: '/tasks',        icon: ClipboardList },
-  { name: 'Settings',   href: '/settings',     icon: Settings },
+  { name: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard },
+  { name: 'Leads',       href: '/leads',       icon: Users },
+  { name: 'PowerDial',   href: '/powerdial',   icon: Phone },
+  { name: 'Call Floor',  href: '/call-floor',  icon: PhoneCall },
+  { name: 'Steve BGE',   href: '/steve',       icon: TrendingUp },
+  { name: 'Rico BGE',    href: '/rico',        icon: ClipboardList },
+  { name: 'Work Orders', href: '/work-orders', icon: FileText },
+  { name: 'HR Portal',   href: '/hr',          icon: UserCog },
+  { name: 'Scraper',     href: '/scraper',     icon: Search },
+  { name: 'Developers',  href: '/developer',   icon: Code2 },
+  { name: 'Tasks',       href: '/tasks',       icon: ClipboardList },
+  { name: 'Settings',    href: '/settings',    icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -27,19 +27,32 @@ export default function Sidebar() {
   const { user, signOut } = useAuth();
   const displayName = user?.email?.split('@')[0] || 'User';
   const initials = displayName.slice(0, 2).toUpperCase();
+  const isDashboard = pathname === '/dashboard';
 
   return (
     <div className="flex flex-col w-60 min-h-screen bg-[#07070d] border-r border-white/[0.06] py-6 px-4 shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-2 mb-8">
-        <div className="w-8 h-8 rounded-lg gradient-bg-cyan flex items-center justify-center">
-          <span className="text-white font-bold text-xs">S</span>
+      <Link href="/dashboard">
+        <div className="flex items-center gap-3 px-2 mb-4 hover:opacity-80 transition-opacity cursor-pointer">
+          <div className="w-8 h-8 rounded-lg gradient-bg-cyan flex items-center justify-center">
+            <span className="text-white font-bold text-xs">S</span>
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm tracking-wide">STARZ-OS</p>
+            <p className="text-white/30 text-xs">Operations Platform</p>
+          </div>
         </div>
-        <div>
-          <p className="text-white font-bold text-sm tracking-wide">STARZ-OS</p>
-          <p className="text-white/30 text-xs">Operations Platform</p>
-        </div>
-      </div>
+      </Link>
+
+      {/* Back to Dashboard - shown on non-dashboard pages */}
+      {!isDashboard && (
+        <Link href="/dashboard">
+          <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs">
+            <span>←</span>
+            <span>Back to Dashboard</span>
+          </div>
+        </Link>
+      )}
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1">
