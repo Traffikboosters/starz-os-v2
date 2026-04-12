@@ -32,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["supabase", "node_modules"]
+  "exclude": ["app/developer","supabase", "node_modules"]
 }
