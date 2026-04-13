@@ -11,7 +11,7 @@ import {
   TrendingUp, Users, Send, Eye, RotateCcw
 } from 'lucide-react';
 
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 interface OutreachQueueItem {
   id: string;
   lead_id: string | null;
@@ -86,7 +86,7 @@ interface FollowupRule {
 type Tab = 'queue' | 'campaigns' | 'logs' | 'replies' | 'followups';
 
 function fmt(d: string | null) {
-  if (!d) return 'â€”';
+  if (!d) return 'Ã¢â‚¬â€';
   return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
@@ -107,7 +107,7 @@ function StatusPill({ status }: { status: string | null }) {
   const cls = map[(status || '').toLowerCase()] || 'bg-white/10 text-white/40 border-white/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>
-      {status || 'â€”'}
+      {status || 'Ã¢â‚¬â€'}
     </span>
   );
 }
@@ -121,7 +121,7 @@ function ChannelIcon({ channel }: { channel: string | null }) {
   return <Globe className="w-3.5 h-3.5 text-white/40" />;
 }
 
-// â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 export default function OutreachEngine() {
   const supabase = createClient();
   const [tab, setTab] = useState<Tab>('queue');
@@ -221,7 +221,7 @@ export default function OutreachEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Outreach Engine</h1>
-              <p className="text-sm text-white/40">Steve BGE command center â€” automated multi-channel outreach</p>
+              <p className="text-sm text-white/40">Steve BGE command center - automated multi-channel outreach</p>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <button onClick={() => loadData(tab)} className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-white transition-colors">
@@ -282,7 +282,7 @@ export default function OutreachEngine() {
             </div>
           ) : (
             <>
-              {/* â”€â”€ OUTREACH QUEUE â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ OUTREACH QUEUE Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {tab === 'queue' && (
                 <div className={selectedItem ? 'grid grid-cols-[1fr_380px] gap-5' : ''}>
                   <div>
@@ -328,23 +328,23 @@ export default function OutreachEngine() {
                               <tr key={item.id} onClick={() => setSelectedItem(selectedItem?.id === item.id ? null : item)}
                                 className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer ${selectedItem?.id === item.id ? 'bg-white/5' : ''}`}>
                                 <td className="px-4 py-3">
-                                  <p className="font-medium text-white truncate max-w-[160px]">{item.business_name || 'â€”'}</p>
-                                  <p className="text-xs text-white/30 truncate">{item.email || item.phone || 'â€”'}</p>
+                                  <p className="font-medium text-white truncate max-w-[160px]">{item.business_name || 'Ã¢â‚¬â€'}</p>
+                                  <p className="text-xs text-white/30 truncate">{item.email || item.phone || 'Ã¢â‚¬â€'}</p>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-1.5">
                                     <ChannelIcon channel={item.recommended_channel} />
-                                    <span className="text-xs text-white/50 capitalize">{item.recommended_channel || 'â€”'}</span>
+                                    <span className="text-xs text-white/50 capitalize">{item.recommended_channel || 'Ã¢â‚¬â€'}</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <span className="text-xs text-white/50">Step {item.step_number ?? 'â€”'}</span>
+                                  <span className="text-xs text-white/50">Step {item.step_number ?? 'Ã¢â‚¬â€'}</span>
                                   {item.sequence_name && <p className="text-xs text-white/20 truncate max-w-[100px]">{item.sequence_name}</p>}
                                 </td>
                                 <td className="px-4 py-3"><StatusPill status={item.status} /></td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold ${item.priority === 'high' ? 'text-red-400' : item.priority === 'medium' ? 'text-yellow-400' : 'text-white/30'}`}>
-                                    {item.priority || 'â€”'}
+                                    {item.priority || 'Ã¢â‚¬â€'}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-xs text-white/40">{fmt(item.scheduled_for)}</td>
@@ -369,8 +369,8 @@ export default function OutreachEngine() {
                     <Card className="bg-gray-900 border-white/10 overflow-auto max-h-[calc(100vh-220px)]">
                       <div className="p-4 border-b border-white/10 flex items-start justify-between sticky top-0 bg-gray-900 z-10">
                         <div>
-                          <h3 className="font-bold text-white">{selectedItem.business_name || 'â€”'}</h3>
-                          <p className="text-xs text-white/40">{selectedItem.industry} Â· {selectedItem.city}, {selectedItem.state}</p>
+                          <h3 className="font-bold text-white">{selectedItem.business_name || 'Ã¢â‚¬â€'}</h3>
+                          <p className="text-xs text-white/40">{selectedItem.industry} Ã‚Â· {selectedItem.city}, {selectedItem.state}</p>
                         </div>
                         <button onClick={() => setSelectedItem(null)} className="text-white/30 hover:text-white text-xl leading-none">&times;</button>
                       </div>
@@ -379,7 +379,7 @@ export default function OutreachEngine() {
                           <div className="bg-white/5 rounded-lg p-3">
                             <p className="text-xs text-white/30 mb-0.5">Lead Score</p>
                             <p className={`text-xl font-bold ${(selectedItem.lead_score || 0) >= 70 ? 'text-green-400' : (selectedItem.lead_score || 0) >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {selectedItem.lead_score ?? 'â€”'}
+                              {selectedItem.lead_score ?? 'Ã¢â‚¬â€'}
                             </p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-3">
@@ -412,10 +412,10 @@ export default function OutreachEngine() {
                         <div className="bg-white/5 rounded-xl p-3">
                           <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Sequence</p>
                           <div className="flex flex-col gap-1.5 text-xs">
-                            <div className="flex justify-between"><span className="text-white/40">Name</span><span className="text-white/70">{selectedItem.sequence_name || 'â€”'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Step</span><span className="text-white/70">{selectedItem.step_number ?? 'â€”'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Channel</span><span className="text-white/70 capitalize">{selectedItem.recommended_channel || 'â€”'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Priority</span><span className={`font-semibold ${selectedItem.priority === 'high' ? 'text-red-400' : selectedItem.priority === 'medium' ? 'text-yellow-400' : 'text-white/40'}`}>{selectedItem.priority || 'â€”'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Name</span><span className="text-white/70">{selectedItem.sequence_name || 'Ã¢â‚¬â€'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Step</span><span className="text-white/70">{selectedItem.step_number ?? 'Ã¢â‚¬â€'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Channel</span><span className="text-white/70 capitalize">{selectedItem.recommended_channel || 'Ã¢â‚¬â€'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Priority</span><span className={`font-semibold ${selectedItem.priority === 'high' ? 'text-red-400' : selectedItem.priority === 'medium' ? 'text-yellow-400' : 'text-white/40'}`}>{selectedItem.priority || 'Ã¢â‚¬â€'}</span></div>
                             <div className="flex justify-between"><span className="text-white/40">Scheduled</span><span className="text-white/70">{fmt(selectedItem.scheduled_for)}</span></div>
                             <div className="flex justify-between"><span className="text-white/40">Attempts</span><span className={`${(selectedItem.attempts || 0) >= (selectedItem.max_attempts || 3) ? 'text-red-400' : 'text-white/70'}`}>{selectedItem.attempts ?? 0}/{selectedItem.max_attempts ?? 3}</span></div>
                           </div>
@@ -433,7 +433,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* â”€â”€ CAMPAIGNS â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ CAMPAIGNS Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {tab === 'campaigns' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {campaigns.length === 0 ? (
@@ -443,7 +443,7 @@ export default function OutreachEngine() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-bold text-white">{camp.name || 'â€”'}</p>
+                            <p className="font-bold text-white">{camp.name || 'Ã¢â‚¬â€'}</p>
                             {camp.offer_name && <p className="text-xs text-cyan-400 mt-0.5">{camp.offer_name}</p>}
                           </div>
                           <StatusPill status={camp.status} />
@@ -451,7 +451,7 @@ export default function OutreachEngine() {
                         <div className="flex flex-col gap-1.5 text-xs mb-3">
                           <div className="flex justify-between">
                             <span className="text-white/40">Daily Limit</span>
-                            <span className="text-white/70">{camp.daily_limit ?? 'â€”'} emails/day</span>
+                            <span className="text-white/70">{camp.daily_limit ?? 'Ã¢â‚¬â€'} emails/day</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-white/40">Approval Required</span>
@@ -483,7 +483,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* â”€â”€ SEND LOGS â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ SEND LOGS Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {tab === 'logs' && (
                 <Card className="bg-gray-900 border-white/10">
                   <div className="overflow-x-auto">
@@ -506,13 +506,13 @@ export default function OutreachEngine() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
                                 <ChannelIcon channel={log.channel} />
-                                <span className="text-xs text-white/60 capitalize">{log.channel || 'â€”'}</span>
+                                <span className="text-xs text-white/60 capitalize">{log.channel || 'Ã¢â‚¬â€'}</span>
                               </div>
                             </td>
                             <td className="px-4 py-3"><StatusPill status={log.status} /></td>
-                            <td className="px-4 py-3 text-xs text-white/40">{log.provider || 'â€”'}</td>
+                            <td className="px-4 py-3 text-xs text-white/40">{log.provider || 'Ã¢â‚¬â€'}</td>
                             <td className="px-4 py-3 text-xs text-white/50 max-w-[300px] truncate">
-                              {log.error ? <span className="text-red-400">{log.error}</span> : (log.message || 'â€”')}
+                              {log.error ? <span className="text-red-400">{log.error}</span> : (log.message || 'Ã¢â‚¬â€')}
                             </td>
                             <td className="px-4 py-3 text-xs text-white/40">{log.retry_count ?? 0}</td>
                             <td className="px-4 py-3 text-xs text-white/30">{fmt(log.created_at)}</td>
@@ -524,7 +524,7 @@ export default function OutreachEngine() {
                 </Card>
               )}
 
-              {/* â”€â”€ REPLY INBOX â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ REPLY INBOX Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {tab === 'replies' && (
                 <div className="flex flex-col gap-3">
                   {replies.length === 0 ? (
@@ -534,8 +534,8 @@ export default function OutreachEngine() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-bold text-white">{reply.company || reply.lead_name || 'â€”'}</p>
-                            <p className="text-xs text-white/40">{reply.lead_email} Â· via {reply.provider}</p>
+                            <p className="font-bold text-white">{reply.company || reply.lead_name || 'Ã¢â‚¬â€'}</p>
+                            <p className="text-xs text-white/40">{reply.lead_email} Ã‚Â· via {reply.provider}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {reply.processed_at ? (
@@ -566,7 +566,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* â”€â”€ FOLLOW-UP RULES â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ FOLLOW-UP RULES Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {tab === 'followups' && (
                 <div className="flex flex-col gap-3">
                   {followups.length === 0 ? (
@@ -577,10 +577,10 @@ export default function OutreachEngine() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${rule.active ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-white/20'}`}>
-                              #{rule.priority ?? 'â€”'}
+                              #{rule.priority ?? 'Ã¢â‚¬â€'}
                             </div>
                             <div>
-                              <p className="font-semibold text-white capitalize">{rule.stage || 'â€”'} stage</p>
+                              <p className="font-semibold text-white capitalize">{rule.stage || 'Ã¢â‚¬â€'} stage</p>
                               {rule.subject_template && (
                                 <p className="text-xs text-white/50 mt-0.5">Subject: {rule.subject_template}</p>
                               )}
@@ -593,15 +593,15 @@ export default function OutreachEngine() {
                         <div className="grid grid-cols-3 gap-3 mt-3">
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">No-Reply Window</p>
-                            <p className="text-sm font-semibold text-white">{rule.min_no_reply_days}â€“{rule.max_no_reply_days} days</p>
+                            <p className="text-sm font-semibold text-white">{rule.min_no_reply_days}Ã¢â‚¬â€œ{rule.max_no_reply_days} days</p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">Delay</p>
-                            <p className="text-sm font-semibold text-white">{rule.delay_hours ?? 'â€”'}h</p>
+                            <p className="text-sm font-semibold text-white">{rule.delay_hours ?? 'Ã¢â‚¬â€'}h</p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">Priority</p>
-                            <p className="text-sm font-semibold text-cyan-400">{rule.priority ?? 'â€”'}</p>
+                            <p className="text-sm font-semibold text-cyan-400">{rule.priority ?? 'Ã¢â‚¬â€'}</p>
                           </div>
                         </div>
                       </CardContent>
