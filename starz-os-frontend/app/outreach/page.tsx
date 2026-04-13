@@ -11,7 +11,7 @@ import {
   TrendingUp, Users, Send, Eye, RotateCcw
 } from 'lucide-react';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Types ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 interface OutreachQueueItem {
   id: string;
   lead_id: string | null;
@@ -83,10 +83,31 @@ interface FollowupRule {
   active: boolean | null;
 }
 
+interface EngineControl {
+  id: string;
+  engine_enabled: boolean;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  call_enabled: boolean;
+  auto_followups_enabled: boolean;
+  auto_create_deals: boolean;
+  auto_send_proposals: boolean;
+  approval_mode: boolean;
+  ai_aggressiveness: string | null;
+  max_emails_per_hour: number | null;
+  max_sms_per_hour: number | null;
+  max_calls_per_hour: number | null;
+  hot_score_threshold: number | null;
+  warm_score_threshold: number | null;
+  business_hours_only: boolean;
+  timezone: string | null;
+  updated_at: string;
+}
+
 type Tab = 'queue' | 'campaigns' | 'logs' | 'replies' | 'followups';
 
 function fmt(d: string | null) {
-  if (!d) return 'Ã¢â‚¬â€';
+  if (!d) return 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
   return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
@@ -107,7 +128,7 @@ function StatusPill({ status }: { status: string | null }) {
   const cls = map[(status || '').toLowerCase()] || 'bg-white/10 text-white/40 border-white/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>
-      {status || 'Ã¢â‚¬â€'}
+      {status || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}
     </span>
   );
 }
@@ -121,7 +142,7 @@ function ChannelIcon({ channel }: { channel: string | null }) {
   return <Globe className="w-3.5 h-3.5 text-white/40" />;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Main Component ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export default function OutreachEngine() {
   const supabase = createClient();
   const [tab, setTab] = useState<Tab>('queue');
@@ -136,6 +157,9 @@ export default function OutreachEngine() {
   const [channelFilter, setChannelFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedItem, setSelectedItem] = useState<OutreachQueueItem | null>(null);
+  const [engine, setEngine] = useState<EngineControl | null>(null);
+  const [engineLoading, setEngineLoading] = useState(false);
+  const [engineSaving, setEngineSaving] = useState(false);
 
   // Metrics
   const [metrics, setMetrics] = useState({
@@ -189,6 +213,25 @@ export default function OutreachEngine() {
   }, []);
 
   useEffect(() => { loadData(tab); }, [tab]);
+
+  const loadEngine = useCallback(async () => {
+    setEngineLoading(true);
+    const { data } = await supabase.schema('outreach').from('engine_control').select('*').limit(1).single();
+    if (data) setEngine(data as EngineControl);
+    setEngineLoading(false);
+  }, []);
+
+  useEffect(() => { loadEngine(); }, []);
+
+  async function toggleEngine(field: keyof EngineControl, value: boolean | string | number) {
+    if (!engine) return;
+    setEngineSaving(true);
+    const { data } = await supabase.schema('outreach').from('engine_control')
+      .update({ [field]: value, updated_at: new Date().toISOString() })
+      .eq('id', engine.id).select().single();
+    if (data) setEngine(data as EngineControl);
+    setEngineSaving(false);
+  }
 
   const tabs: { id: Tab; label: string; icon: any; count?: number }[] = [
     { id: 'queue',     label: 'Outreach Queue',  icon: Send,        count: queue.length },
@@ -252,6 +295,73 @@ export default function OutreachEngine() {
             ))}
           </div>
 
+
+          {/* Engine Control Panel */}
+          {engine && (
+            <div className="bg-gray-900 border border-white/10 rounded-xl p-4 mb-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${engine.engine_enabled ? "bg-green-400 shadow-[0_0_8px_#4ade80]" : "bg-gray-600"}`} />
+                  <span className="font-bold text-white text-sm">Engine Control</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${engine.engine_enabled ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
+                    {engine.engine_enabled ? "RUNNING" : "STOPPED"}
+                  </span>
+                  {engineSaving && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggleEngine("engine_enabled", true)}
+                    disabled={engine.engine_enabled || engineSaving}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${engine.engine_enabled ? "bg-white/5 text-white/20 border-white/10 cursor-not-allowed" : "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"}`}>
+                    <Play className="w-3 h-3" />Start
+                  </button>
+                  <button onClick={() => toggleEngine("engine_enabled", false)}
+                    disabled={!engine.engine_enabled || engineSaving}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${!engine.engine_enabled ? "bg-white/5 text-white/20 border-white/10 cursor-not-allowed" : "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"}`}>
+                    <Pause className="w-3 h-3" />Stop
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Max Emails/hr", value: engine.max_emails_per_hour, color: "text-blue-400", icon: Mail },
+                  { label: "Max SMS/hr", value: engine.max_sms_per_hour, color: "text-purple-400", icon: MessageSquare },
+                  { label: "Max Calls/hr", value: engine.max_calls_per_hour, color: "text-green-400", icon: Phone },
+                  { label: "Hot Score Threshold", value: engine.hot_score_threshold, color: "text-orange-400", icon: TrendingUp },
+                ].map(({ label, value, color, icon: Icon }) => (
+                  <div key={label} className="bg-white/5 rounded-lg p-3 flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${color} opacity-60`} />
+                    <div><p className={`text-lg font-bold ${color}`}>{value ?? "-"}</p><p className="text-xs text-white/30">{label}</p></div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Email", field: "email_enabled" as keyof EngineControl, value: engine.email_enabled },
+                  { label: "SMS", field: "sms_enabled" as keyof EngineControl, value: engine.sms_enabled },
+                  { label: "Calls", field: "call_enabled" as keyof EngineControl, value: engine.call_enabled },
+                  { label: "Auto Follow-ups", field: "auto_followups_enabled" as keyof EngineControl, value: engine.auto_followups_enabled },
+                  { label: "Auto Create Deals", field: "auto_create_deals" as keyof EngineControl, value: engine.auto_create_deals },
+                  { label: "Auto Send Proposals", field: "auto_send_proposals" as keyof EngineControl, value: engine.auto_send_proposals },
+                  { label: "Approval Mode", field: "approval_mode" as keyof EngineControl, value: engine.approval_mode },
+                  { label: "Business Hours Only", field: "business_hours_only" as keyof EngineControl, value: engine.business_hours_only },
+                ].map(({ label, field, value }) => (
+                  <button key={label} onClick={() => toggleEngine(field, !value)} disabled={engineSaving}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${value ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/40" : "bg-white/5 text-white/30 border-white/10 hover:border-white/20"}`}>
+                    {value ? "✓" : "○"} {label}
+                  </button>
+                ))}
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs text-white/30">AI Mode:</span>
+                  <select value={engine.ai_aggressiveness || "balanced"}
+                    onChange={e => toggleEngine("ai_aggressiveness", e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+                    style={{ background: "rgba(255,255,255,0.05)" }}>
+                    {["conservative", "balanced", "aggressive"].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Tabs */}
           <div className="flex gap-1 mb-5 border-b border-white/10 overflow-x-auto">
             {tabs.map(({ id, label, icon: Icon, count }) => (
@@ -282,7 +392,7 @@ export default function OutreachEngine() {
             </div>
           ) : (
             <>
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ OUTREACH QUEUE Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ OUTREACH QUEUE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
               {tab === 'queue' && (
                 <div className={selectedItem ? 'grid grid-cols-[1fr_380px] gap-5' : ''}>
                   <div>
@@ -328,23 +438,23 @@ export default function OutreachEngine() {
                               <tr key={item.id} onClick={() => setSelectedItem(selectedItem?.id === item.id ? null : item)}
                                 className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer ${selectedItem?.id === item.id ? 'bg-white/5' : ''}`}>
                                 <td className="px-4 py-3">
-                                  <p className="font-medium text-white truncate max-w-[160px]">{item.business_name || 'Ã¢â‚¬â€'}</p>
-                                  <p className="text-xs text-white/30 truncate">{item.email || item.phone || 'Ã¢â‚¬â€'}</p>
+                                  <p className="font-medium text-white truncate max-w-[160px]">{item.business_name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</p>
+                                  <p className="text-xs text-white/30 truncate">{item.email || item.phone || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</p>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-1.5">
                                     <ChannelIcon channel={item.recommended_channel} />
-                                    <span className="text-xs text-white/50 capitalize">{item.recommended_channel || 'Ã¢â‚¬â€'}</span>
+                                    <span className="text-xs text-white/50 capitalize">{item.recommended_channel || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <span className="text-xs text-white/50">Step {item.step_number ?? 'Ã¢â‚¬â€'}</span>
+                                  <span className="text-xs text-white/50">Step {item.step_number ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span>
                                   {item.sequence_name && <p className="text-xs text-white/20 truncate max-w-[100px]">{item.sequence_name}</p>}
                                 </td>
                                 <td className="px-4 py-3"><StatusPill status={item.status} /></td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold ${item.priority === 'high' ? 'text-red-400' : item.priority === 'medium' ? 'text-yellow-400' : 'text-white/30'}`}>
-                                    {item.priority || 'Ã¢â‚¬â€'}
+                                    {item.priority || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-xs text-white/40">{fmt(item.scheduled_for)}</td>
@@ -369,8 +479,8 @@ export default function OutreachEngine() {
                     <Card className="bg-gray-900 border-white/10 overflow-auto max-h-[calc(100vh-220px)]">
                       <div className="p-4 border-b border-white/10 flex items-start justify-between sticky top-0 bg-gray-900 z-10">
                         <div>
-                          <h3 className="font-bold text-white">{selectedItem.business_name || 'Ã¢â‚¬â€'}</h3>
-                          <p className="text-xs text-white/40">{selectedItem.industry} Ã‚Â· {selectedItem.city}, {selectedItem.state}</p>
+                          <h3 className="font-bold text-white">{selectedItem.business_name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</h3>
+                          <p className="text-xs text-white/40">{selectedItem.industry} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {selectedItem.city}, {selectedItem.state}</p>
                         </div>
                         <button onClick={() => setSelectedItem(null)} className="text-white/30 hover:text-white text-xl leading-none">&times;</button>
                       </div>
@@ -379,7 +489,7 @@ export default function OutreachEngine() {
                           <div className="bg-white/5 rounded-lg p-3">
                             <p className="text-xs text-white/30 mb-0.5">Lead Score</p>
                             <p className={`text-xl font-bold ${(selectedItem.lead_score || 0) >= 70 ? 'text-green-400' : (selectedItem.lead_score || 0) >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {selectedItem.lead_score ?? 'Ã¢â‚¬â€'}
+                              {selectedItem.lead_score ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}
                             </p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-3">
@@ -412,10 +522,10 @@ export default function OutreachEngine() {
                         <div className="bg-white/5 rounded-xl p-3">
                           <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Sequence</p>
                           <div className="flex flex-col gap-1.5 text-xs">
-                            <div className="flex justify-between"><span className="text-white/40">Name</span><span className="text-white/70">{selectedItem.sequence_name || 'Ã¢â‚¬â€'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Step</span><span className="text-white/70">{selectedItem.step_number ?? 'Ã¢â‚¬â€'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Channel</span><span className="text-white/70 capitalize">{selectedItem.recommended_channel || 'Ã¢â‚¬â€'}</span></div>
-                            <div className="flex justify-between"><span className="text-white/40">Priority</span><span className={`font-semibold ${selectedItem.priority === 'high' ? 'text-red-400' : selectedItem.priority === 'medium' ? 'text-yellow-400' : 'text-white/40'}`}>{selectedItem.priority || 'Ã¢â‚¬â€'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Name</span><span className="text-white/70">{selectedItem.sequence_name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Step</span><span className="text-white/70">{selectedItem.step_number ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Channel</span><span className="text-white/70 capitalize">{selectedItem.recommended_channel || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span></div>
+                            <div className="flex justify-between"><span className="text-white/40">Priority</span><span className={`font-semibold ${selectedItem.priority === 'high' ? 'text-red-400' : selectedItem.priority === 'medium' ? 'text-yellow-400' : 'text-white/40'}`}>{selectedItem.priority || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span></div>
                             <div className="flex justify-between"><span className="text-white/40">Scheduled</span><span className="text-white/70">{fmt(selectedItem.scheduled_for)}</span></div>
                             <div className="flex justify-between"><span className="text-white/40">Attempts</span><span className={`${(selectedItem.attempts || 0) >= (selectedItem.max_attempts || 3) ? 'text-red-400' : 'text-white/70'}`}>{selectedItem.attempts ?? 0}/{selectedItem.max_attempts ?? 3}</span></div>
                           </div>
@@ -433,7 +543,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ CAMPAIGNS Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ CAMPAIGNS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
               {tab === 'campaigns' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {campaigns.length === 0 ? (
@@ -443,7 +553,7 @@ export default function OutreachEngine() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-bold text-white">{camp.name || 'Ã¢â‚¬â€'}</p>
+                            <p className="font-bold text-white">{camp.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</p>
                             {camp.offer_name && <p className="text-xs text-cyan-400 mt-0.5">{camp.offer_name}</p>}
                           </div>
                           <StatusPill status={camp.status} />
@@ -451,7 +561,7 @@ export default function OutreachEngine() {
                         <div className="flex flex-col gap-1.5 text-xs mb-3">
                           <div className="flex justify-between">
                             <span className="text-white/40">Daily Limit</span>
-                            <span className="text-white/70">{camp.daily_limit ?? 'Ã¢â‚¬â€'} emails/day</span>
+                            <span className="text-white/70">{camp.daily_limit ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'} emails/day</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-white/40">Approval Required</span>
@@ -483,7 +593,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ SEND LOGS Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ SEND LOGS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
               {tab === 'logs' && (
                 <Card className="bg-gray-900 border-white/10">
                   <div className="overflow-x-auto">
@@ -506,13 +616,13 @@ export default function OutreachEngine() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
                                 <ChannelIcon channel={log.channel} />
-                                <span className="text-xs text-white/60 capitalize">{log.channel || 'Ã¢â‚¬â€'}</span>
+                                <span className="text-xs text-white/60 capitalize">{log.channel || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span>
                               </div>
                             </td>
                             <td className="px-4 py-3"><StatusPill status={log.status} /></td>
-                            <td className="px-4 py-3 text-xs text-white/40">{log.provider || 'Ã¢â‚¬â€'}</td>
+                            <td className="px-4 py-3 text-xs text-white/40">{log.provider || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
                             <td className="px-4 py-3 text-xs text-white/50 max-w-[300px] truncate">
-                              {log.error ? <span className="text-red-400">{log.error}</span> : (log.message || 'Ã¢â‚¬â€')}
+                              {log.error ? <span className="text-red-400">{log.error}</span> : (log.message || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}
                             </td>
                             <td className="px-4 py-3 text-xs text-white/40">{log.retry_count ?? 0}</td>
                             <td className="px-4 py-3 text-xs text-white/30">{fmt(log.created_at)}</td>
@@ -524,7 +634,7 @@ export default function OutreachEngine() {
                 </Card>
               )}
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ REPLY INBOX Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ REPLY INBOX ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
               {tab === 'replies' && (
                 <div className="flex flex-col gap-3">
                   {replies.length === 0 ? (
@@ -534,8 +644,8 @@ export default function OutreachEngine() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-bold text-white">{reply.company || reply.lead_name || 'Ã¢â‚¬â€'}</p>
-                            <p className="text-xs text-white/40">{reply.lead_email} Ã‚Â· via {reply.provider}</p>
+                            <p className="font-bold text-white">{reply.company || reply.lead_name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</p>
+                            <p className="text-xs text-white/40">{reply.lead_email} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· via {reply.provider}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {reply.processed_at ? (
@@ -566,7 +676,7 @@ export default function OutreachEngine() {
                 </div>
               )}
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ FOLLOW-UP RULES Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ FOLLOW-UP RULES ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
               {tab === 'followups' && (
                 <div className="flex flex-col gap-3">
                   {followups.length === 0 ? (
@@ -577,10 +687,10 @@ export default function OutreachEngine() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${rule.active ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-white/20'}`}>
-                              #{rule.priority ?? 'Ã¢â‚¬â€'}
+                              #{rule.priority ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}
                             </div>
                             <div>
-                              <p className="font-semibold text-white capitalize">{rule.stage || 'Ã¢â‚¬â€'} stage</p>
+                              <p className="font-semibold text-white capitalize">{rule.stage || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'} stage</p>
                               {rule.subject_template && (
                                 <p className="text-xs text-white/50 mt-0.5">Subject: {rule.subject_template}</p>
                               )}
@@ -593,15 +703,15 @@ export default function OutreachEngine() {
                         <div className="grid grid-cols-3 gap-3 mt-3">
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">No-Reply Window</p>
-                            <p className="text-sm font-semibold text-white">{rule.min_no_reply_days}Ã¢â‚¬â€œ{rule.max_no_reply_days} days</p>
+                            <p className="text-sm font-semibold text-white">{rule.min_no_reply_days}ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ{rule.max_no_reply_days} days</p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">Delay</p>
-                            <p className="text-sm font-semibold text-white">{rule.delay_hours ?? 'Ã¢â‚¬â€'}h</p>
+                            <p className="text-sm font-semibold text-white">{rule.delay_hours ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}h</p>
                           </div>
                           <div className="bg-white/5 rounded-lg p-2 text-center">
                             <p className="text-xs text-white/30 mb-0.5">Priority</p>
-                            <p className="text-sm font-semibold text-cyan-400">{rule.priority ?? 'Ã¢â‚¬â€'}</p>
+                            <p className="text-sm font-semibold text-cyan-400">{rule.priority ?? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</p>
                           </div>
                         </div>
                       </CardContent>
