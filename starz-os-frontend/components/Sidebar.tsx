@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/context/AuthProvider';
 import {
-  LayoutDashboard, Users, Phone, Code2, Settings,
+  LayoutDashboard, Send, Users, Phone, Code2, Settings,
   TrendingUp, ClipboardList, LogOut, PhoneCall, FileText,
   UserCog, Search, LayoutList
 } from 'lucide-react';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Rico BGE',    href: '/rico',        icon: ClipboardList },
   { name: 'Work Orders', href: '/work-orders', icon: FileText },
   { name: 'HR Portal',   href: '/hr',          icon: UserCog },
+  { name: 'Outreach', href: '/outreach', icon: Send },
   { name: 'Scraper',     href: '/scraper',     icon: Search },
   { name: 'Developers',  href: '/developer',   icon: Code2 },
   { name: 'Tasks',       href: '/tasks',       icon: ClipboardList },
@@ -48,7 +49,7 @@ export default function Sidebar() {
       {!isDashboard && (
         <Link href="/dashboard">
           <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs">
-            <span>←</span>
+            <span>â†</span>
             <span>Back to Dashboard</span>
           </div>
         </Link>
