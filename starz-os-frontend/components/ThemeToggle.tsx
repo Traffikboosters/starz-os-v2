@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
@@ -16,7 +16,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="fixed bottom-20 left-6 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg border"
+      className="fixed bottom-6 left-6 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg border"
       style={{
         background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
         borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
