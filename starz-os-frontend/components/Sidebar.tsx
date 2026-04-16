@@ -20,7 +20,7 @@ const navItems = [
   { name: 'HR Portal',   href: '/hr',          icon: UserCog },
   { name: 'Outreach', href: '/outreach', icon: Send },
   { name: 'Scraper',     href: '/scraper',     icon: Search },
-  { name: 'Developers',  href: '/developer',   icon: Code2 },
+  { name: 'Developers',  href: '/dev-dashboard',   icon: Code2 },
   { name: 'Tasks',       href: '/tasks',       icon: ClipboardList },
   { name: 'Settings',    href: '/settings',    icon: Settings },
 ];
@@ -49,7 +49,7 @@ export default function Sidebar() {
       {!isDashboard && (
         <Link href="/dashboard">
           <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs">
-            <span>â†</span>
+            <span>Ã¢â€ Â</span>
             <span>Back to Dashboard</span>
           </div>
         </Link>
