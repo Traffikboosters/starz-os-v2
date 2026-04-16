@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/context/AuthProvider';
 import {
-  LayoutDashboard, Send, Zap, Brain, Activity, Map, Users, Phone, Code2, Settings,
+  LayoutDashboard, Send, Zap, Brain, Activity, Map, BarChart3, Users, Phone, Code2, Settings,
   TrendingUp, ClipboardList, LogOut, PhoneCall, FileText,
   UserCog, Search, LayoutList
 } from 'lucide-react';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Rico BGE',    href: '/rico',        icon: ClipboardList },
   { name: 'Work Orders', href: '/work-orders', icon: FileText },
   { name: 'HR Portal',   href: '/hr',          icon: UserCog },
+  { name: 'Performance', href: '/performance', icon: BarChart3 },
   { name: 'Rank Engine', href: '/rank-domination', icon: Map },
   { name: 'Site SEO', href: '/site-optimization', icon: Activity },
   { name: 'Intelligence', href: '/intelligence', icon: Brain },
@@ -53,7 +54,7 @@ export default function Sidebar() {
       {!isDashboard && (
         <Link href="/dashboard">
           <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs">
-            <span>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</span>
+            <span>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</span>
             <span>Back to Dashboard</span>
           </div>
         </Link>
