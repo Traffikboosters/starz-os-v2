@@ -55,7 +55,7 @@ interface Competitor {
 type Tab = 'opportunities' | 'audits' | 'competitors';
 
 function fmt(d: string | null) {
-  if (!d) return '—';
+  if (!d) return 'â€”';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -75,7 +75,7 @@ function LeadStatusPill({ status }: { status: string | null }) {
     lost: 'bg-red-500/20 text-red-400 border-red-500/30',
   };
   const cls = map[(status || '').toLowerCase()] || 'bg-white/10 text-white/40 border-white/20';
-  return <span className={`px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>{status || '—'}</span>;
+  return <span className={`px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>{status || 'â€”'}</span>;
 }
 
 export default function IntelligenceEngine() {
@@ -214,8 +214,8 @@ export default function IntelligenceEngine() {
                     <div key={opp.id} className="flex items-center gap-4 bg-white/5 rounded-xl px-4 py-3">
                       <span className="text-white/20 text-sm font-bold w-4">#{i + 1}</span>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-white">{opp.industry} — {opp.city}, {opp.state}</p>
-                        <p className="text-xs text-white/30">Vol: {opp.search_volume?.toLocaleString()} · {opp.competitor_count} competitors · {opp.weak_sites} weak sites</p>
+                        <p className="text-sm font-semibold text-white">{opp.industry} â€” {opp.city}, {opp.state}</p>
+                        <p className="text-xs text-white/30">Vol: {opp.search_volume?.toLocaleString()} Â· {opp.competitor_count} competitors Â· {opp.weak_sites} weak sites</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <LeadStatusPill status={opp.lead_status} />
@@ -308,13 +308,13 @@ export default function IntelligenceEngine() {
                               </div>
                               {opp.country && <p className="text-xs text-white/30 ml-5">{opp.country}</p>}
                             </td>
-                            <td className="px-4 py-3 text-xs text-white/60 capitalize">{opp.industry || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-white/60 capitalize">{opp.industry || 'â€”'}</td>
                             <td className="px-4 py-3"><ScoreBadge score={opp.opportunity_score} /></td>
-                            <td className="px-4 py-3 text-xs text-white/60">{opp.search_volume?.toLocaleString() || '—'}</td>
-                            <td className="px-4 py-3 text-xs text-white/60">{opp.competitor_count ?? '—'}</td>
+                            <td className="px-4 py-3 text-xs text-white/60">{opp.search_volume?.toLocaleString() || 'â€”'}</td>
+                            <td className="px-4 py-3 text-xs text-white/60">{opp.competitor_count ?? 'â€”'}</td>
                             <td className="px-4 py-3">
                               <span className={`text-xs font-semibold ${(opp.weak_sites || 0) >= 5 ? 'text-red-400' : (opp.weak_sites || 0) >= 2 ? 'text-yellow-400' : 'text-white/40'}`}>
-                                {opp.weak_sites ?? '—'}
+                                {opp.weak_sites ?? 'â€”'}
                               </span>
                             </td>
                             <td className="px-4 py-3"><LeadStatusPill status={opp.lead_status} /></td>
@@ -357,14 +357,14 @@ export default function IntelligenceEngine() {
                             audit.schema_missing && 'Schema',
                             audit.mobile_bad && 'Mobile',
                             audit.low_reviews && 'Reviews',
-                          ].filter(Boolean);
+                          ].filter((x): x is string => Boolean(x));
                           return (
                             <tr key={audit.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                               <td className="px-4 py-3">
-                                <p className="font-medium text-white">{audit.business_name || '—'}</p>
+                                <p className="font-medium text-white">{audit.business_name || 'â€”'}</p>
                                 {audit.website && <a href={audit.website.startsWith('http') ? audit.website : `https://${audit.website}`} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:text-cyan-300">{audit.website.replace(/^https?:\/\//, '')}</a>}
                               </td>
-                              <td className="px-4 py-3 text-xs text-white/60">{[audit.city, audit.state].filter(Boolean).join(', ') || '—'}</td>
+                              <td className="px-4 py-3 text-xs text-white/60">{[audit.city, audit.state].filter(Boolean).join(', ') || 'â€”'}</td>
                               <td className="px-4 py-3"><ScoreBadge score={audit.weakness_score} /></td>
                               <td className="px-4 py-3">
                                 <div className="flex flex-wrap gap-1">
@@ -410,15 +410,15 @@ export default function IntelligenceEngine() {
                           </td></tr>
                         ) : filteredCompetitors.map(comp => (
                           <tr key={comp.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                            <td className="px-4 py-3 font-medium text-white">{comp.name || '—'}</td>
-                            <td className="px-4 py-3 text-xs text-white/60 capitalize">{comp.industry || '—'}</td>
+                            <td className="px-4 py-3 font-medium text-white">{comp.name || 'â€”'}</td>
+                            <td className="px-4 py-3 text-xs text-white/60 capitalize">{comp.industry || 'â€”'}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1">
                                 <Star className="w-3.5 h-3.5 text-yellow-400" />
-                                <span className="text-sm font-semibold text-white">{comp.rating?.toFixed(1) || '—'}</span>
+                                <span className="text-sm font-semibold text-white">{comp.rating?.toFixed(1) || 'â€”'}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-xs text-white/60">{comp.review_count?.toLocaleString() || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-white/60">{comp.review_count?.toLocaleString() || 'â€”'}</td>
                             <td className="px-4 py-3"><ScoreBadge score={comp.market_score} /></td>
                             <td className="px-4 py-3 text-xs text-white/30">{fmt(comp.first_seen)}</td>
                           </tr>
