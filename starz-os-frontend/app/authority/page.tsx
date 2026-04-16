@@ -98,11 +98,11 @@ function StatusPill({ status }: { status: string | null }) {
     new: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   };
   const cls = map[(status || '').toLowerCase()] || 'bg-white/10 text-white/40 border-white/20';
-  return <span className={`px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>{status || '—'}</span>;
+  return <span className={`px-2 py-0.5 rounded text-xs font-semibold border capitalize ${cls}`}>{status || 'â€”'}</span>;
 }
 
 function fmt(d: string | null) {
-  if (!d) return '—';
+  if (!d) return 'â€”';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -121,11 +121,14 @@ export default function AuthorityEngine() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const loadProjects = useCallback(async () => {
-    const { data } = await supabase.schema('authority').from('projects')
-      .select('*').order('created_at', { ascending: false });
+    const { data, error: projError } = await supabase.schema('authority').from('projects')
+      .select('*').order('created_at', { ascending: false }).limit(50);
+    console.log('projects:', data, projError);
     if (data?.length) {
       setProjects(data as Project[]);
       setSelectedProject(data[0] as Project);
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -181,13 +184,13 @@ export default function AuthorityEngine() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Authority Engine</h1>
-              <p className="text-sm text-white/40">Backlinks + Trust Building — automated domain authority system</p>
+              <p className="text-sm text-white/40">Backlinks + Trust Building â€” automated domain authority system</p>
             </div>
             <div className="ml-auto flex items-center gap-3">
               {projects.length > 0 && (
                 <select value={selectedProject?.id || ''} onChange={e => setSelectedProject(projects.find(p => p.id === e.target.value) || null)}
                   className={ic} style={{ appearance: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.client_name} — {p.domain}</option>)}
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.client_name} â€” {p.domain}</option>)}
                 </select>
               )}
               <button onClick={() => selectedProject && loadProjectData(selectedProject.id)}
@@ -411,16 +414,16 @@ export default function AuthorityEngine() {
                                 <a href={bl.source_url?.startsWith('http') ? bl.source_url : `https://${bl.source_url}`}
                                   target="_blank" rel="noopener noreferrer"
                                   className="text-cyan-400 hover:text-cyan-300 text-xs transition-colors">
-                                  {bl.source_url?.replace(/^https?:\/\//, '') || '—'}
+                                  {bl.source_url?.replace(/^https?:\/\//, '') || 'â€”'}
                                 </a>
                               </td>
-                              <td className="px-4 py-3 text-xs text-white/60 max-w-[150px] truncate">{bl.anchor_text || '—'}</td>
+                              <td className="px-4 py-3 text-xs text-white/60 max-w-[150px] truncate">{bl.anchor_text || 'â€”'}</td>
                               <td className="px-4 py-3">
                                 <span className={`text-sm font-bold ${(bl.domain_authority || 0) >= 50 ? 'text-green-400' : (bl.domain_authority || 0) >= 30 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                  {bl.domain_authority ?? '—'}
+                                  {bl.domain_authority ?? 'â€”'}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-xs text-white/40 capitalize">{bl.type || '—'}</td>
+                              <td className="px-4 py-3 text-xs text-white/40 capitalize">{bl.type || 'â€”'}</td>
                               <td className="px-4 py-3"><StatusPill status={bl.status} /></td>
                               <td className="px-4 py-3 text-xs text-white/30">{fmt(bl.discovered_at)}</td>
                             </tr>
@@ -477,10 +480,10 @@ export default function AuthorityEngine() {
                           <tr><td colSpan={5} className="py-20 text-center text-white/20">No automation runs yet</td></tr>
                         ) : runs.map(run => (
                           <tr key={run.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                            <td className="px-4 py-3 text-sm text-white capitalize">{run.run_type || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-white capitalize">{run.run_type || 'â€”'}</td>
                             <td className="px-4 py-3"><StatusPill status={run.status} /></td>
                             <td className="px-4 py-3 text-xs text-white/40">{run.retry_count ?? 0}</td>
-                            <td className="px-4 py-3 text-xs text-red-400 max-w-[300px] truncate">{run.last_error || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-red-400 max-w-[300px] truncate">{run.last_error || 'â€”'}</td>
                             <td className="px-4 py-3 text-xs text-white/30">{fmt(run.created_at)}</td>
                           </tr>
                         ))}
