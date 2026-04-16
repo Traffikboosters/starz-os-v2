@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import Sidebar from '@/components/Sidebar';
 import {
   Brain, Zap, Activity, BarChart3, FileText, TrendingUp,
   RefreshCw, Loader2, ChevronDown, ChevronUp, Globe,
@@ -210,9 +209,7 @@ export default function DeveloperDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
+    <div className="bg-gray-950 min-h-screen">
         <div className="p-6">
 
           {/* Header */}
@@ -336,7 +333,5 @@ export default function DeveloperDashboard() {
           </div>
 
         </div>
-      </div>
-    </div>
   );
 }
