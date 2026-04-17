@@ -29,7 +29,7 @@ export default function WorkOrdersPage() {
     if (statusFilter !== "all") result = result.filter((wo) => wo.status === statusFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((wo) => wo.client_name?.toLowerCase().includes(q) || wo.business_name?.toLowerCase().includes(q) || wo.customer_email?.toLowerCase().includes(q) || wo.proposal_id?.toLowerCase().includes(q) || wo.service?.toLowerCase().includes(q));
+      result = result.filter((wo) => wo.client_name?.toLowerCase().includes(q) || wo.business_name?.toLowerCase().includes(q) || wo.email?.toLowerCase().includes(q) || wo.proposal_id?.toLowerCase().includes(q) || wo.service?.toLowerCase().includes(q));
     }
     setFiltered(result);
   }, [search, statusFilter, workOrders]);
@@ -97,14 +97,14 @@ export default function WorkOrdersPage() {
             <tbody className="divide-y divide-gray-800">
               {filtered.map((wo) => (
                 <tr key={wo.id} className="hover:bg-gray-900/50 cursor-pointer transition-colors" onClick={() => setSelected(wo)}>
-                  <td className="px-4 py-3"><div className="font-medium text-white">{wo.business_name || wo.client_name}</div><div className="text-gray-500 text-xs">{wo.customer_email}</div></td>
-                  <td className="px-4 py-3 text-gray-300">{wo.service || wo.project_type || "—"}</td>
+                  <td className="px-4 py-3"><div className="font-medium text-white">{wo.business_name || wo.client_name}</div><div className="text-gray-500 text-xs">{wo.email}</div></td>
+                  <td className="px-4 py-3 text-gray-300">{wo.service || wo.service_type || "—"}</td>
                   <td className="px-4 py-3 text-gray-400 font-mono text-xs">{wo.proposal_id || "—"}</td>
                   <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium capitalize " + getStatusColor(wo.status)}>{wo.status || "unknown"}</span></td>
                   <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium capitalize " + getPaymentStatusColor(wo.payment_status)}>{wo.payment_status || "—"}</span></td>
                   <td className="px-4 py-3 text-gray-300">{formatCurrency(wo.total_amount)}</td>
-                  <td className="px-4 py-3 text-gray-400">{formatDate(wo.start_date)}</td>
-                  <td className="px-4 py-3 text-gray-400">{formatDate(wo.due_date)}</td>
+                  <td className="px-4 py-3 text-gray-400">{formatDate(wo.production_released_at)}</td>
+                  <td className="px-4 py-3 text-gray-400">{formatDate(wo.clearance_ends_at)}</td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><select value={wo.status || ""} onChange={(e) => handleStatusChange(wo.id, e.target.value)} disabled={updating} className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-orange-500">{STATUS_OPTIONS.map((s) => (<option key={s} value={s}>{s}</option>))}</select></td>
                 </tr>
               ))}
