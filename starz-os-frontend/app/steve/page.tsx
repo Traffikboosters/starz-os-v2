@@ -128,7 +128,7 @@ function LineChartComponent({ deals }: { deals: PipelineDeal[] }) {
     if (!canvasRef.current || deals.length === 0) return;
     if (chartRef.current) chartRef.current.destroy();
     const countsByDay: Record<string, number> = {};
-    deals.forEach((d) => {
+    deals.forEach((d: any) => {
       const day = new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       countsByDay[day] = (countsByDay[day] || 0) + 1;
     });
@@ -214,7 +214,7 @@ export default function StevePage() {
         if (error) throw new Error(error.message);
         setDeals(data || []);
         const statsMap: Record<string, StageStats> = {};
-        (data || []).forEach((d) => {
+        (data || []).forEach((d: any) => {
           const s = d.stage || 'unknown';
           if (!statsMap[s]) statsMap[s] = { stage: s, count: 0, high_interest: 0 };
           statsMap[s].count++;
