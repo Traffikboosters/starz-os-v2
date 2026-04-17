@@ -11,7 +11,7 @@ export default function RepPortal() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: any } }) => {
       if (!user) { router.push('/login'); return; }
       setUser(user)
       setLoading(false)
@@ -50,15 +50,15 @@ export default function RepPortal() {
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
           {[
-            { label:'My Leads',   icon:'👥', desc:'View and work assigned leads',    href:'/portal/rep/leads',     color:'#1D9E75' },
-            { label:'PowerDial',  icon:'📞', desc:'Call queue and dialer workspace', href:'/portal/rep/dialer',    color:'#534AB7' },
-            { label:'Pipeline',   icon:'📊', desc:'Your deal pipeline and stages',   href:'/portal/rep/pipeline',  color:'#EF9F27' },
-            { label:'Tasks',      icon:'✅', desc:'Follow-ups and daily actions',    href:'/portal/rep/tasks',     color:'#5DCAA5' },
-            { label:'Proposals',  icon:'📄', desc:'Generate and track proposals',    href:'/portal/rep/proposals', color:'#1D9E75' },
-            { label:'My KPIs',    icon:'📈', desc:'Your performance dashboard',      href:'/portal/rep/kpis',      color:'#534AB7' },
-            { label:'Commission', icon:'💰', desc:'Earnings and payroll summary',    href:'/portal/rep/commission',color:'#EF9F27' },
-            { label:'Training',   icon:'🎓', desc:'Scripts and certification hub',   href:'/portal/rep/training',  color:'#5DCAA5' },
-            { label:'Email',      icon:'✉️', desc:'Your inbox and lead threads',     href:'/portal/rep/email',     color:'#1D9E75' },
+            { label:'My Leads',   icon:'ðŸ‘¥', desc:'View and work assigned leads',    href:'/portal/rep/leads',     color:'#1D9E75' },
+            { label:'PowerDial',  icon:'ðŸ“ž', desc:'Call queue and dialer workspace', href:'/portal/rep/dialer',    color:'#534AB7' },
+            { label:'Pipeline',   icon:'ðŸ“Š', desc:'Your deal pipeline and stages',   href:'/portal/rep/pipeline',  color:'#EF9F27' },
+            { label:'Tasks',      icon:'âœ…', desc:'Follow-ups and daily actions',    href:'/portal/rep/tasks',     color:'#5DCAA5' },
+            { label:'Proposals',  icon:'ðŸ“„', desc:'Generate and track proposals',    href:'/portal/rep/proposals', color:'#1D9E75' },
+            { label:'My KPIs',    icon:'ðŸ“ˆ', desc:'Your performance dashboard',      href:'/portal/rep/kpis',      color:'#534AB7' },
+            { label:'Commission', icon:'ðŸ’°', desc:'Earnings and payroll summary',    href:'/portal/rep/commission',color:'#EF9F27' },
+            { label:'Training',   icon:'ðŸŽ“', desc:'Scripts and certification hub',   href:'/portal/rep/training',  color:'#5DCAA5' },
+            { label:'Email',      icon:'âœ‰ï¸', desc:'Your inbox and lead threads',     href:'/portal/rep/email',     color:'#1D9E75' },
           ].map(({ label, icon, desc, href, color }) => (
             <div key={label} onClick={() => router.push(href)}
               style={{ background:'#131320', border:'1px solid #1a1a2e', borderRadius:10, padding:'20px 22px', cursor:'pointer',
