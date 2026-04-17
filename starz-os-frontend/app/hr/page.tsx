@@ -78,7 +78,7 @@ export default function HRPortal() {
         setRoles(r.data || []);
         setMetrics({
           total: u.data?.length || 0,
-          active: u.data?.filter(x => x.role_status === 'active').length || 0,
+          active: u.data?.filter((x: any) => x.role_status === 'active').length || 0,
           pending_invites: 0,
           open_alerts: 0,
         });
