@@ -185,7 +185,7 @@ function SteveWorkOrders() {
           <div className="flex items-center gap-3 shrink-0">
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(wo.status)}`}>{wo.status}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getPaymentStatusColor(wo.payment_status)}`}>{wo.payment_status || '—'}</span>
-            <span className="text-sm text-white/60 font-medium">{wo.total_amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(wo.total_amount) : '—'}</span>
+            <span className="text-sm text-white/60 font-medium">{wo.total_amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(wo.total_amount) || 0) : '—'}</span>
           </div>
         </div>
       ))}
