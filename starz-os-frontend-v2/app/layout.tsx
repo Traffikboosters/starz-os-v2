@@ -1,15 +1,12 @@
 import type { Metadata } from "next"
 import "./globals.css"
 
-export const metadata: Metadata = {
-  title: "STARZ-OS â€” Business Operating System",
-  description: "Traffik Boosters Â· Sales + Marketing + Operations OS",
-}
+export const metadata: Metadata = { title: "STARZ-OS" }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-slate-950 text-white antialiased">{children}</body>
+      <body style={{ margin:0, padding:0, overflow:"hidden", background:"#0a0a1a" }}>{children}</body>
     </html>
   )
 }

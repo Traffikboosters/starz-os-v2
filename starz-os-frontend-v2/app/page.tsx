@@ -1,2 +1,8 @@
-import { redirect } from "next/navigation"
-export default function Home() { redirect("/starz-os.html") }
+export default function Home() {
+  return (
+    <iframe
+      src="/starz-os.html"
+      style={{ width:"100vw", height:"100vh", border:"none", display:"block" }}
+    />
+  )
+}
