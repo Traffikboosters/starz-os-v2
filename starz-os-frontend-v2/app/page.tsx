@@ -1,8 +1,1 @@
-export default function Home() {
-  return (
-    <iframe
-      src="/starz-os.html"
-      style={{ width:"100vw", height:"100vh", border:"none", display:"block" }}
-    />
-  )
-}
+export default function Home() { return null }
