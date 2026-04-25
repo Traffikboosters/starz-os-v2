@@ -40,5 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-pnpm-lock.yaml
+.env.local
+*.bak
+.env*.local
 .vercel
+
+../pnpm-lock.yaml
+.env*.local
+
+.next/
