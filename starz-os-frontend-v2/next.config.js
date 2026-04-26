@@ -1,1 +1,0 @@
-module.exports = { async rewrites() { return [{ source: "/", destination: "/starz-os.html" }] } }
