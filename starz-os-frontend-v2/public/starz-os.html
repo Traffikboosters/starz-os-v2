@@ -998,7 +998,7 @@ async function runDecisionEngine() {
   logEl.textContent = '⟳ Running decision engine...'
   logEngineActivity('Decision Engine', 'running', 'Processing feedback loop')
   try {
-    const result = await rpc('marketing', 'rpc_feedback_decision_engine')
+    const result = await rpc('public', 'rpc_feedback_decision_engine')
     const msg = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result||'Decision engine complete')
     logEl.className = 'text-xs mt-2 p-3 rounded-lg bg-black/30 font-mono text-green-400'
     logEl.textContent = '✓ ' + msg
@@ -1016,7 +1016,7 @@ async function runLeadDistribution() {
   logEl.textContent = '⟳ Distributing leads...'
   logEngineActivity('Lead Distribution', 'running', 'Assigning best-fit leads')
   try {
-    const result = await rpc('leads', 'assign_best_fit_lead_guarded')
+    const result = await rpc('public', 'assign_best_fit_lead_guarded')
     const msg = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result||'Lead distribution complete')
     logEl.className = 'text-xs mt-2 p-3 rounded-lg bg-black/30 font-mono text-green-400'
     logEl.textContent = '✓ ' + msg
