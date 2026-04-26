@@ -956,9 +956,172 @@ async function loadControlContent(el) {
           <div class="text-slate-600">— No engine runs this session —</div>
         </div>
       </div>
+
+      <!-- STARZ-OS Core Engines -->
+      <div class="stat-card border border-nebula-purple/30">
+        <h3 class="font-space font-semibold text-sm mb-4 flex items-center gap-2">
+          <i data-lucide="cpu" style="width:14px;height:14px;color:#a78bfa"></i>
+          STARZ-OS Core Engines
+          <span class="badge badge-purple ml-2">6 Active</span>
+        </h3>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 rounded-xl bg-white/5 border border-nebula-purple/20 hover:border-nebula-purple/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-nebula-purple/20 flex items-center justify-center shrink-0"><i data-lucide="git-merge" style="width:13px;height:13px;color:#a78bfa"></i></div><div class="text-xs font-semibold">Orchestration</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">core-automation-engine</div>
+            <button onclick="invokeEngine('core-automation-engine','log-orchestration')" class="w-full py-1.5 rounded-lg bg-nebula-purple/20 hover:bg-nebula-purple/40 text-purple-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-orchestration" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/5 border border-green-500/20 hover:border-green-500/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0"><i data-lucide="trending-up" style="width:13px;height:13px;color:#34d399"></i></div><div class="text-xs font-semibold">Revenue</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">outreach-engine</div>
+            <button onclick="invokeEngine('outreach-engine','log-revenue')" class="w-full py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/40 text-green-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-revenue" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/5 border border-nebula-cyan/20 hover:border-nebula-cyan/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-nebula-cyan/20 flex items-center justify-center shrink-0"><i data-lucide="package" style="width:13px;height:13px;color:#06b6d4"></i></div><div class="text-xs font-semibold">Delivery</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">rico-engine</div>
+            <button onclick="invokeEngine('rico-engine','log-delivery')" class="w-full py-1.5 rounded-lg bg-nebula-cyan/20 hover:bg-nebula-cyan/40 text-cyan-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-delivery" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/5 border border-amber-500/20 hover:border-amber-500/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0"><i data-lucide="award" style="width:13px;height:13px;color:#fbbf24"></i></div><div class="text-xs font-semibold">Authority</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">authority-engine</div>
+            <button onclick="invokeEngine('authority-engine','log-authority')" class="w-full py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-authority" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/5 border border-blue-500/20 hover:border-blue-500/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0"><i data-lucide="brain" style="width:13px;height:13px;color:#60a5fa"></i></div><div class="text-xs font-semibold">Intelligence</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">market-intelligence-engine</div>
+            <button onclick="invokeEngine('market-intelligence-engine','log-intelligence')" class="w-full py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-intelligence" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/5 border border-nebula-pink/20 hover:border-nebula-pink/50 transition-all">
+            <div class="flex items-center gap-2 mb-2"><div class="w-7 h-7 rounded-lg bg-nebula-pink/20 flex items-center justify-center shrink-0"><i data-lucide="bell" style="width:13px;height:13px;color:#ec4899"></i></div><div class="text-xs font-semibold">Experience</div></div>
+            <div class="text-[9px] text-slate-500 mb-2">notifications-engine</div>
+            <button onclick="invokeEngine('notifications-engine','log-experience')" class="w-full py-1.5 rounded-lg bg-nebula-pink/20 hover:bg-nebula-pink/40 text-pink-300 text-[10px] font-semibold transition-all">▶ Invoke</button>
+            <div id="log-experience" class="text-[9px] mt-1 text-slate-500 font-mono truncate">Ready</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steve Auto-Closer — Pipeline Orchestrator -->
+      <div class="stat-card border border-green-500/20">
+        <h3 class="font-space font-semibold text-sm mb-3 flex items-center gap-2">
+          <i data-lucide="git-branch" style="width:14px;height:14px;color:#34d399"></i>
+          Pipeline Orchestrator
+          <span class="text-[9px] text-slate-500 font-mono ml-1">steve-auto-closer → master-router</span>
+        </h3>
+        <div class="grid grid-cols-5 gap-2 mb-3">
+          ${[
+            { event:'new_lead',        label:'New Lead',        color:'blue',   icon:'user-plus',    note:'score ≥ 60 → intro email' },
+            { event:'no_reply',        label:'No Reply',        color:'amber',  icon:'mail-x',       note:'→ followup sequence' },
+            { event:'lead_interested', label:'Interested',      color:'purple', icon:'heart-handshake', note:'→ generate proposal' },
+            { event:'proposal_ready',  label:'Proposal Ready',  color:'cyan',   icon:'file-check',   note:'→ send proposal' },
+            { event:'payment_received',label:'Payment Received',color:'green',  icon:'circle-dollar-sign', note:'→ create work order' },
+          ].map(e => `
+            <div class="p-2 rounded-xl bg-white/5 border border-${e.color}-500/20 hover:border-${e.color}-500/40 transition-all text-center">
+              <div class="text-[10px] font-semibold text-white mb-1">${e.label}</div>
+              <div class="text-[8px] text-slate-500 mb-2">${e.note}</div>
+              <button onclick="fireAutoCloser('${e.event}')" class="w-full py-1 rounded-lg bg-${e.color}-500/20 hover:bg-${e.color}-500/40 text-${e.color}-300 text-[9px] font-semibold transition-all">▶ Fire</button>
+            </div>`).join('')}
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <label class="text-[10px] text-slate-400 mb-1 block">Lead ID (for test events)</label>
+            <input type="text" id="closer-lead-id" placeholder="e.g. 123" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-purple/50">
+          </div>
+          <div class="flex-1">
+            <label class="text-[10px] text-slate-400 mb-1 block">Score (for new_lead)</label>
+            <input type="number" id="closer-score" placeholder="e.g. 75" value="75" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-purple/50">
+          </div>
+        </div>
+        <div id="closer-log" class="text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-slate-500">Ready — enter a lead ID and fire an event</div>
+      </div>
+
     </div>`
 
   lucide.createIcons()
+}
+
+async function invokeEngine(slug, logId) {
+  const logEl = document.getElementById(logId)
+  if (!logEl) return
+  logEl.className = 'text-[9px] mt-1 text-nebula-amber font-mono truncate loading-pulse'
+  logEl.textContent = '⟳ Invoking...'
+  logEngineActivity(slug, 'running', 'Engine invoked')
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/${slug}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ source: 'starz-os-control-panel', ts: new Date().toISOString() })
+    })
+    const text = await res.text()
+    let msg
+    try { const d = JSON.parse(text); msg = d.message || d.status || d.ok || JSON.stringify(d) }
+    catch { msg = text || 'OK' }
+    if (res.ok) {
+      logEl.className = 'text-[9px] mt-1 text-green-400 font-mono truncate'
+      logEl.textContent = '✓ ' + String(msg).slice(0, 60)
+      logEngineActivity(slug, 'success', String(msg).slice(0, 80))
+    } else {
+      logEl.className = 'text-[9px] mt-1 text-red-400 font-mono truncate'
+      logEl.textContent = '✗ ' + res.status + ' ' + String(msg).slice(0, 50)
+      logEngineActivity(slug, 'error', res.status + ' ' + String(msg).slice(0, 60))
+    }
+  } catch(e) {
+    logEl.className = 'text-[9px] mt-1 text-red-400 font-mono truncate'
+    logEl.textContent = '✗ ' + e.message
+    logEngineActivity(slug, 'error', e.message)
+  }
+}
+
+async function fireAutoCloser(event) {
+  const logEl = document.getElementById('closer-log')
+  const leadId = document.getElementById('closer-lead-id')?.value?.trim()
+  const score = parseInt(document.getElementById('closer-score')?.value || '75')
+
+  if (!leadId && ['new_lead','no_reply','lead_interested'].includes(event)) {
+    logEl.className = 'text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-amber-400'
+    logEl.textContent = '⚠ Enter a Lead ID first'
+    return
+  }
+
+  logEl.className = 'text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-nebula-amber loading-pulse'
+  logEl.textContent = `⟳ Firing event: ${event}...`
+  logEngineActivity('steve-auto-closer', 'running', event)
+
+  const payloads = {
+    new_lead:         { id: leadId, score },
+    no_reply:         { id: leadId },
+    lead_interested:  { id: leadId },
+    proposal_ready:   { lead_id: leadId },
+    payment_received: { lead_id: leadId }
+  }
+
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/steve-auto-closer`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event, payload: payloads[event] || {} })
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) {
+      logEl.className = 'text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-green-400'
+      logEl.textContent = `✓ Event "${event}" fired → pipeline routed via master-router`
+      logEngineActivity('steve-auto-closer', 'success', `${event} → master-router`)
+    } else {
+      logEl.className = 'text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-red-400'
+      logEl.textContent = `✗ ${data.error || JSON.stringify(data)}`
+      logEngineActivity('steve-auto-closer', 'error', data.error || res.status)
+    }
+  } catch(e) {
+    logEl.className = 'text-xs mt-3 p-3 rounded-lg bg-black/30 font-mono text-red-400'
+    logEl.textContent = '✗ ' + e.message
+    logEngineActivity('steve-auto-closer', 'error', e.message)
+  }
 }
 
 function logEngineActivity(engine, status, detail) {
