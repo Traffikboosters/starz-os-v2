@@ -995,10 +995,18 @@ async function runSentinel() {
 async function runDecisionEngine() {
   const logEl = document.getElementById('decision-log')
   logEl.className = 'text-xs mt-2 p-3 rounded-lg bg-black/30 font-mono text-nebula-amber loading-pulse'
-  logEl.textContent = '⟳ Running decision engine...'
-  logEngineActivity('Decision Engine', 'running', 'Processing feedback loop')
+  logEl.textContent = '⟳ Running decision engine (dry run)...'
+  logEngineActivity('Decision Engine', 'running', 'Processing feedback loop (dry run)')
   try {
-    const result = await rpc('public', 'rpc_feedback_decision_engine')
+    // p_org_id: null = all orgs, p_work_order_id: null = all, p_dry_run: true = safe mode
+    const result = await rpc('public', 'rpc_feedback_decision_engine', {
+      p_org_id: null,
+      p_work_order_id: null,
+      p_dry_run: true,
+      p_max_backlink_actions: 10,
+      p_max_content_actions: 10,
+      p_cooldown_hours: 24
+    })
     const msg = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result||'Decision engine complete')
     logEl.className = 'text-xs mt-2 p-3 rounded-lg bg-black/30 font-mono text-green-400'
     logEl.textContent = '✓ ' + msg
@@ -1016,7 +1024,12 @@ async function runLeadDistribution() {
   logEl.textContent = '⟳ Distributing leads...'
   logEngineActivity('Lead Distribution', 'running', 'Assigning best-fit leads')
   try {
-    const result = await rpc('public', 'assign_best_fit_lead_guarded')
+    const result = await rpc('public', 'assign_best_fit_lead_guarded', {
+      p_prospect_id: 0,
+      p_daily_cap: 20,
+      p_load_penalty: 0.1,
+      p_fairness_boost: 0.2
+    })
     const msg = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result||'Lead distribution complete')
     logEl.className = 'text-xs mt-2 p-3 rounded-lg bg-black/30 font-mono text-green-400'
     logEl.textContent = '✓ ' + msg
