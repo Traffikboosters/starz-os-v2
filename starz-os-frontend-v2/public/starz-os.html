@@ -589,7 +589,7 @@ async function loadCRMContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
     const leads = await sb('crm', 'leads',
-      'select=id,name,business_name,industry,status,lead_score,priority_level,intent,assigned_to,last_activity_at,revenue_tier,close_probability,phone,email,notes&order=lead_score.desc&limit=100')
+      'select=id,name,business_name,industry,status,lead_score,priority_level,intent,assigned_to,last_activity_at,revenue_tier,close_probability,phone,email&order=lead_score.desc&limit=100')
 
     let selectedLead = null
 
@@ -690,7 +690,6 @@ async function loadCRMContent(el) {
             ${l.intent ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Intent</span><span class="text-white">${l.intent}</span></div>` : ''}
             ${l.last_activity_at ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Last Active</span><span class="text-slate-300">${ago(l.last_activity_at)}</span></div>` : ''}
           </div>
-          ${l.notes ? `<div class="text-[11px] text-slate-400 p-2 rounded-lg bg-black/20 mb-3 italic">"${l.notes}"</div>` : ''}
           <!-- Copy ID -->
           <button onclick="window._crmCopyId('${l.id}')" class="w-full py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-mono transition-all mb-3">
             📋 Copy Lead ID: ${l.id}
@@ -1416,7 +1415,7 @@ const appConfigs = {
   dashboard: { name:'Command Dashboard',  icon:'layout-dashboard', w:980,  h:680 },
   sales:     { name:'Sales War Room',     icon:'trending-up',      w:1060, h:680 },
   steve:     { name:'Steve BGE Console',  icon:'bot',              w:760,  h:640 },
-  crm:       { name:'Partner CRM',        icon:'users',            w:1040, h:680 },
+  crm:       { name:'CRM',               icon:'users',            w:1040, h:680 },
   calls:     { name:'Call Floor',         icon:'phone',            w:900,  h:680 },
   finance:   { name:'Finance Core',       icon:'dollar-sign',      w:980,  h:700 },
   marketing: { name:'Marketing Hub',      icon:'megaphone',        w:980,  h:680 },
