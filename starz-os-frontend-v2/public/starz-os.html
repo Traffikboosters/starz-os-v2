@@ -294,7 +294,7 @@ const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
 
 async function sb(schema, table, params = '') {
-  const headers = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }; if (schema && schema !== 'public') { headers['Accept-Profile'] = schema; headers['Content-Profile'] = schema; }
+  const headers = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept-Profile': schema }
   const res = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers })
   if (!res.ok) throw new Error(`${table}: ${res.status}`)
   return res.json()
