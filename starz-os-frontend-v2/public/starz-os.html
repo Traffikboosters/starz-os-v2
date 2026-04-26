@@ -589,33 +589,181 @@ async function loadCRMContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
     const leads = await sb('crm', 'leads',
-      'select=id,name,business_name,industry,status,lead_score,priority_level,intent,assigned_to,last_activity_at,revenue_tier,close_probability&order=lead_score.desc&limit=100')
-    el.innerHTML = `
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="font-space font-bold text-lg">Lead Intelligence — ${leads.length} leads</h2>
-          <div class="flex gap-2">
-            <span class="badge badge-green">${leads.filter(l=>l.status==='qualified').length} Qualified</span>
-            <span class="badge badge-red">${leads.filter(l=>l.priority_level==='high').length} High Priority</span>
+      'select=id,name,business_name,industry,status,lead_score,priority_level,intent,assigned_to,last_activity_at,revenue_tier,close_probability,phone,email,notes&order=lead_score.desc&limit=100')
+
+    let selectedLead = null
+
+    const render = () => {
+      el.innerHTML = `
+        <div class="flex gap-4" style="height:580px">
+          <!-- Lead List -->
+          <div class="flex flex-col" style="width:55%;min-width:0">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+              <h2 class="font-space font-bold text-base">CRM — ${leads.length} leads</h2>
+              <div class="flex gap-2">
+                <span class="badge badge-green">${leads.filter(l=>l.status==='qualified').length} Qualified</span>
+                <span class="badge badge-red">${leads.filter(l=>l.priority_level==='high').length} High Priority</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mb-3 shrink-0">
+              ${['new','contacted','qualified','disqualified'].map(s => `
+                <div class="stat-card text-center py-2">
+                  <div class="text-lg font-bold font-mono text-white">${leads.filter(l=>l.status===s).length}</div>
+                  <div class="text-[9px] text-slate-400 mt-0.5 capitalize">${s}</div>
+                </div>`).join('')}
+            </div>
+            <!-- Search -->
+            <input type="text" id="crm-search" placeholder="🔍 Search leads..." class="mb-2 w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-purple/50 shrink-0">
+            <!-- Table -->
+            <div class="overflow-y-auto flex-1 rounded-xl border border-white/5" id="crm-table-wrap">
+              <table class="data-table w-full">
+                <thead class="sticky top-0 bg-slate-900/90 backdrop-blur z-10">
+                  <tr><th>Name</th><th>Industry</th><th>Status</th><th>Score</th><th>Priority</th></tr>
+                </thead>
+                <tbody id="crm-tbody">
+                  ${leads.map(l => `
+                    <tr class="cursor-pointer hover:bg-nebula-purple/10 transition-colors ${selectedLead?.id===l.id?'bg-nebula-purple/20 border-l-2 border-nebula-purple':''}"
+                        onclick="window._crmSelectLead('${l.id}')">
+                      <td class="font-medium">${l.name||l.business_name||'—'}</td>
+                      <td class="text-slate-400 text-[11px]">${l.industry||'—'}</td>
+                      <td>${statusBadge(l.status)}</td>
+                      <td><span class="font-mono text-nebula-cyan text-xs">${l.lead_score||'—'}</span></td>
+                      <td>${l.priority_level==='high'?'<span class="badge badge-red">High</span>':l.priority_level==='medium'?'<span class="badge badge-amber">Med</span>':'<span class="badge badge-gray">Low</span>'}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          <!-- Lead Detail Panel -->
+          <div class="flex-1 flex flex-col gap-3 overflow-y-auto" id="crm-detail">
+            ${selectedLead ? renderDetail(selectedLead) : `
+              <div class="flex-1 flex flex-col items-center justify-center text-center text-slate-500 gap-3 h-full">
+                <i data-lucide="mouse-pointer-click" style="width:32px;height:32px;color:#475569"></i>
+                <div class="text-sm">Select a lead to view details<br>and take action</div>
+              </div>`}
+          </div>
+        </div>`
+
+      lucide.createIcons()
+
+      // Search filter
+      document.getElementById('crm-search')?.addEventListener('input', function() {
+        const q = this.value.toLowerCase()
+        document.querySelectorAll('#crm-tbody tr').forEach(row => {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
+        })
+      })
+    }
+
+    function renderDetail(l) {
+      return `
+        <div class="stat-card border border-nebula-purple/30">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="font-space font-bold text-base text-white">${l.name||'—'}</div>
+              <div class="text-xs text-slate-400 mt-0.5">${l.business_name||''} ${l.industry ? '· '+l.industry : ''}</div>
+            </div>
+            <div class="flex gap-1">
+              ${statusBadge(l.status)}
+              ${l.priority_level==='high'?'<span class="badge badge-red">High</span>':l.priority_level==='medium'?'<span class="badge badge-amber">Med</span>':''}
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="text-center p-2 rounded-lg bg-black/20">
+              <div class="text-lg font-bold text-nebula-cyan font-mono">${l.lead_score||'—'}</div>
+              <div class="text-[9px] text-slate-400">Score</div>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-black/20">
+              <div class="text-lg font-bold text-nebula-purple font-mono">${l.close_probability ? Math.round(Number(l.close_probability)*100)+'%' : '—'}</div>
+              <div class="text-[9px] text-slate-400">Close %</div>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-black/20">
+              <div class="text-lg font-bold text-nebula-amber font-mono">${l.revenue_tier||'—'}</div>
+              <div class="text-[9px] text-slate-400">Tier</div>
+            </div>
+          </div>
+          <div class="space-y-1.5 text-xs mb-3">
+            ${l.phone ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Phone</span><span class="font-mono text-white">${l.phone}</span></div>` : ''}
+            ${l.email ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Email</span><span class="text-white truncate">${l.email}</span></div>` : ''}
+            ${l.assigned_to ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Assigned</span><span class="text-white">${l.assigned_to}</span></div>` : ''}
+            ${l.intent ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Intent</span><span class="text-white">${l.intent}</span></div>` : ''}
+            ${l.last_activity_at ? `<div class="flex items-center gap-2"><span class="text-slate-400 w-16">Last Active</span><span class="text-slate-300">${ago(l.last_activity_at)}</span></div>` : ''}
+          </div>
+          ${l.notes ? `<div class="text-[11px] text-slate-400 p-2 rounded-lg bg-black/20 mb-3 italic">"${l.notes}"</div>` : ''}
+          <!-- Copy ID -->
+          <button onclick="window._crmCopyId('${l.id}')" class="w-full py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-mono transition-all mb-3">
+            📋 Copy Lead ID: ${l.id}
+          </button>
         </div>
-        <div class="grid grid-cols-4 gap-3">
-          ${['new','contacted','qualified','disqualified'].map(s => `<div class="stat-card text-center"><div class="text-xl font-bold font-mono text-white">${leads.filter(l=>l.status===s).length}</div><div class="text-[10px] text-slate-400 mt-1 capitalize">${s}</div></div>`).join('')}
-        </div>
-        <table class="data-table">
-          <thead><tr><th>Name</th><th>Business</th><th>Industry</th><th>Status</th><th>Score</th><th>Priority</th><th>Close %</th><th>Last Activity</th></tr></thead>
-          <tbody>${leads.map(l => `<tr>
-            <td class="font-medium">${l.name||'—'}</td>
-            <td>${l.business_name||'—'}</td>
-            <td class="text-slate-400">${l.industry||'—'}</td>
-            <td>${statusBadge(l.status)}</td>
-            <td><span class="font-mono text-nebula-cyan">${l.lead_score||'—'}</span></td>
-            <td>${l.priority_level==='high'?'<span class="badge badge-red">High</span>':l.priority_level==='medium'?'<span class="badge badge-amber">Med</span>':'<span class="badge badge-gray">Low</span>'}</td>
-            <td>${l.close_probability ? Math.round(Number(l.close_probability)*100)+'%' : '—'}</td>
-            <td class="text-slate-400">${ago(l.last_activity_at)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>`
+
+        <!-- Pipeline Actions -->
+        <div class="stat-card border border-green-500/20">
+          <div class="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-2">
+            <i data-lucide="git-branch" style="width:12px;height:12px;color:#34d399"></i>
+            Fire Pipeline Event
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="window._crmFireEvent('${l.id}','new_lead',${l.lead_score||0})" class="py-1.5 px-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-[10px] font-semibold transition-all">📨 New Lead</button>
+            <button onclick="window._crmFireEvent('${l.id}','no_reply',0)" class="py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[10px] font-semibold transition-all">🔁 No Reply</button>
+            <button onclick="window._crmFireEvent('${l.id}','lead_interested',0)" class="py-1.5 px-2 rounded-lg bg-nebula-purple/20 hover:bg-nebula-purple/30 text-purple-300 text-[10px] font-semibold transition-all">🤝 Interested</button>
+            <button onclick="window._crmFireEvent('${l.id}','proposal_ready',0)" class="py-1.5 px-2 rounded-lg bg-nebula-cyan/20 hover:bg-nebula-cyan/30 text-cyan-300 text-[10px] font-semibold transition-all">📄 Proposal Ready</button>
+          </div>
+          <div id="crm-pipeline-log" class="text-[9px] mt-2 text-slate-500 font-mono">Ready</div>
+        </div>`
+    }
+
+    // Global handlers (survive innerHTML rewrites)
+    window._crmSelectLead = (id) => {
+      selectedLead = leads.find(l => String(l.id) === String(id)) || null
+      render()
+      // Scroll detail into view on mobile
+      document.getElementById('crm-detail')?.scrollIntoView({ behavior:'smooth', block:'nearest' })
+    }
+
+    window._crmCopyId = (id) => {
+      navigator.clipboard.writeText(String(id)).then(() => {
+        // Also populate the Pipeline Orchestrator input if open
+        const closerInput = document.getElementById('closer-lead-id')
+        if (closerInput) { closerInput.value = id; closerInput.focus() }
+        // Flash feedback
+        const btn = event?.target
+        if (btn) { const orig = btn.textContent; btn.textContent = '✓ Copied!'; btn.classList.add('text-green-400'); setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('text-green-400') }, 1500) }
+      })
+    }
+
+    window._crmFireEvent = async (leadId, event, score) => {
+      const logEl = document.getElementById('crm-pipeline-log')
+      if (logEl) { logEl.className = 'text-[9px] mt-2 text-nebula-amber font-mono loading-pulse'; logEl.textContent = `⟳ Firing ${event}...` }
+      try {
+        const payloads = {
+          new_lead:        { id: leadId, score: score || 60 },
+          no_reply:        { id: leadId },
+          lead_interested: { id: leadId },
+          proposal_ready:  { lead_id: leadId },
+          payment_received:{ lead_id: leadId }
+        }
+        const res = await fetch(`${SB_URL}/functions/v1/steve-auto-closer`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event, payload: payloads[event] })
+        })
+        const data = await res.json()
+        if (logEl) {
+          if (res.ok && data.ok) {
+            logEl.className = 'text-[9px] mt-2 text-green-400 font-mono'
+            logEl.textContent = `✓ "${event}" fired → routed via master-router`
+          } else {
+            logEl.className = 'text-[9px] mt-2 text-red-400 font-mono'
+            logEl.textContent = `✗ ${data.error || res.status}`
+          }
+        }
+      } catch(e) {
+        if (logEl) { logEl.className = 'text-[9px] mt-2 text-red-400 font-mono'; logEl.textContent = '✗ ' + e.message }
+      }
+    }
+
+    render()
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
@@ -1268,7 +1416,7 @@ const appConfigs = {
   dashboard: { name:'Command Dashboard',  icon:'layout-dashboard', w:980,  h:680 },
   sales:     { name:'Sales War Room',     icon:'trending-up',      w:1060, h:680 },
   steve:     { name:'Steve BGE Console',  icon:'bot',              w:760,  h:640 },
-  crm:       { name:'Lead Intelligence',  icon:'users',            w:1040, h:680 },
+  crm:       { name:'Partner CRM',        icon:'users',            w:1040, h:680 },
   calls:     { name:'Call Floor',         icon:'phone',            w:900,  h:680 },
   finance:   { name:'Finance Core',       icon:'dollar-sign',      w:980,  h:700 },
   marketing: { name:'Marketing Hub',      icon:'megaphone',        w:980,  h:680 },
