@@ -1,1 +1,1 @@
-{"outputDirectory":"public","buildCommand":"echo ok"}
+{"outputDirectory":"public","buildCommand":"echo ok","routes":[{"src":"/","dest":"/starz-os.html"}]}
