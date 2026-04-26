@@ -269,6 +269,10 @@
       <i data-lucide="terminal" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Engines</div>
     </button>
+    <button onclick="openWindow('bge')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative" style="background:linear-gradient(145deg,#f9a8d4 0%,#ec4899 45%,#9d174d 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(236,72,153,0.65),0 2px 6px rgba(0,0,0,0.55);">
+      <i data-lucide="phone-call" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">BGE Floor</div>
+    </button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -1408,6 +1412,299 @@ async function runReassignStale() {
   }
 }
 
+// ── BGE SALES FLOOR ──────────────────────────────────────────────────────────
+async function loadBGEContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [contractors, leadAssignments, commissions, repPerf, recentCalls, leaderboard] = await Promise.all([
+      sb('public', 'v_bge_contractor_profiles', 'select=*&limit=50').catch(()=>[]),
+      sb('public', 'v_bge_lead_assignments', 'select=*&order=assigned_at.desc&limit=100').catch(()=>[]),
+      sb('finance', 'commissions', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
+      sb('analytics', 'rep_performance_daily', 'select=*&order=date.desc&limit=50').catch(()=>[]),
+      sb('dialer', 'calls', 'select=id,phone_number,call_status,duration,sentiment,deal_heat_score,ai_tip,objection,proposal_ready,stripe_checkout_url,detected_buying_signal,started_at,ended_at,created_at&order=created_at.desc&limit=30').catch(()=>[]),
+      sb('kpis', 'rep_leaderboard', 'select=*&limit=20').catch(()=>[]),
+    ])
+
+    const totalCommEarned = commissions.reduce((s,c)=>s+(Number(c.amount)||Number(c.commission_amount)||0),0)
+    const activeCalls = recentCalls.filter(c=>c.call_status==='active'||c.call_status==='connected')
+    const proposalReady = recentCalls.filter(c=>c.proposal_ready)
+
+    let activeTab = 'floor'
+    const tabs = [
+      { id:'floor',    label:'📞 Call Floor',     color:'nebula-pink' },
+      { id:'leads',    label:'👥 My Leads',        color:'nebula-cyan' },
+      { id:'earnings', label:'💰 Earnings',         color:'green' },
+      { id:'board',    label:'🏆 Leaderboard',      color:'nebula-amber' },
+      { id:'team',     label:'🧑‍💼 BGE Profiles',   color:'nebula-purple' },
+    ]
+
+    const renderTab = (tab) => {
+      if (tab === 'floor') return `
+        <div class="space-y-4">
+          <!-- Live Call Stats -->
+          <div class="grid grid-cols-4 gap-3">
+            <div class="stat-card border border-red-500/30 text-center">
+              <div class="text-2xl font-bold text-red-400 font-mono">${activeCalls.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">🔴 Live Calls</div>
+            </div>
+            <div class="stat-card border border-amber-500/30 text-center">
+              <div class="text-2xl font-bold text-amber-400 font-mono">${proposalReady.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">📄 Proposal Ready</div>
+            </div>
+            <div class="stat-card border border-green-500/30 text-center">
+              <div class="text-2xl font-bold text-green-400 font-mono">${recentCalls.filter(c=>c.call_status==='completed').length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">✅ Completed Today</div>
+            </div>
+            <div class="stat-card border border-nebula-cyan/30 text-center">
+              <div class="text-2xl font-bold text-nebula-cyan font-mono">${fmt(totalCommEarned)}</div>
+              <div class="text-[10px] text-slate-400 mt-1">💰 Total Commissions</div>
+            </div>
+          </div>
+
+          <!-- Active Calls -->
+          ${activeCalls.length ? `
+          <div class="stat-card border border-red-500/20">
+            <h3 class="text-sm font-semibold text-red-400 mb-3 flex items-center gap-2">
+              <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Active Calls
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+              ${activeCalls.map(c=>`
+                <div class="p-3 rounded-xl border border-red-500/30 bg-red-500/5">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold text-amber-300 font-mono">${c.phone_number||'—'}</span>
+                    <span class="badge badge-red">LIVE</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+                    <div><span class="text-slate-400">Sentiment</span><br><span class="text-white font-medium">${c.sentiment||'—'}</span></div>
+                    <div><span class="text-slate-400">Heat Score</span><br><span class="font-mono text-nebula-amber font-bold">${c.deal_heat_score||'—'}</span></div>
+                  </div>
+                  ${c.ai_tip?`<div class="text-[10px] p-2 rounded bg-black/30 text-emerald-300 mb-1">💡 ${c.ai_tip}</div>`:''}
+                  ${c.objection?`<div class="text-[10px] p-2 rounded bg-red-900/30 text-red-300 mb-1">⚠️ ${c.objection}</div>`:''}
+                  ${c.detected_buying_signal?`<div class="text-[10px] p-2 rounded bg-green-900/30 text-green-300">🔥 ${c.detected_buying_signal}</div>`:''}
+                </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- Proposal Ready Actions -->
+          ${proposalReady.length ? `
+          <div class="stat-card border border-nebula-purple/20">
+            <h3 class="text-sm font-semibold text-nebula-purple mb-3">📄 Proposals Ready to Send</h3>
+            <div class="space-y-2">
+              ${proposalReady.map(c=>`
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-nebula-purple/20">
+                  <div>
+                    <div class="text-xs font-medium">${c.phone_number||'—'}</div>
+                    <div class="text-[10px] text-slate-400">Heat: ${c.deal_heat_score||'—'} · ${ago(c.created_at)}</div>
+                  </div>
+                  <div class="flex gap-2">
+                    ${c.stripe_checkout_url?`<a href="${c.stripe_checkout_url}" target="_blank" class="py-1 px-3 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-[10px] font-semibold">💳 Checkout</a>`:''}
+                    <button onclick="window._bgeFireEvent('lead_interested','${c.lead_id||''}')" class="py-1 px-3 rounded-lg bg-nebula-purple/20 hover:bg-nebula-purple/30 text-purple-300 text-[10px] font-semibold">🤝 Mark Interested</button>
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- Recent Calls Table -->
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200 mb-3">Recent Calls</h3>
+            <table class="data-table">
+              <thead><tr><th>Phone</th><th>Status</th><th>Duration</th><th>Sentiment</th><th>Heat</th><th>Signal</th><th>Time</th></tr></thead>
+              <tbody>${recentCalls.slice(0,15).map(c=>`<tr>
+                <td class="font-mono text-xs">${c.phone_number||'—'}</td>
+                <td>${statusBadge(c.call_status)}</td>
+                <td>${c.duration?c.duration+'s':'—'}</td>
+                <td class="${c.sentiment==='positive'?'text-green-400':c.sentiment==='negative'?'text-red-400':'text-slate-400'}">${c.sentiment||'—'}</td>
+                <td><span class="font-mono text-nebula-amber">${c.deal_heat_score||'—'}</span></td>
+                <td class="text-[10px] text-green-300">${c.detected_buying_signal||'—'}</td>
+                <td class="text-slate-400">${ago(c.created_at)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>`
+
+      if (tab === 'leads') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">BGE Lead Assignments — ${leadAssignments.length}</h2>
+            <div class="flex gap-2">
+              <span class="badge badge-amber">3-day rotation rule active</span>
+              <span class="badge badge-red">🔒 No exports</span>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Lead</th><th>Business</th><th>Assigned To</th><th>Status</th><th>Score</th><th>Assigned</th><th>Action</th></tr></thead>
+            <tbody>${leadAssignments.slice(0,30).map(l=>`<tr>
+              <td class="font-medium">${l.lead_name||l.name||'—'}</td>
+              <td class="text-slate-400 text-xs">${l.business_name||'—'}</td>
+              <td>${l.contractor_name||l.assigned_to||'—'}</td>
+              <td>${statusBadge(l.status)}</td>
+              <td><span class="font-mono text-nebula-cyan">${l.lead_score||l.score||'—'}</span></td>
+              <td class="text-slate-400">${ago(l.assigned_at)}</td>
+              <td>
+                <button onclick="window._bgeFireEvent('new_lead','${l.lead_id||l.id||''}')" class="py-0.5 px-2 rounded bg-blue-500/20 text-blue-300 text-[9px] font-semibold hover:bg-blue-500/30">▶ New Lead</button>
+              </td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      if (tab === 'earnings') {
+        const paid = commissions.filter(c=>c.status==='paid')
+        const pending = commissions.filter(c=>c.status==='pending'||c.status==='approved')
+        const totalPaid = paid.reduce((s,c)=>s+(Number(c.amount)||Number(c.commission_amount)||0),0)
+        const totalPending = pending.reduce((s,c)=>s+(Number(c.amount)||Number(c.commission_amount)||0),0)
+        return `
+        <div class="space-y-4">
+          <h2 class="font-space font-bold text-base">BGE Earnings & Commissions</h2>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="stat-card border border-green-500/30 text-center">
+              <div class="text-2xl font-bold text-green-400 font-mono">${fmt(totalPaid)}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Paid Out</div>
+            </div>
+            <div class="stat-card border border-amber-500/30 text-center">
+              <div class="text-2xl font-bold text-amber-400 font-mono">${fmt(totalPending)}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Pending</div>
+            </div>
+            <div class="stat-card border border-nebula-purple/30 text-center">
+              <div class="text-2xl font-bold text-nebula-purple font-mono">${fmt(totalCommEarned)}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Total Earned</div>
+            </div>
+          </div>
+          <div class="stat-card border border-slate-700/40">
+            <div class="text-xs text-nebula-amber mb-2 font-semibold">💰 Pricing Flexibility (BGE Rule)</div>
+            <div class="text-xs text-slate-400">Base price × 0.8 → × 1.2 &nbsp;|&nbsp; Commission-based, independent contractors</div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Rep/Contractor</th><th>Amount</th><th>Type</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>${commissions.slice(0,20).map(c=>`<tr>
+              <td class="font-medium">${c.rep_name||c.contractor_name||c.rep_id||'—'}</td>
+              <td class="font-mono text-green-400">${fmt(c.amount||c.commission_amount||0)}</td>
+              <td class="text-slate-400 text-xs">${c.commission_type||c.type||'—'}</td>
+              <td>${statusBadge(c.status)}</td>
+              <td class="text-slate-400">${ago(c.created_at||c.paid_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+      }
+
+      if (tab === 'board') return `
+        <div class="space-y-4">
+          <h2 class="font-space font-bold text-base">🏆 BGE Leaderboard</h2>
+          ${leaderboard.length ? `
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Rep</th><th>Calls</th><th>Closes</th><th>Revenue</th><th>Score</th><th>Rank</th></tr></thead>
+            <tbody>${leaderboard.map((r,i)=>`<tr class="${i===0?'bg-amber-500/10':''}">
+              <td class="font-mono font-bold ${i===0?'text-amber-400':i===1?'text-slate-300':i===2?'text-amber-700':'text-slate-500'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td class="font-medium">${r.rep_name||r.name||r.rep_id||'—'}</td>
+              <td>${r.calls_made||r.total_calls||'—'}</td>
+              <td><span class="text-green-400 font-mono">${r.deals_closed||r.closes||'—'}</span></td>
+              <td class="font-mono text-nebula-cyan">${fmt(r.revenue||r.total_revenue||0)}</td>
+              <td><span class="font-mono text-nebula-purple">${r.score||r.performance_score||'—'}</span></td>
+              <td>${r.rank||r.tier||'—'}</td>
+            </tr>`).join('')}</tbody>
+          </table>` : `
+          <div class="text-center text-slate-500 py-8">Leaderboard data loading...</div>`}
+          ${repPerf.length ? `
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200 mb-3">Rep Performance — Last 7 Days</h3>
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Rep</th><th>Calls</th><th>Connects</th><th>Closes</th><th>Revenue</th></tr></thead>
+              <tbody>${repPerf.slice(0,15).map(r=>`<tr>
+                <td class="text-slate-400">${r.date||'—'}</td>
+                <td>${r.rep_name||r.rep_id||'—'}</td>
+                <td>${r.calls_made||r.calls||'—'}</td>
+                <td>${r.connects||r.connected||'—'}</td>
+                <td><span class="text-green-400">${r.closes||r.deals_closed||'—'}</span></td>
+                <td class="font-mono text-nebula-cyan">${fmt(r.revenue||0)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : ''}
+        </div>`
+
+      if (tab === 'team') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">BGE Contractor Profiles — ${contractors.length}</h2>
+            <div class="flex gap-2">
+              <span class="badge badge-purple">Independent</span>
+              <span class="badge badge-red">🔒 Sentinel Monitored</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            ${contractors.slice(0,12).map(c=>`
+              <div class="stat-card border border-nebula-purple/15 hover:border-nebula-purple/40 transition-all">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-purple to-nebula-pink flex items-center justify-center text-sm font-bold text-white shrink-0">
+                    ${(c.name||c.full_name||'?').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-white">${c.name||c.full_name||'—'}</div>
+                    <div class="text-[10px] text-slate-400">${c.email||c.contractor_email||'—'}</div>
+                  </div>
+                  <div class="ml-auto">${statusBadge(c.status||c.contractor_status)}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-nebula-cyan font-mono">${c.leads_assigned||c.active_leads||'—'}</div>
+                    <div class="text-[8px] text-slate-400">Leads</div>
+                  </div>
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-green-400 font-mono">${c.deals_closed||c.closes||'—'}</div>
+                    <div class="text-[8px] text-slate-400">Closed</div>
+                  </div>
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-nebula-amber font-mono">${c.commission_rate ? (Number(c.commission_rate)*100).toFixed(0)+'%' : '—'}</div>
+                    <div class="text-[8px] text-slate-400">Comm %</div>
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>
+          ${contractors.length === 0 ? '<div class="text-center text-slate-500 py-8">No contractor profiles found</div>' : ''}
+        </div>`
+
+      return '<div class="text-slate-500 text-center py-8">Tab not found</div>'
+    }
+
+    const renderBGE = () => {
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <!-- Tab Bar -->
+          <div class="flex gap-1 mb-4 shrink-0 border-b border-slate-700/40 pb-3">
+            ${tabs.map(t=>`
+              <button onclick="window._bgeTab('${t.id}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-nebula-purple/30 text-white border border-nebula-purple/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                ${t.label}
+              </button>`).join('')}
+            <div class="ml-auto flex items-center gap-2">
+              <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <span class="text-[10px] text-slate-400">BGE Floor Live</span>
+            </div>
+          </div>
+          <!-- Tab Content -->
+          <div class="flex-1 overflow-y-auto" id="bge-tab-content">
+            ${renderTab(activeTab)}
+          </div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._bgeTab = (tab) => { activeTab = tab; renderBGE() }
+
+    window._bgeFireEvent = async (event, leadId) => {
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/steve-auto-closer`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event, payload: { id: leadId, score: 75 } })
+        })
+        const data = await res.json()
+        alert(data.ok ? `✓ Event "${event}" fired → master-router` : `✗ ${data.error||'Error'}`)
+      } catch(e) { alert('✗ ' + e.message) }
+    }
+
+    renderBGE()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
 // ── WINDOW MANAGER ───────────────────────────────────────────────────────────
 const windows = {}; let zIndex = 1000; let windowCount = 0
 
@@ -1421,6 +1718,7 @@ const appConfigs = {
   marketing: { name:'Marketing Hub',      icon:'megaphone',        w:980,  h:680 },
   files:     { name:'Work Orders',        icon:'folder-open',      w:980,  h:660 },
   control:   { name:'Engine Control',     icon:'terminal',         w:980,  h:720 },
+  bge:       { name:'BGE Sales Floor',    icon:'phone-call',       w:1080, h:720 },
 }
 
 const loaders = {
@@ -1432,7 +1730,8 @@ const loaders = {
   finance:   loadFinanceContent,
   marketing: loadMarketingContent,
   files:     loadFilesContent,
-  control:   loadControlContent
+  control:   loadControlContent,
+  bge:       loadBGEContent
 }
 
 function openWindow(appId) {
