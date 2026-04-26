@@ -679,7 +679,7 @@ async function loadMarketingContent(el) {
   try {
     const [campaigns, metrics, leads] = await Promise.all([
       sb('outreach', 'campaigns', 'select=*&order=created_at.desc&limit=20'),
-      sb('analytics', 'lead_metrics_daily_2026_04', 'select=*&order=date.desc&limit=14'),
+      sb('analytics', 'lead_metrics_daily', 'select=*&order=date.desc&limit=14'),
       sb('crm', 'leads', 'select=status,tier,assigned_to,targeting_status&limit=500'),
     ])
 
