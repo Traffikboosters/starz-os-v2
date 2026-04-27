@@ -305,6 +305,7 @@
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
+const TENANT_ID = '11111111-1111-1111-1111-111111111111' // Traffik Boosters Corp
 
 async function sb(schema, table, params = '') {
   const headers = {
@@ -320,6 +321,20 @@ async function sb(schema, table, params = '') {
     throw new Error(`${table}:${res.status} ${err}`)
   }
   return res.json()
+}
+
+// Standardized edge function caller with tenant_id
+async function callEngine(slug, action, payload = {}) {
+  const res = await fetch(`${SB_URL}/functions/v1/${slug}`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, tenant_id: TENANT_ID, payload })
+  })
+  const text = await res.text()
+  let data
+  try { data = JSON.parse(text) } catch { data = text }
+  if (!res.ok) throw new Error(`${slug}/${action}: ${res.status} — ${typeof data === 'object' ? JSON.stringify(data) : data}`)
+  return data
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -1876,11 +1891,7 @@ async function loadHRContent(el) {
       const log = document.getElementById('hr-recruit-log')
       if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Running auto recruit...' }
       try {
-        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
-          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'auto_recruit', payload:{ threshold: Number(document.getElementById('hr-threshold')?.value||15) } })
-        })
-        const data = await res.json()
+        const data = await callEngine('core-automation-engine', 'auto_recruit', { threshold: Number(document.getElementById('hr-threshold')?.value||15) })
         if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ ' + (data.message||'Auto recruit triggered') }
       } catch(e) {
         if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
@@ -1891,11 +1902,7 @@ async function loadHRContent(el) {
       const log = document.getElementById('hr-recruit-log')
       if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Posting jobs...' }
       try {
-        const res = await fetch(`${SB_URL}/functions/v1/outreach-engine`, {
-          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'post_job', payload:{ title:'Make Money as a BGE at Traffik Boosters', platforms:['craigslist','indeed','monster'] } })
-        })
-        const data = await res.json()
+        const data = await callEngine('outreach-engine', 'post_job', { title:'Make Money as a BGE at Traffik Boosters', platforms:['craigslist','indeed','monster'] })
         if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ Jobs posted: ' + (data.message||'Success') }
       } catch(e) {
         if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
@@ -1910,11 +1917,7 @@ async function loadHRContent(el) {
       if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Running full onboarding...' }
       try {
         const contractor = contractors.find(c=>String(c.id)===String(contractorId))
-        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
-          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'onboard_contractor', payload:{ contractor_id:contractorId, email:contractor?.email, name:contractor?.name||contractor?.full_name, starter_leads:Number(starterLeads) } })
-        })
-        const data = await res.json()
+        const data = await callEngine('core-automation-engine', 'onboard_contractor', { contractor_id:contractorId, email:contractor?.email, name:contractor?.name||contractor?.full_name, starter_leads:Number(starterLeads) })
         if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ Onboarding complete: ' + (data.message||'Success') }
       } catch(e) {
         if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
@@ -1927,11 +1930,7 @@ async function loadHRContent(el) {
       if (!contractorId) { if(log){log.textContent='⚠ Select a contractor first';log.className='text-[10px] mt-3 text-amber-400 font-mono'} return }
       if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Logging milestone...' }
       try {
-        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
-          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'create_task', payload:{ user_id:contractorId, title:'First call completed (milestone logged)', priority:'medium', category:'onboarding_milestone' } })
-        })
-        const data = await res.json()
+        await callEngine('core-automation-engine', 'create_task', { user_id:contractorId, title:'First call completed (milestone logged)', priority:'medium', category:'onboarding_milestone' })
         if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ First call milestone logged' }
       } catch(e) {
         if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
@@ -1942,11 +1941,7 @@ async function loadHRContent(el) {
       const log = document.getElementById('hr-coaching-log')
       if (log) { log.className = 'text-[10px] text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Flagging low performers...' }
       try {
-        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
-          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'flag_coaching', payload:{ daily_target:30, min_conversion:8 } })
-        })
-        const data = await res.json()
+        const data = await callEngine('core-automation-engine', 'flag_coaching', { daily_target:30, min_conversion:8 })
         if (log) { log.className = 'text-[10px] text-green-400 font-mono'; log.textContent = '✓ ' + (data.message||'Low performers flagged for coaching') }
       } catch(e) {
         if (log) { log.className = 'text-[10px] text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
@@ -2186,7 +2181,7 @@ function initRealtime() {
 
     // ── Channel 1: Call Floor ─────────────────────────────────────────────────
     rtState.channels.callFloor = rtState.client
-      .channel('org:call_floor')
+      .channel(`org:${TENANT_ID}:call_floor`)
       .on('broadcast', { event: 'call_update' }, ({ payload }) => {
         handleCallUpdate(payload)
       })
@@ -2202,7 +2197,7 @@ function initRealtime() {
 
     // ── Channel 2: Sales Feed ─────────────────────────────────────────────────
     rtState.channels.salesFeed = rtState.client
-      .channel('org:sales_feed')
+      .channel(`org:${TENANT_ID}:sales_feed`)
       .on('broadcast', { event: 'deal_won' }, ({ payload }) => {
         handleDealWon(payload)
       })
@@ -2218,7 +2213,7 @@ function initRealtime() {
 
     // ── Channel 3: Leaderboard ────────────────────────────────────────────────
     rtState.channels.leaderboard = rtState.client
-      .channel('org:leaderboard')
+      .channel(`org:${TENANT_ID}:leaderboard`)
       .on('broadcast', { event: 'score_update' }, ({ payload }) => {
         handleLeaderboardUpdate(payload)
       })
