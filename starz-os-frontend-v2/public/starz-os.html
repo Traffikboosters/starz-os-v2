@@ -278,6 +278,10 @@
       <i data-lucide="users-round" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">HR Command</div>
     </button>
+    <button onclick="openWindow('contractors')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative" style="background:linear-gradient(145deg,#93c5fd 0%,#6366f1 45%,#312e81 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(99,102,241,0.65),0 2px 6px rgba(0,0,0,0.55);">
+      <i data-lucide="briefcase" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Contractors</div>
+    </button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -2056,6 +2060,289 @@ async function loadHRContent(el) {
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
+// ── CONTRACTOR DASHBOARD ─────────────────────────────────────────────────────
+async function loadContractorContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [contractors, assignments, leads] = await Promise.all([
+      sb('public', 'contractors', `select=contractor_id,full_name,first_name,last_name,email,phone,status,level,title,routing_priority,ai_weight,created_at&tenant_id=eq.${TENANT_ID}&order=created_at.desc&limit=100`),
+      sb('public', 'contractor_lead_assignments', `select=*&tenant_id=eq.${TENANT_ID}&order=assignment_date.desc&limit=500`),
+      sb('crm', 'leads', 'select=id,name,business_name,status,lead_score,close_probability,assigned_to,assigned_at,last_activity_at,industry&limit=500'),
+    ])
+
+    const now = Date.now()
+    const DAY = 86400000
+    const CLOSE_WINDOW_DAYS = 10
+    const HIBERNATION_DAYS = 28
+
+    // Enrich assignments with lead data and time calculations
+    const enriched = assignments.map(a => {
+      const lead = leads.find(l => l.id === a.lead_id)
+      const contractor = contractors.find(c => c.contractor_id === a.contractor_id)
+      const assignedMs = new Date(a.assignment_date).getTime()
+      const daysSinceAssign = Math.floor((now - assignedMs) / DAY)
+      const daysLeft = CLOSE_WINDOW_DAYS - daysSinceAssign
+      const isExpired = daysSinceAssign > CLOSE_WINDOW_DAYS
+      const isHibernating = daysSinceAssign > HIBERNATION_DAYS
+      const lastActivity = lead?.last_activity_at ? Math.floor((now - new Date(lead.last_activity_at).getTime()) / DAY) : null
+      return { ...a, lead, contractor, daysSinceAssign, daysLeft, isExpired, isHibernating, lastActivity }
+    })
+
+    const active = contractors.filter(c => c.status === 'active')
+    const expiring = enriched.filter(a => a.daysLeft >= 0 && a.daysLeft <= 3)
+    const expired = enriched.filter(a => a.isExpired && !a.isHibernating)
+    const hibernating = enriched.filter(a => a.isHibernating)
+
+    let activeTab = 'overview'
+    const tabs = [
+      { id:'overview',    label:'📊 Overview' },
+      { id:'pipeline',    label:'🔄 Pipeline' },
+      { id:'lifecycle',   label:'⏱ Lifecycle' },
+      { id:'roster',      label:'👥 Roster' },
+    ]
+
+    const lifecycleStages = [
+      { key:'new',         label:'New',         color:'text-slate-400', bg:'bg-slate-700/30',   border:'border-slate-600/40' },
+      { key:'contacted',   label:'Contacted',   color:'text-blue-400',  bg:'bg-blue-500/10',    border:'border-blue-500/30' },
+      { key:'qualified',   label:'Qualified',   color:'text-purple-400',bg:'bg-purple-500/10',  border:'border-purple-500/30' },
+      { key:'proposal',    label:'Proposal',    color:'text-cyan-400',  bg:'bg-cyan-500/10',    border:'border-cyan-500/30' },
+      { key:'closing',     label:'Closing',     color:'text-amber-400', bg:'bg-amber-500/10',   border:'border-amber-500/30' },
+      { key:'won',         label:'Won',         color:'text-green-400', bg:'bg-green-500/10',   border:'border-green-500/30' },
+    ]
+
+    const renderTab = (tab) => {
+      if (tab === 'overview') return `
+        <div class="space-y-4">
+          <div class="grid grid-cols-4 gap-3">
+            <div class="stat-card border border-green-500/30 text-center">
+              <div class="text-2xl font-bold text-green-400 font-mono">${active.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Active Contractors</div>
+            </div>
+            <div class="stat-card border border-nebula-cyan/30 text-center">
+              <div class="text-2xl font-bold text-nebula-cyan font-mono">${assignments.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Total Assignments</div>
+            </div>
+            <div class="stat-card border border-amber-500/30 text-center">
+              <div class="text-2xl font-bold text-amber-400 font-mono">${expiring.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">⚠ Expiring Soon</div>
+            </div>
+            <div class="stat-card border border-red-500/30 text-center">
+              <div class="text-2xl font-bold text-red-400 font-mono">${hibernating.length}</div>
+              <div class="text-[10px] text-slate-400 mt-1">❄ Hibernating</div>
+            </div>
+          </div>
+
+          <!-- Rules Banner -->
+          <div class="stat-card border border-nebula-purple/20 bg-nebula-purple/5">
+            <div class="flex items-center gap-6 text-xs">
+              <div class="flex items-center gap-2"><span class="text-nebula-amber font-bold">⏱ 10-Day</span><span class="text-slate-400">Close window per assignment</span></div>
+              <div class="w-px h-4 bg-slate-700"></div>
+              <div class="flex items-center gap-2"><span class="text-blue-400 font-bold">❄ 4-Week</span><span class="text-slate-400">Hibernation threshold</span></div>
+              <div class="w-px h-4 bg-slate-700"></div>
+              <div class="flex items-center gap-2"><span class="text-green-400 font-bold">🧠 Steve</span><span class="text-slate-400">Requalifies hibernated leads</span></div>
+            </div>
+          </div>
+
+          <!-- Expiring Assignments -->
+          ${expiring.length ? `
+          <div class="stat-card border border-amber-500/20">
+            <h3 class="text-sm font-semibold text-amber-400 mb-3">⚠ Expiring Within 3 Days</h3>
+            <table class="data-table">
+              <thead><tr><th>Contractor</th><th>Lead</th><th>Business</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>${expiring.map(a=>`<tr>
+                <td class="font-medium">${a.contractor?.full_name||'—'}</td>
+                <td>${a.lead?.name||'—'}</td>
+                <td class="text-slate-400">${a.lead?.business_name||'—'}</td>
+                <td><span class="font-mono font-bold ${a.daysLeft<=1?'text-red-400':'text-amber-400'}">${a.daysLeft}d</span></td>
+                <td>${statusBadge(a.lead?.status)}</td>
+                <td><button onclick="window._ctRequalify('${a.lead_id}')" class="py-0.5 px-2 rounded bg-nebula-purple/20 text-purple-300 text-[9px] font-semibold hover:bg-nebula-purple/30">🧠 Requalify</button></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : ''}
+
+          <!-- Hibernating -->
+          ${hibernating.length ? `
+          <div class="stat-card border border-blue-500/20">
+            <h3 class="text-sm font-semibold text-blue-400 mb-3">❄ Hibernating Leads (${hibernating.length})</h3>
+            <table class="data-table">
+              <thead><tr><th>Lead</th><th>Business</th><th>Days Dormant</th><th>Score</th><th>Action</th></tr></thead>
+              <tbody>${hibernating.slice(0,10).map(a=>`<tr>
+                <td class="font-medium">${a.lead?.name||'—'}</td>
+                <td class="text-slate-400">${a.lead?.business_name||'—'}</td>
+                <td><span class="font-mono text-blue-400">${a.daysSinceAssign}d</span></td>
+                <td><span class="font-mono text-nebula-cyan">${a.lead?.lead_score||'—'}</span></td>
+                <td><button onclick="window._ctRequalify('${a.lead_id}')" class="py-0.5 px-2 rounded bg-blue-500/20 text-blue-300 text-[9px] font-semibold hover:bg-blue-500/30">🧠 Send to Steve</button></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : ''}
+        </div>`
+
+      if (tab === 'pipeline') return `
+        <div class="space-y-4">
+          <h2 class="font-space font-bold text-base">Lead Pipeline Tracking</h2>
+          <table class="data-table">
+            <thead><tr><th>Contractor</th><th>Lead</th><th>Business</th><th>Stage</th><th>Score</th><th>Close %</th><th>Days Assigned</th><th>Window</th></tr></thead>
+            <tbody>${enriched.slice(0,30).map(a=>`<tr class="${a.isHibernating?'opacity-40':a.isExpired?'bg-red-500/5':''}">
+              <td class="font-medium text-xs">${a.contractor?.full_name||String(a.contractor_id||'').slice(0,8)+'...'}</td>
+              <td>${a.lead?.name||'—'}</td>
+              <td class="text-slate-400 text-xs">${a.lead?.business_name||'—'}</td>
+              <td>${statusBadge(a.lead?.status)}</td>
+              <td><span class="font-mono text-nebula-cyan">${a.lead?.lead_score||'—'}</span></td>
+              <td><span class="font-mono text-nebula-purple">${a.lead?.close_probability ? (Number(a.lead.close_probability)*100).toFixed(0)+'%' : '—'}</span></td>
+              <td><span class="font-mono ${a.daysSinceAssign>CLOSE_WINDOW_DAYS?'text-red-400':'text-slate-300'}">${a.daysSinceAssign}d</span></td>
+              <td>
+                ${a.isHibernating ? '<span class="badge badge-blue">❄ Hibernating</span>' :
+                  a.isExpired ? '<span class="badge badge-red">Expired</span>' :
+                  a.daysLeft <= 3 ? `<span class="badge badge-amber">⚠ ${a.daysLeft}d left</span>` :
+                  `<span class="badge badge-green">${a.daysLeft}d left</span>`}
+              </td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      if (tab === 'lifecycle') return `
+        <div class="space-y-4">
+          <h2 class="font-space font-bold text-base">Lead Lifecycle Visualization</h2>
+          <!-- Funnel -->
+          <div class="grid grid-cols-6 gap-2">
+            ${lifecycleStages.map(stage => {
+              const count = leads.filter(l => (l.status||'').toLowerCase() === stage.key).length
+              const pct = leads.length > 0 ? Math.round(count/leads.length*100) : 0
+              return `<div class="stat-card ${stage.border} ${stage.bg} text-center flex flex-col">
+                <div class="text-2xl font-bold font-mono ${stage.color}">${count}</div>
+                <div class="text-[10px] text-slate-400 mt-1 font-semibold">${stage.label}</div>
+                <div class="text-[9px] text-slate-500 mt-0.5">${pct}%</div>
+                <div class="w-full bg-slate-700/50 rounded-full h-1 mt-2">
+                  <div class="h-1 rounded-full ${stage.bg.replace('/10','/60')}" style="width:${pct}%"></div>
+                </div>
+              </div>`
+            }).join('')}
+          </div>
+
+          <!-- Flow diagram -->
+          <div class="stat-card border border-slate-700/40">
+            <h3 class="text-sm font-semibold mb-4 text-slate-200">Assignment Lifecycle Rules</h3>
+            <div class="flex items-center gap-2 text-xs flex-wrap">
+              <div class="px-3 py-2 rounded-lg bg-nebula-purple/20 border border-nebula-purple/30 text-purple-300">Lead Assigned</div>
+              <span class="text-slate-500">→</span>
+              <div class="px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300">Contractor Works Lead</div>
+              <span class="text-slate-500">→</span>
+              <div class="px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300">10-Day Close Window</div>
+              <span class="text-slate-500">→</span>
+              <div class="flex flex-col gap-1">
+                <div class="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300">✓ Closed Won</div>
+                <div class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300">✗ Expired</div>
+              </div>
+              <span class="text-slate-500">→</span>
+              <div class="px-3 py-2 rounded-lg bg-blue-900/30 border border-blue-500/20 text-blue-300">❄ 4-Week Hibernation</div>
+              <span class="text-slate-500">→</span>
+              <div class="px-3 py-2 rounded-lg bg-nebula-pink/20 border border-nebula-pink/30 text-pink-300">🧠 Steve Requalifies</div>
+              <span class="text-slate-500">→</span>
+              <div class="px-3 py-2 rounded-lg bg-nebula-purple/20 border border-nebula-purple/30 text-purple-300">♻ Reassigned</div>
+            </div>
+          </div>
+
+          <!-- Days distribution -->
+          <div class="stat-card">
+            <h3 class="text-sm font-semibold mb-3 text-slate-200">Assignment Age Distribution</h3>
+            <div class="grid grid-cols-4 gap-3">
+              ${[
+                { label:'0-3 days', filter: a => a.daysSinceAssign <= 3, color:'text-green-400', border:'border-green-500/20' },
+                { label:'4-10 days', filter: a => a.daysSinceAssign > 3 && a.daysSinceAssign <= 10, color:'text-amber-400', border:'border-amber-500/20' },
+                { label:'11-28 days', filter: a => a.daysSinceAssign > 10 && a.daysSinceAssign <= 28, color:'text-red-400', border:'border-red-500/20' },
+                { label:'28+ days', filter: a => a.daysSinceAssign > 28, color:'text-blue-400', border:'border-blue-500/20' },
+              ].map(bucket => `
+                <div class="stat-card ${bucket.border} text-center">
+                  <div class="text-2xl font-bold font-mono ${bucket.color}">${enriched.filter(bucket.filter).length}</div>
+                  <div class="text-[10px] text-slate-400 mt-1">${bucket.label}</div>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>`
+
+      if (tab === 'roster') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">Contractor Roster — ${contractors.length} total</h2>
+            <span class="badge badge-green">${active.length} Active</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            ${contractors.map(c => {
+              const cAssignments = assignments.filter(a => a.contractor_id === c.contractor_id)
+              const activeAssignments = cAssignments.filter(a => {
+                const days = Math.floor((now - new Date(a.assignment_date).getTime()) / DAY)
+                return days <= CLOSE_WINDOW_DAYS
+              })
+              return `<div class="stat-card border border-white/10 hover:border-nebula-purple/30 transition-all">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-purple to-nebula-pink flex items-center justify-center text-sm font-bold text-white shrink-0">
+                    ${(c.full_name||c.first_name||'?').charAt(0).toUpperCase()}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-white truncate">${c.full_name||c.first_name+' '+c.last_name||'—'}</div>
+                    <div class="text-[10px] text-slate-400">${c.title||c.level||'BGE Contractor'}</div>
+                  </div>
+                  <div class="ml-auto shrink-0">${statusBadge(c.status)}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center mb-2">
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-nebula-cyan font-mono">${cAssignments.length}</div>
+                    <div class="text-[8px] text-slate-400">Total</div>
+                  </div>
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-green-400 font-mono">${activeAssignments.length}</div>
+                    <div class="text-[8px] text-slate-400">Active</div>
+                  </div>
+                  <div class="p-1.5 rounded bg-black/20">
+                    <div class="text-sm font-bold text-nebula-amber font-mono">${c.ai_weight ? Number(c.ai_weight).toFixed(2) : '—'}</div>
+                    <div class="text-[8px] text-slate-400">AI Weight</div>
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-500">${c.email||'—'} · Priority: ${c.routing_priority||'—'}</div>
+              </div>`
+            }).join('')}
+          </div>
+        </div>`
+
+      return ''
+    }
+
+    const renderCT = () => {
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <div class="flex gap-1 mb-4 shrink-0 border-b border-slate-700/40 pb-3">
+            ${tabs.map(t=>`
+              <button onclick="window._ctTab('${t.id}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-nebula-purple/30 text-white border border-nebula-purple/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                ${t.label}
+              </button>`).join('')}
+            <div class="ml-auto flex items-center gap-3 text-[10px] text-slate-400">
+              <span class="text-amber-400 font-semibold">⚠ ${expiring.length} expiring</span>
+              <span class="text-blue-400 font-semibold">❄ ${hibernating.length} hibernating</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            ${renderTab(activeTab)}
+          </div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._ctTab = (tab) => { activeTab = tab; renderCT() }
+
+    window._ctRequalify = async (leadId) => {
+      try {
+        const data = await callEngine('core-automation-engine', 'requalify_lead', { lead_id: leadId })
+        showRealtimeToast(`🧠 Lead sent to Steve for requalification`, 'purple')
+      } catch(e) {
+        showRealtimeToast(`✗ Requalify failed: ${e.message}`, 'red')
+      }
+    }
+
+    renderCT()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
 // ── WINDOW MANAGER ───────────────────────────────────────────────────────────
 const windows = {}; let zIndex = 1000; let windowCount = 0
 
@@ -2071,20 +2358,22 @@ const appConfigs = {
   control:   { name:'Engine Control',     icon:'terminal',         w:980,  h:720 },
   bge:       { name:'BGE Sales Floor',    icon:'phone-call',       w:1080, h:720 },
   hr:        { name:'HR Command',         icon:'users-round',      w:1060, h:720 },
+  contractors: { name:'Contractor Dashboard', icon:'briefcase',     w:1080, h:740 },
 }
 
 const loaders = {
-  dashboard: loadDashboardContent,
-  sales:     loadSalesContent,
-  steve:     loadSteveContent,
-  crm:       loadCRMContent,
-  calls:     loadCallsContent,
-  finance:   loadFinanceContent,
-  marketing: loadMarketingContent,
-  files:     loadFilesContent,
-  control:   loadControlContent,
-  bge:       loadBGEContent,
-  hr:        loadHRContent
+  dashboard:   loadDashboardContent,
+  sales:       loadSalesContent,
+  steve:       loadSteveContent,
+  crm:         loadCRMContent,
+  calls:       loadCallsContent,
+  finance:     loadFinanceContent,
+  marketing:   loadMarketingContent,
+  files:       loadFilesContent,
+  control:     loadControlContent,
+  bge:         loadBGEContent,
+  hr:          loadHRContent,
+  contractors: loadContractorContent
 }
 
 function openWindow(appId) {
