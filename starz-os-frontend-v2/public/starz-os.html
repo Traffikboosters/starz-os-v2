@@ -118,6 +118,7 @@
     <div class="hidden md:flex items-center gap-4 text-xs">
       <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span class="text-slate-400">Live Data</span></div>
       <div class="flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-nebula-cyan"></i><span class="text-slate-400">Supabase Connected</span></div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full realtime-dot" style="background:#f59e0b" title="Realtime: Connecting..."></span><span class="text-slate-400">Realtime</span></div>
     </div>
     <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
       <div class="theme-toggle-slider">
@@ -2162,6 +2163,207 @@ lucide.createIcons()
 loadSidebar()
 loadAlerts()
 setInterval(() => { loadSidebar(); loadAlerts() }, 60000)
+
+// ── REALTIME ENGINE ───────────────────────────────────────────────────────────
+// Load Supabase JS client for realtime broadcast subscriptions
+const REALTIME_SCRIPT = document.createElement('script')
+REALTIME_SCRIPT.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+REALTIME_SCRIPT.onload = () => { initRealtime() }
+document.head.appendChild(REALTIME_SCRIPT)
+
+// Realtime state
+const rtState = {
+  callFloor: [],
+  salesFeed: [],
+  leaderboard: [],
+  client: null,
+  channels: {}
+}
+
+function initRealtime() {
+  try {
+    rtState.client = window.supabase.createClient(SB_URL, SB_KEY)
+
+    // ── Channel 1: Call Floor ─────────────────────────────────────────────────
+    rtState.channels.callFloor = rtState.client
+      .channel('org:call_floor')
+      .on('broadcast', { event: 'call_update' }, ({ payload }) => {
+        handleCallUpdate(payload)
+      })
+      .on('broadcast', { event: 'call_started' }, ({ payload }) => {
+        handleCallStarted(payload)
+      })
+      .on('broadcast', { event: 'call_ended' }, ({ payload }) => {
+        handleCallEnded(payload)
+      })
+      .subscribe((status) => {
+        updateRealtimeStatus('call_floor', status)
+      })
+
+    // ── Channel 2: Sales Feed ─────────────────────────────────────────────────
+    rtState.channels.salesFeed = rtState.client
+      .channel('org:sales_feed')
+      .on('broadcast', { event: 'deal_won' }, ({ payload }) => {
+        handleDealWon(payload)
+      })
+      .on('broadcast', { event: 'deal_update' }, ({ payload }) => {
+        handleDealUpdate(payload)
+      })
+      .on('broadcast', { event: 'lead_assigned' }, ({ payload }) => {
+        handleLeadAssigned(payload)
+      })
+      .subscribe((status) => {
+        updateRealtimeStatus('sales_feed', status)
+      })
+
+    // ── Channel 3: Leaderboard ────────────────────────────────────────────────
+    rtState.channels.leaderboard = rtState.client
+      .channel('org:leaderboard')
+      .on('broadcast', { event: 'score_update' }, ({ payload }) => {
+        handleLeaderboardUpdate(payload)
+      })
+      .subscribe()
+
+    console.log('[STARZ-OS] Realtime channels initialized')
+  } catch(e) {
+    console.warn('[STARZ-OS] Realtime init failed:', e.message)
+  }
+}
+
+// ── Realtime Status Indicator ─────────────────────────────────────────────────
+function updateRealtimeStatus(channel, status) {
+  const dot = document.querySelector('.realtime-dot')
+  if (!dot) return
+  if (status === 'SUBSCRIBED') {
+    dot.style.background = '#10b981'
+    dot.title = 'Realtime: Connected'
+  } else if (status === 'CHANNEL_ERROR') {
+    dot.style.background = '#ef4444'
+    dot.title = 'Realtime: Error'
+  }
+}
+
+// ── Call Floor Handlers ───────────────────────────────────────────────────────
+function handleCallStarted(payload) {
+  rtState.callFloor.unshift(payload)
+  if (rtState.callFloor.length > 20) rtState.callFloor.pop()
+  showRealtimeToast(`📞 Call started — ${payload.phone_number||'unknown'}`, 'amber')
+  // Refresh calls window if open
+  const callsWin = Object.entries(windows).find(([,w]) => w.appId === 'calls')
+  if (callsWin) { const el = document.getElementById('content-'+callsWin[0]); if(el) loadCallsContent(el) }
+}
+
+function handleCallEnded(payload) {
+  rtState.callFloor = rtState.callFloor.filter(c => c.id !== payload.id)
+  if (payload.proposal_ready) {
+    showRealtimeToast(`📄 Proposal ready — ${payload.phone_number||'lead'}`, 'purple')
+  }
+  if (payload.deal_heat_score >= 8) {
+    showRealtimeToast(`🔥 Hot lead! Score ${payload.deal_heat_score} — ${payload.phone_number||''}`, 'green')
+  }
+}
+
+function handleCallUpdate(payload) {
+  const idx = rtState.callFloor.findIndex(c => c.id === payload.id)
+  if (idx >= 0) rtState.callFloor[idx] = { ...rtState.callFloor[idx], ...payload }
+}
+
+// ── Sales Feed Handlers ───────────────────────────────────────────────────────
+function handleDealWon(payload) {
+  rtState.salesFeed.unshift({ type:'won', ...payload, ts: Date.now() })
+  showRealtimeToast(`🏆 Deal WON — ${fmt(payload.value||0)} · ${payload.company||payload.name||''}`, 'green')
+  loadSidebar() // Refresh KPIs
+}
+
+function handleDealUpdate(payload) {
+  rtState.salesFeed.unshift({ type:'update', ...payload, ts: Date.now() })
+  // Refresh sales window if open
+  const salesWin = Object.entries(windows).find(([,w]) => w.appId === 'sales')
+  if (salesWin) { const el = document.getElementById('content-'+salesWin[0]); if(el) loadSalesContent(el) }
+}
+
+function handleLeadAssigned(payload) {
+  showRealtimeToast(`👤 Lead assigned — ${payload.lead_name||payload.name||''}`, 'cyan')
+  loadSidebar()
+}
+
+function handleLeaderboardUpdate(payload) {
+  const idx = rtState.leaderboard.findIndex(r => r.rep_id === payload.rep_id)
+  if (idx >= 0) rtState.leaderboard[idx] = { ...rtState.leaderboard[idx], ...payload }
+  else rtState.leaderboard.unshift(payload)
+}
+
+// ── Toast Notification ────────────────────────────────────────────────────────
+function showRealtimeToast(msg, color = 'purple') {
+  const colors = {
+    purple: 'border-nebula-purple/40 bg-nebula-purple/10 text-purple-300',
+    green:  'border-green-500/40 bg-green-500/10 text-green-300',
+    amber:  'border-amber-500/40 bg-amber-500/10 text-amber-300',
+    cyan:   'border-nebula-cyan/40 bg-nebula-cyan/10 text-cyan-300',
+    red:    'border-red-500/40 bg-red-500/10 text-red-300',
+  }
+  const toast = document.createElement('div')
+  toast.className = `fixed top-16 right-4 z-[9999] px-4 py-3 rounded-xl border text-xs font-medium backdrop-blur-sm shadow-lg transition-all duration-300 ${colors[color]||colors.purple}`
+  toast.style.cssText = 'max-width:320px;transform:translateX(120%)'
+  toast.textContent = msg
+  document.body.appendChild(toast)
+  setTimeout(() => { toast.style.transform='translateX(0)' }, 10)
+  setTimeout(() => {
+    toast.style.transform='translateX(120%)'
+    setTimeout(() => toast.remove(), 300)
+  }, 4000)
+}
+
+// ── SECURITY LAYER ────────────────────────────────────────────────────────────
+async function checkUserAccess() {
+  try {
+    if (!rtState.client) return // realtime not loaded yet
+    const { data: { user } } = await rtState.client.auth.getUser()
+    if (!user) return // anonymous — OS is admin-only for now
+
+    const role = user.user_metadata?.role
+    const isActive = user.user_metadata?.is_active !== false
+
+    if (!isActive) {
+      // Suspended user — lock the OS
+      document.getElementById('desktop').innerHTML = `
+        <div class="flex items-center justify-center h-full">
+          <div class="stat-card border border-red-500/30 text-center p-8 max-w-md">
+            <div class="text-4xl mb-4">🔒</div>
+            <h2 class="font-space font-bold text-red-400 text-xl mb-2">Account Suspended</h2>
+            <p class="text-slate-400 text-sm">Your account has been suspended. Contact admin@traffikboosters.com</p>
+          </div>
+        </div>`
+      document.querySelector('.orbital-dock').style.display = 'none'
+      return
+    }
+
+    // Role-based dock restrictions
+    if (role === 'contractor') {
+      // Contractors only see BGE floor and CRM
+      document.querySelectorAll('.dock-item').forEach(btn => {
+        const allowed = ['bge','crm','calls']
+        const appId = btn.getAttribute('onclick')?.match(/openWindow\('(\w+)'\)/)?.[1]
+        if (appId && !allowed.includes(appId)) {
+          btn.style.display = 'none'
+        }
+      })
+    }
+
+    // Update top bar with user info
+    const userNameEl = document.querySelector('.text-sm.font-medium')
+    if (userNameEl && user.email) {
+      userNameEl.textContent = user.user_metadata?.name || user.email.split('@')[0]
+    }
+
+  } catch(e) {
+    console.warn('[STARZ-OS] Auth check skipped:', e.message)
+  }
+}
+
+// Run security check after realtime loads
+setTimeout(checkUserAccess, 2000)
+
 </script>
 </body>
 </html>
