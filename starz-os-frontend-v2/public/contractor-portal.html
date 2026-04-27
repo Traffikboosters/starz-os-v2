@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BGE Portal — Traffik Boosters</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .mono { font-family: 'DM Mono', monospace; }
+    body { background: #080c14; color: #e2e8f0; min-height: 100vh; }
+
+    .bg-grid {
+      background-image:
+        linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card-green {
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 13px;
+      transition: all 0.15s; cursor: pointer; border: none; outline: none;
+    }
+    .btn-green { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .btn-green:hover { background: rgba(16,185,129,0.3); }
+    .btn-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-red:hover { background: rgba(239,68,68,0.25); }
+    .btn-gray { background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+    .btn-gray:hover { background: rgba(255,255,255,0.1); }
+    .btn-primary { background: #10b981; color: #000; }
+    .btn-primary:hover { background: #059669; }
+
+    .tab { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: #64748b; }
+    .tab.active { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .tab:hover:not(.active) { color: #cbd5e1; background: rgba(255,255,255,0.04); }
+
+    .badge { display:inline-flex; align-items:center; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
+    .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge-gray { background: rgba(255,255,255,0.06); color: #64748b; border: 1px solid rgba(255,255,255,0.08); }
+
+    .lead-row { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.1s; cursor: pointer; }
+    .lead-row:hover { background: rgba(255,255,255,0.03); }
+
+    .heat-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow:hidden; }
+    .heat-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+    .login-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(16,185,129,0.15);
+      border-radius: 24px;
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #e2e8f0;
+      padding: 10px 14px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus { border-color: rgba(16,185,129,0.4); }
+
+    .spinner { width:20px; height:20px; border:2px solid rgba(16,185,129,0.2); border-top-color:#10b981; border-radius:50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+    .slide-in { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  </style>
+</head>
+<body class="bg-grid">
+
+<!-- ── LOGIN SCREEN ─────────────────────────────────────────────────────── -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+  <div class="login-card slide-in">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 mb-4">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white">BGE Portal</h1>
+      <p class="text-slate-400 text-sm mt-1">Traffik Boosters — Business Growth Experts</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Email Address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="login-error" class="text-red-400 text-xs hidden p-3 rounded-lg bg-red-500/10 border border-red-500/20"></div>
+      <button onclick="doLogin()" class="btn btn-primary w-full mt-2" id="login-btn">
+        Sign In
+      </button>
+    </div>
+
+    <p class="text-center text-xs text-slate-600 mt-6">Authorized BGE contractors only</p>
+  </div>
+</div>
+
+<!-- ── PORTAL SCREEN ────────────────────────────────────────────────────── -->
+<div id="portal-screen" class="hidden min-h-screen flex flex-col">
+
+  <!-- Top Bar -->
+  <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-sm font-semibold text-white">BGE Portal</div>
+        <div class="text-[10px] text-slate-500">Traffik Boosters</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 bg-emerald-500 rounded-full pulse"></span>
+        <span class="text-xs text-slate-400">Live</span>
+      </div>
+      <div id="user-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8">
+        <div class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400" id="user-avatar">?</div>
+        <span class="text-xs text-slate-300" id="user-name">Loading...</span>
+      </div>
+      <button onclick="doLogout()" class="btn btn-gray" style="padding:6px 14px;font-size:11px;">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-52 shrink-0 border-r border-white/5 p-4 flex flex-col gap-1">
+      <button onclick="showTab('leads')" class="tab active text-left w-full" id="tab-leads">
+        📋 My Leads
+      </button>
+      <button onclick="showTab('dial')" class="tab text-left w-full" id="tab-dial">
+        📞 PowerDial
+      </button>
+      <button onclick="showTab('earnings')" class="tab text-left w-full" id="tab-earnings">
+        💰 Earnings
+      </button>
+      <button onclick="showTab('stats')" class="tab text-left w-full" id="tab-stats">
+        📊 My Stats
+      </button>
+
+      <!-- Today's Stats -->
+      <div class="mt-6 p-3 rounded-xl bg-white/3 border border-white/6">
+        <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-3">Today</div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Calls Made</span>
+            <span class="mono text-white font-semibold" id="stat-calls">—</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Leads Active</span>
+            <span class="mono text-emerald-400 font-semibold" id="stat-leads">—</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Revenue</span>
+            <span class="mono text-amber-400 font-semibold" id="stat-revenue">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lock check status -->
+      <div class="mt-4 p-3 rounded-xl bg-white/3 border border-white/6">
+        <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-2">Access</div>
+        <div id="lock-status" class="text-xs text-slate-400">Checking...</div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+
+      <!-- MY LEADS TAB -->
+      <div id="view-leads" class="slide-in">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h2 class="text-lg font-bold text-white">My Assigned Leads</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Your active pipeline — 10-day close window per lead</p>
+          </div>
+          <button onclick="loadLeads()" class="btn btn-gray" style="padding:6px 14px;font-size:11px;">↻ Refresh</button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="flex gap-2 mb-4">
+          <input type="text" id="lead-search" placeholder="Search leads..." oninput="filterLeads(this.value)" style="max-width:240px;">
+          <select id="lead-filter" onchange="filterLeads()" style="max-width:160px;">
+            <option value="">All Status</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="closing">Closing</option>
+          </select>
+        </div>
+
+        <div id="leads-list" class="card" style="padding:0;overflow:hidden;">
+          <div class="flex items-center justify-center py-12">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POWERDIAL TAB -->
+      <div id="view-dial" class="hidden slide-in">
+        <div class="mb-5">
+          <h2 class="text-lg font-bold text-white">PowerDial</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Call your leads directly — Dialpad handles the connection</p>
+        </div>
+
+        <!-- Current Call Display -->
+        <div id="active-call" class="card-green mb-4 hidden">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.45-.45a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-emerald-300" id="call-name">Calling...</div>
+              <div class="text-xs text-slate-400 mono" id="call-phone"></div>
+            </div>
+            <div class="ml-auto">
+              <span class="badge badge-green pulse">● LIVE</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="endCall()" class="btn btn-red flex-1">⏹ End Call</button>
+            <button onclick="getSteveWhisper()" class="btn btn-gray flex-1">🧠 Steve Assist</button>
+          </div>
+          <div id="steve-whisper" class="mt-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 hidden">
+            <div class="text-[10px] text-purple-400 font-semibold mb-1">🧠 STEVE SAYS</div>
+            <div class="text-xs text-purple-200" id="whisper-text"></div>
+          </div>
+        </div>
+
+        <!-- Call Queue -->
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="p-4 border-b border-white/5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold">Call Queue</span>
+              <span class="badge badge-gray" id="queue-count">0 leads</span>
+            </div>
+          </div>
+          <div id="dial-queue">
+            <div class="flex items-center justify-center py-8">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EARNINGS TAB -->
+      <div id="view-earnings" class="hidden slide-in">
+        <div class="mb-5">
+          <h2 class="text-lg font-bold text-white">My Earnings</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Commission tracking and payout history</p>
+        </div>
+        <div id="earnings-content">
+          <div class="flex items-center justify-center py-12">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div id="view-stats" class="hidden slide-in">
+        <div class="mb-5">
+          <h2 class="text-lg font-bold text-white">My Performance</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Close rate, call stats, and ranking</p>
+        </div>
+        <div id="stats-content">
+          <div class="flex items-center justify-center py-12">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
+const TENANT_ID = '11111111-1111-1111-1111-111111111111'
+
+const supabase = window.supabase.createClient(SB_URL, SB_ANON)
+
+let currentUser = null
+let contractorProfile = null
+let allLeads = []
+let currentCall = null
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim()
+  const password = document.getElementById('login-password').value
+  const btn = document.getElementById('login-btn')
+  const err = document.getElementById('login-error')
+
+  err.classList.add('hidden')
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div>'
+  btn.disabled = true
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+
+    const role = data.user?.user_metadata?.role
+    if (!['contractor', 'rep'].includes(role)) {
+      await supabase.auth.signOut()
+      throw new Error('Access denied. This portal is for BGE contractors only.')
+    }
+
+    await initPortal(data.user)
+  } catch(e) {
+    err.textContent = e.message
+    err.classList.remove('hidden')
+    btn.innerHTML = 'Sign In'
+    btn.disabled = false
+  }
+}
+
+async function doLogout() {
+  await supabase.auth.signOut()
+  document.getElementById('portal-screen').classList.add('hidden')
+  document.getElementById('login-screen').classList.remove('hidden')
+  currentUser = null
+  contractorProfile = null
+}
+
+// Enter key on password
+document.getElementById('login-password')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin()
+})
+
+// ── INIT PORTAL ───────────────────────────────────────────────────────────────
+async function initPortal(user) {
+  currentUser = user
+  document.getElementById('login-screen').classList.add('hidden')
+  document.getElementById('portal-screen').classList.remove('hidden')
+
+  // Set user info
+  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'BGE'
+  document.getElementById('user-name').textContent = name
+  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase()
+
+  // Load contractor profile
+  try {
+    const { data } = await supabase
+      .schema('public')
+      .from('contractors')
+      .select('*')
+      .eq('email', user.email)
+      .single()
+    contractorProfile = data
+  } catch(e) {
+    console.warn('No contractor profile found:', e.message)
+  }
+
+  // Run lock check
+  await checkAccess()
+
+  // Load initial data
+  await loadLeads()
+  await loadSidebarStats()
+}
+
+async function checkAccess() {
+  const el = document.getElementById('lock-status')
+  if (!contractorProfile) {
+    el.innerHTML = '<span class="text-amber-400">⚠ Profile not linked</span>'
+    return
+  }
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/contractor_portal-lock_check`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contractor_id: contractorProfile.contractor_id, lead_id: null })
+    })
+    const data = await res.json()
+    if (data.allowed === false) {
+      el.innerHTML = data.reasons?.map(r =>
+        `<div class="text-red-400">✗ ${r.replace(/_/g,' ')}</div>`
+      ).join('') || '<span class="text-red-400">Access restricted</span>'
+    } else {
+      el.innerHTML = '<span class="text-emerald-400">✓ Full access</span>'
+    }
+  } catch(e) {
+    el.innerHTML = '<span class="text-slate-500">Access check unavailable</span>'
+  }
+}
+
+// ── DATA LOADERS ──────────────────────────────────────────────────────────────
+async function loadSidebarStats() {
+  try {
+    if (!contractorProfile) return
+    const { data: calls } = await supabase
+      .schema('dialer')
+      .from('calls')
+      .select('id,revenue,created_at')
+      .eq('user_id', currentUser.id)
+      .gte('created_at', new Date().toISOString().split('T')[0])
+
+    document.getElementById('stat-calls').textContent = calls?.length || 0
+    const rev = calls?.reduce((s,c) => s + (Number(c.revenue)||0), 0) || 0
+    document.getElementById('stat-revenue').textContent = rev > 0 ? '$' + rev.toLocaleString() : '$0'
+  } catch(e) { console.warn('Stats error:', e.message) }
+}
+
+async function loadLeads() {
+  const el = document.getElementById('leads-list')
+  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
+
+  try {
+    // Get assignments for this contractor
+    let assignmentsQuery = supabase
+      .schema('public')
+      .from('contractor_lead_assignments')
+      .select('lead_id, assignment_date')
+      .eq('tenant_id', TENANT_ID)
+      .order('assignment_date', { ascending: false })
+      .limit(50)
+
+    if (contractorProfile) {
+      assignmentsQuery = assignmentsQuery.eq('contractor_id', contractorProfile.contractor_id)
+    }
+
+    const { data: assignments } = await assignmentsQuery
+
+    if (!assignments?.length) {
+      el.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No leads assigned yet</div>'
+      document.getElementById('stat-leads').textContent = '0'
+      return
+    }
+
+    // Get lead details
+    const leadIds = assignments.map(a => a.lead_id).filter(Boolean)
+    const { data: leads } = await supabase
+      .schema('crm')
+      .from('leads')
+      .select('id,name,business_name,phone,email,status,lead_score,close_probability,assigned_at,last_activity_at,industry')
+      .in('id', leadIds)
+      .limit(50)
+
+    // Merge assignment date
+    allLeads = (leads || []).map(l => {
+      const a = assignments.find(a => a.lead_id === l.id)
+      const days = a ? Math.floor((Date.now() - new Date(a.assignment_date).getTime()) / 86400000) : 0
+      return { ...l, assignment_date: a?.assignment_date, days_assigned: days, days_left: Math.max(0, 10 - days) }
+    })
+
+    document.getElementById('stat-leads').textContent = allLeads.length
+    renderLeads(allLeads)
+  } catch(e) {
+    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
+  }
+}
+
+function renderLeads(leads) {
+  const el = document.getElementById('leads-list')
+  if (!leads.length) {
+    el.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No leads found</div>'
+    return
+  }
+
+  const statusColor = { new:'badge-blue', contacted:'badge-amber', qualified:'badge-green', closing:'badge-green', won:'badge-green', lost:'badge-red' }
+
+  el.innerHTML = leads.map(l => `
+    <div class="lead-row" onclick="selectLead('${l.id}')">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-semibold text-white truncate">${l.name || l.business_name || '—'}</span>
+            <span class="badge ${statusColor[l.status?.toLowerCase()] || 'badge-gray'} shrink-0">${l.status || 'new'}</span>
+          </div>
+          <div class="text-xs text-slate-400 truncate">${l.business_name || l.industry || '—'} · ${l.phone || 'No phone'}</div>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-xs font-semibold ${l.days_left <= 2 ? 'text-red-400' : l.days_left <= 5 ? 'text-amber-400' : 'text-slate-400'} mono">${l.days_left}d left</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">Score: ${l.lead_score || '—'}</div>
+        </div>
+      </div>
+      ${l.close_probability ? `
+      <div class="mt-2">
+        <div class="heat-bar">
+          <div class="heat-fill ${Number(l.close_probability) >= 0.7 ? 'bg-emerald-500' : Number(l.close_probability) >= 0.4 ? 'bg-amber-500' : 'bg-slate-500'}"
+               style="width:${Math.min(100, Number(l.close_probability) * 100).toFixed(0)}%"></div>
+        </div>
+      </div>` : ''}
+    </div>`).join('')
+}
+
+function filterLeads(q) {
+  const search = (document.getElementById('lead-search')?.value || '').toLowerCase()
+  const status = document.getElementById('lead-filter')?.value || ''
+  const filtered = allLeads.filter(l => {
+    const matchSearch = !search || (l.name||'').toLowerCase().includes(search) || (l.business_name||'').toLowerCase().includes(search) || (l.phone||'').includes(search)
+    const matchStatus = !status || (l.status||'').toLowerCase() === status
+    return matchSearch && matchStatus
+  })
+  renderLeads(filtered)
+}
+
+function selectLead(id) {
+  const lead = allLeads.find(l => l.id === id)
+  if (!lead) return
+  showTab('dial')
+  // Pre-populate the dial queue with this lead
+  loadDialQueue(lead)
+}
+
+async function loadDialQueue(preselect) {
+  const el = document.getElementById('dial-queue')
+  const countEl = document.getElementById('queue-count')
+
+  // Use current leads as dial queue sorted by priority
+  const queue = [...allLeads].filter(l => l.phone && !['won','lost'].includes(l.status?.toLowerCase()))
+    .sort((a,b) => (b.lead_score||0) - (a.lead_score||0))
+
+  countEl.textContent = queue.length + ' leads'
+
+  if (!queue.length) {
+    el.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">No callable leads in queue</div>'
+    return
+  }
+
+  el.innerHTML = queue.map(l => `
+    <div class="lead-row flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="text-sm font-semibold text-white truncate">${l.name || l.business_name || '—'}</div>
+        <div class="text-xs text-slate-400 mono">${l.phone || '—'}</div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-[10px] text-slate-500">${l.days_left}d left</span>
+        <button onclick="startCall('${l.id}','${(l.phone||'').replace(/'/g,"\\'")}','${(l.name||l.business_name||'Lead').replace(/'/g,"\\'")}');event.stopPropagation()"
+          class="btn btn-green" style="padding:5px 12px;font-size:11px;">
+          📞 Dial
+        </button>
+      </div>
+    </div>`).join('')
+}
+
+async function startCall(leadId, phone, name) {
+  if (!phone) { alert('No phone number for this lead'); return }
+  currentCall = { leadId, phone, name }
+  document.getElementById('call-name').textContent = name
+  document.getElementById('call-phone').textContent = phone
+  document.getElementById('active-call').classList.remove('hidden')
+  document.getElementById('steve-whisper').classList.add('hidden')
+
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone_number: phone, lead_id: leadId, tenant_id: TENANT_ID, user_id: currentUser?.id })
+    })
+    const data = await res.json()
+    console.log('Call initiated:', data)
+  } catch(e) {
+    console.warn('Call error:', e.message)
+  }
+}
+
+async function endCall() {
+  document.getElementById('active-call').classList.add('hidden')
+  document.getElementById('steve-whisper').classList.add('hidden')
+  currentCall = null
+  await loadSidebarStats()
+}
+
+async function getSteveWhisper() {
+  const whisperEl = document.getElementById('steve-whisper')
+  const textEl = document.getElementById('whisper-text')
+  whisperEl.classList.remove('hidden')
+  textEl.textContent = 'Steve is thinking...'
+
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/steve_call_whisper`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: currentCall?.leadId, tenant_id: TENANT_ID })
+    })
+    const data = await res.json()
+    textEl.textContent = data.whisper || data.tip || data.message || 'Focus on urgency and ROI. Ask about their biggest challenge.'
+  } catch(e) {
+    textEl.textContent = 'Focus on urgency and ROI. Listen for pain points and close on a specific date.'
+  }
+}
+
+async function loadEarnings() {
+  const el = document.getElementById('earnings-content')
+  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
+
+  try {
+    const { data } = await supabase
+      .schema('finance')
+      .from('commissions')
+      .select('*')
+      .eq('user_id', currentUser?.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (!data?.length) {
+      el.innerHTML = '<div class="text-center py-10 text-slate-500 text-sm">No earnings records yet</div>'
+      return
+    }
+
+    const total = data.reduce((s,c) => s + (Number(c.amount)||0), 0)
+    const paid = data.filter(c => c.status === 'paid').reduce((s,c) => s + (Number(c.amount)||0), 0)
+
+    el.innerHTML = `
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="card text-center">
+          <div class="text-2xl font-bold text-white mono">$${total.toLocaleString()}</div>
+          <div class="text-xs text-slate-400 mt-1">Total Earned</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-2xl font-bold text-emerald-400 mono">$${paid.toLocaleString()}</div>
+          <div class="text-xs text-slate-400 mt-1">Paid Out</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-2xl font-bold text-amber-400 mono">$${(total-paid).toLocaleString()}</div>
+          <div class="text-xs text-slate-400 mt-1">Pending</div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="p-4 border-b border-white/5 text-sm font-semibold">Commission History</div>
+        ${data.map(c => `
+          <div class="lead-row flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-white">$${Number(c.amount||0).toLocaleString()}</div>
+              <div class="text-xs text-slate-400">${c.description || c.source || '—'} · ${c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</div>
+            </div>
+            <span class="badge ${c.status==='paid'?'badge-green':c.status==='pending'?'badge-amber':'badge-gray'}">${c.status||'—'}</span>
+          </div>`).join('')}
+      </div>`
+  } catch(e) {
+    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
+  }
+}
+
+async function loadStats() {
+  const el = document.getElementById('stats-content')
+  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
+
+  try {
+    const [callsRes, perfRes] = await Promise.all([
+      supabase.schema('dialer').from('calls').select('call_status,duration,revenue,created_at').eq('user_id', currentUser?.id).limit(100),
+      supabase.schema('sales').from('v_rep_performance').select('*').eq('user_id', currentUser?.id).single()
+    ])
+
+    const calls = callsRes.data || []
+    const perf = perfRes.data || {}
+    const today = calls.filter(c => new Date(c.created_at).toDateString() === new Date().toDateString())
+
+    el.innerHTML = `
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card-green">
+          <div class="text-3xl font-bold text-emerald-400 mono">${perf.close_rate ? (Number(perf.close_rate)*100).toFixed(1)+'%' : '—'}</div>
+          <div class="text-xs text-slate-400 mt-1">Close Rate</div>
+        </div>
+        <div class="card">
+          <div class="text-3xl font-bold text-white mono">${perf.deals_won || 0}</div>
+          <div class="text-xs text-slate-400 mt-1">Deals Won</div>
+        </div>
+        <div class="card">
+          <div class="text-3xl font-bold text-amber-400 mono">${perf.avg_deal_value ? '$'+Number(perf.avg_deal_value).toLocaleString() : '—'}</div>
+          <div class="text-xs text-slate-400 mt-1">Avg Deal Value</div>
+        </div>
+        <div class="card">
+          <div class="text-3xl font-bold text-blue-400 mono">${calls.length}</div>
+          <div class="text-xs text-slate-400 mt-1">Total Calls</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="text-sm font-semibold mb-3">Today's Activity</div>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <div class="text-xl font-bold mono">${today.length}</div>
+            <div class="text-[10px] text-slate-400">Calls Made</div>
+          </div>
+          <div>
+            <div class="text-xl font-bold mono text-emerald-400">${today.filter(c=>c.call_status==='completed').length}</div>
+            <div class="text-[10px] text-slate-400">Completed</div>
+          </div>
+          <div>
+            <div class="text-xl font-bold mono text-amber-400">$${today.reduce((s,c)=>s+(Number(c.revenue)||0),0).toLocaleString()}</div>
+            <div class="text-[10px] text-slate-400">Revenue</div>
+          </div>
+        </div>
+      </div>`
+  } catch(e) {
+    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  ['leads','dial','earnings','stats'].forEach(t => {
+    document.getElementById('view-'+t).classList.add('hidden')
+    document.getElementById('tab-'+t).classList.remove('active')
+  })
+  document.getElementById('view-'+tab).classList.remove('hidden')
+  document.getElementById('tab-'+tab).classList.add('active')
+
+  if (tab === 'dial') loadDialQueue()
+  if (tab === 'earnings') loadEarnings()
+  if (tab === 'stats') loadStats()
+}
+
+// ── AUTO-LOGIN CHECK ──────────────────────────────────────────────────────────
+supabase.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) {
+    const role = session.user.user_metadata?.role
+    if (['contractor','rep'].includes(role)) {
+      initPortal(session.user)
+    }
+  }
+})
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    document.getElementById('portal-screen').classList.add('hidden')
+    document.getElementById('login-screen').classList.remove('hidden')
+  }
+})
+</script>
+</body>
+</html>
