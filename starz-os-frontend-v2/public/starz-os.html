@@ -286,6 +286,10 @@
       <i data-lucide="heart-handshake" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Zara HR</div>
     </button>
+    <button onclick="openWindow('inbox')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative" style="background:linear-gradient(145deg,#67e8f9 0%,#0891b2 45%,#164e63 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(8,145,178,0.65),0 2px 6px rgba(0,0,0,0.55);">
+      <i data-lucide="mail-open" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Reply Inbox</div>
+    </button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -2064,6 +2068,268 @@ async function loadHRContent(el) {
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
+// ── REPLY INBOX ───────────────────────────────────────────────────────────────
+async function loadInboxContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [replies, prospectReplies] = await Promise.all([
+      sb('outreach', 'reply_inbox', 'select=*&order=received_at.desc&limit=100'),
+      sb('prospecting', 'replies', 'select=*&order=created_at.desc&limit=50').catch(()=>[]),
+    ])
+
+    const intentColors = {
+      interested:     'badge-green',
+      question:       'badge-blue',
+      not_interested: 'badge-red',
+      maybe:          'badge-amber',
+      curious:        'badge-gray',
+      hot:            'badge-green',
+      warm:           'badge-amber',
+      cold:           'badge-gray',
+    }
+
+    const intentIcons = {
+      interested:     '🔥',
+      question:       '❓',
+      not_interested: '🚫',
+      maybe:          '🤔',
+      curious:        '👀',
+      hot:            '🔥',
+      warm:           '♨️',
+    }
+
+    const unactioned = replies.filter(r => !r.actioned)
+    const actioned = replies.filter(r => r.actioned)
+    const interested = replies.filter(r => r.intent === 'interested' || r.intent_signal === 'interested')
+    const notInterested = replies.filter(r => r.intent === 'not_interested' || r.intent_signal === 'not_interested')
+
+    let activeTab = 'all'
+    let searchQ = ''
+
+    const tabs = [
+      { id:'all',          label:`📬 All (${replies.length})` },
+      { id:'unactioned',   label:`⚡ New (${unactioned.length})` },
+      { id:'interested',   label:`🔥 Interested (${interested.length})` },
+      { id:'test',         label:'🧪 Test Reply' },
+    ]
+
+    const renderReply = (r) => {
+      const intent = r.intent || r.intent_signal || 'unknown'
+      const result = r.processing_result || {}
+      const subject = result.response_subject || '—'
+      const steveReplied = result.steve_replied || r.actioned
+      return `
+        <div class="p-4 rounded-xl border ${r.actioned ? 'border-slate-700/30 opacity-60' : 'border-nebula-cyan/20 bg-nebula-cyan/5'} hover:border-nebula-purple/40 transition-all">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-semibold text-white truncate">${r.lead_name||r.company||r.lead_email||'—'}</span>
+                <span class="text-[10px] text-slate-400 shrink-0">${r.company||''}</span>
+              </div>
+              <div class="text-xs text-slate-400 font-mono truncate">${r.lead_email||'—'}</div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="badge ${intentColors[intent]||'badge-gray'}">${intentIcons[intent]||''} ${intent}</span>
+              ${r.intent_confidence ? `<span class="text-[9px] text-slate-500 font-mono">${(Number(r.intent_confidence)*100).toFixed(0)}%</span>` : ''}
+              ${steveReplied ? '<span class="badge badge-green text-[9px]">✓ Steve replied</span>' : '<span class="badge badge-amber text-[9px]">Pending</span>'}
+            </div>
+          </div>
+          <div class="text-xs text-slate-300 mb-2 p-2 rounded bg-black/20 line-clamp-2">${r.reply_text||r.message||'—'}</div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-[10px] text-slate-500">
+              <span>${ago(r.received_at||r.created_at)}</span>
+              ${subject !== '—' ? `<span class="text-nebula-cyan">→ "${subject}"</span>` : ''}
+              ${r.provider ? `<span class="badge badge-gray text-[9px]">${r.provider}</span>` : ''}
+            </div>
+            <div class="flex gap-2">
+              ${!r.actioned ? `<button onclick="window._inboxReply('${r.lead_email||''}','${(r.reply_text||'').replace(/'/g,"\\'")}','${r.id}')" class="py-0.5 px-2 rounded bg-nebula-purple/20 text-purple-300 text-[9px] font-semibold hover:bg-nebula-purple/30">💬 Steve Reply</button>` : ''}
+              ${r.pipeline_id ? `<button onclick="openWindow('sales')" class="py-0.5 px-2 rounded bg-nebula-cyan/20 text-cyan-300 text-[9px] font-semibold hover:bg-nebula-cyan/30">📊 Pipeline</button>` : ''}
+            </div>
+          </div>
+        </div>`
+    }
+
+    const renderTab = (tab) => {
+      let items = replies
+      if (tab === 'unactioned') items = unactioned
+      if (tab === 'interested') items = interested
+
+      if (searchQ) items = items.filter(r =>
+        (r.lead_email||'').toLowerCase().includes(searchQ) ||
+        (r.lead_name||'').toLowerCase().includes(searchQ) ||
+        (r.company||'').toLowerCase().includes(searchQ) ||
+        (r.reply_text||'').toLowerCase().includes(searchQ)
+      )
+
+      if (tab === 'test') return `
+        <div class="space-y-4 max-w-2xl">
+          <div class="stat-card border border-nebula-cyan/20">
+            <h3 class="text-sm font-semibold mb-3 text-nebula-cyan">🧪 Test Steve Reply System</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Lead Email</label>
+                <input type="email" id="test-email" value="traffikboosters@gmail.com" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-cyan/50">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Message from Lead</label>
+                <textarea id="test-message" rows="3" placeholder="e.g. How much does this cost? / Yes I'm interested! / Please remove me" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-nebula-cyan/50 resize-none"></textarea>
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Lead Name (optional)</label>
+                <input type="text" id="test-name" placeholder="John Smith" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-cyan/50">
+              </div>
+              <div class="flex gap-2">
+                <button onclick="window._inboxTestReply()" class="py-2 px-4 rounded-lg bg-nebula-cyan/20 hover:bg-nebula-cyan/30 text-cyan-300 text-xs font-semibold transition-all">🚀 Send Test Reply</button>
+                <select id="test-intent" class="bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none">
+                  <option value="">Auto-detect intent</option>
+                  <option value="interested">Interested</option>
+                  <option value="question">Question</option>
+                  <option value="not_interested">Not Interested</option>
+                  <option value="maybe">Maybe</option>
+                </select>
+              </div>
+              <div id="inbox-test-log" class="text-[10px] text-slate-500 font-mono p-2">Ready</div>
+            </div>
+          </div>
+
+          <!-- Quick test buttons -->
+          <div class="stat-card">
+            <h3 class="text-xs font-semibold text-slate-300 mb-3">Quick Tests</h3>
+            <div class="grid grid-cols-2 gap-2">
+              ${[
+                { msg:'How much does this cost?', label:'💰 Pricing Question' },
+                { msg:'Yes I am interested, sounds good!', label:'🔥 Interested' },
+                { msg:'Yes interested, call me at 786-555-1234', label:'📞 Interested + Phone' },
+                { msg:'Please remove me, not interested', label:'🚫 Not Interested' },
+                { msg:'Maybe, I already have someone handling this', label:'🤔 Maybe' },
+                { msg:'Tell me more about what you do', label:'👀 Curious' },
+              ].map(t=>`
+                <button onclick="document.getElementById('test-message').value='${t.msg}';window._inboxTestReply()" 
+                  class="py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-semibold text-left transition-all">
+                  ${t.label}
+                </button>`).join('')}
+            </div>
+          </div>
+        </div>`
+
+      return `
+        <div class="space-y-3">
+          ${items.length === 0 ? `<div class="text-center text-slate-500 py-12">No replies found</div>` :
+            items.map(renderReply).join('')}
+        </div>`
+    }
+
+    const renderInbox = () => {
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <!-- Header stats -->
+          <div class="grid grid-cols-4 gap-3 mb-4 shrink-0">
+            <div class="stat-card text-center border border-nebula-cyan/20">
+              <div class="text-xl font-bold text-nebula-cyan font-mono">${replies.length}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Total Replies</div>
+            </div>
+            <div class="stat-card text-center border border-amber-500/20">
+              <div class="text-xl font-bold text-amber-400 font-mono">${unactioned.length}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Unactioned</div>
+            </div>
+            <div class="stat-card text-center border border-green-500/20">
+              <div class="text-xl font-bold text-green-400 font-mono">${interested.length}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Interested 🔥</div>
+            </div>
+            <div class="stat-card text-center border border-red-500/20">
+              <div class="text-xl font-bold text-red-400 font-mono">${notInterested.length}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Not Interested</div>
+            </div>
+          </div>
+
+          <!-- Tabs + Search -->
+          <div class="flex items-center gap-2 mb-4 shrink-0">
+            <div class="flex gap-1 flex-wrap">
+              ${tabs.map(t=>`
+                <button onclick="window._inboxTab('${t.id}')"
+                  class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-nebula-cyan/30 text-white border border-nebula-cyan/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                  ${t.label}
+                </button>`).join('')}
+            </div>
+            <input type="text" id="inbox-search" placeholder="🔍 Search replies..." 
+              oninput="window._inboxSearch(this.value)"
+              class="ml-auto bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-cyan/50 w-48">
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto" id="inbox-content">
+            ${renderTab(activeTab)}
+          </div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._inboxTab = (tab) => { activeTab = tab; renderInbox() }
+    window._inboxSearch = (q) => { searchQ = q.toLowerCase(); renderInbox() }
+
+    window._inboxReply = async (email, message, replyId) => {
+      const log = document.getElementById('inbox-test-log')
+      showRealtimeToast('⟳ Steve is replying...', 'cyan')
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/reply-webhook`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, message, name: '' })
+        })
+        const data = await res.json()
+        if (data.ok) {
+          showRealtimeToast(`✓ Steve replied: "${data.response_subject}"`, 'green')
+          setTimeout(() => loadInboxContent(el), 2000)
+        } else {
+          showRealtimeToast('✗ Reply failed', 'red')
+        }
+      } catch(e) {
+        showRealtimeToast('✗ ' + e.message, 'red')
+      }
+    }
+
+    window._inboxTestReply = async () => {
+      const email = document.getElementById('test-email')?.value?.trim()
+      const message = document.getElementById('test-message')?.value?.trim()
+      const name = document.getElementById('test-name')?.value?.trim()
+      const intent = document.getElementById('test-intent')?.value
+      const log = document.getElementById('inbox-test-log')
+
+      if (!email || !message) {
+        if(log){log.textContent='⚠ Email and message required';log.className='text-[10px] text-amber-400 font-mono p-2'}
+        return
+      }
+
+      if(log){log.className='text-[10px] text-nebula-amber font-mono p-2 loading-pulse';log.textContent='⟳ Sending to reply-webhook...'}
+
+      try {
+        const body = { email, message, name: name||'' }
+        if (intent) body.intent = intent
+
+        const res = await fetch(`${SB_URL}/functions/v1/reply-webhook`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (data.ok) {
+          if(log){
+            log.className='text-[10px] text-green-400 font-mono p-2'
+            log.innerHTML = `✓ Success!<br>Intent: <b>${data.intent}</b><br>Subject: "${data.response_subject}"<br>Phone captured: ${data.phone_captured||'none'}<br>Lead ID: ${data.lead_id||'not found'}`
+          }
+          showRealtimeToast(`✓ Steve replied: "${data.response_subject}"`, 'green')
+        } else {
+          if(log){log.className='text-[10px] text-red-400 font-mono p-2';log.textContent='✗ '+JSON.stringify(data)}
+        }
+      } catch(e) {
+        if(log){log.className='text-[10px] text-red-400 font-mono p-2';log.textContent='✗ '+e.message}
+      }
+    }
+
+    renderInbox()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
 // ── ZARA HR DIRECTOR ──────────────────────────────────────────────────────────
 async function loadZaraContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
@@ -2697,6 +2963,7 @@ const appConfigs = {
   hr:        { name:'HR Command',         icon:'users-round',      w:1060, h:720 },
   contractors: { name:'Contractor Dashboard', icon:'briefcase',     w:1080, h:740 },
   zara:        { name:'Zara — HR Director',   icon:'heart-handshake', w:1080, h:740 },
+  inbox:       { name:'Reply Inbox',          icon:'mail-open',       w:1080, h:720 },
 }
 
 const loaders = {
@@ -2712,7 +2979,8 @@ const loaders = {
   bge:         loadBGEContent,
   hr:          loadHRContent,
   contractors: loadContractorContent,
-  zara:        loadZaraContent
+  zara:        loadZaraContent,
+  inbox:       loadInboxContent
 }
 
 function openWindow(appId) {
