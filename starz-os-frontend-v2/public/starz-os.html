@@ -463,9 +463,11 @@ async function loadDashboardContent(el) {
 async function loadSalesContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
-    // Using only verified columns from deals.pipeline
-    const pipeline = await sb('deals', 'pipeline',
-      'select=id,name,lead_name,company,stage,value,interest_level,ai_score,assigned_to,next_action,service,source,phone,lead_email,updated_at,outreach_status,touch_count,reply_intent&order=updated_at.desc&limit=100')
+    const [pipeline, pricing] = await Promise.all([
+      sb('deals', 'pipeline',
+        'select=id,name,lead_name,company,stage,value,interest_level,ai_score,assigned_to,next_action,service,source,phone,lead_email,updated_at,outreach_status,touch_count,reply_intent&order=updated_at.desc&limit=100'),
+      sb('deals', 'v_pricing_intelligence', 'select=*&order=win_rate.desc&limit=20').catch(()=>[]),
+    ])
 
     const stages = ['new','contacted','proposal','closing','won','lost']
     const stageColors = { new:'border-slate-600', contacted:'border-blue-500/40', proposal:'border-purple-500/40', closing:'border-amber-500/40', won:'border-green-500/40', lost:'border-red-500/40' }
@@ -532,6 +534,23 @@ async function loadSalesContent(el) {
             </tr>`).join('')}</tbody>
           </table>
         </div>
+
+        ${pricing.length ? `
+        <!-- Pricing Intelligence -->
+        <div class="stat-card border border-nebula-amber/20">
+          <h3 class="font-space font-semibold text-sm mb-3 flex items-center gap-2">
+            <i data-lucide="brain" style="width:14px;height:14px;color:#fbbf24"></i>
+            AI Pricing Intelligence — by Industry
+          </h3>
+          <table class="data-table">
+            <thead><tr><th>Industry</th><th>Avg Win Price</th><th>Win Rate</th></tr></thead>
+            <tbody>${pricing.map(p=>`<tr>
+              <td class="font-medium capitalize">${p.industry||'—'}</td>
+              <td class="font-mono text-green-400">${fmt(p.avg_win_price||0)}</td>
+              <td><span class="font-mono text-nebula-cyan">${p.win_rate ? (Number(p.win_rate)*100).toFixed(1)+'%' : '—'}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
       </div>`
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
@@ -571,14 +590,16 @@ async function loadSteveContent(el) {
     messages.push({ role:'assistant', text:'<span class="spinner" style="width:16px;height:16px"></span>' })
     render()
     try {
-      const [pipeline, leads, kpis] = await Promise.all([
+      const [pipeline, leads, kpis, patterns] = await Promise.all([
         sb('deals', 'pipeline', 'select=stage,value,name,interest_level,ai_score&limit=200'),
         sb('crm', 'leads', 'select=status,lead_score,priority_level&limit=500'),
         sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=3'),
+        sb('ai', 'v_steve_patterns', 'select=*&order=win_rate.desc&limit=10').catch(()=>[]),
       ])
       const won = pipeline.filter(p=>p.stage?.toLowerCase()==='won')
       const totalVal = pipeline.reduce((s,p)=>s+(Number(p.value)||0),0)
-      const context = `You are Steve BGE, senior sales AI for Traffik Boosters digital marketing agency. Live data as of now: Pipeline: ${pipeline.length} deals total, ${won.length} won, $${totalVal.toFixed(0)} total pipeline value. Stage breakdown: ${['new','contacted','proposal','closing','won','lost'].map(s=>s+':'+pipeline.filter(p=>p.stage?.toLowerCase()===s).length).join(', ')}. Leads: ${leads.length} total, ${leads.filter(l=>l.status==='qualified').length} qualified, ${leads.filter(l=>l.priority_level==='high').length} high priority. Latest KPI snapshot: ${JSON.stringify(kpis[0]||{})}. Answer concisely in 2-3 sentences. Use dollar signs and percentages where relevant.`
+      const topPatterns = patterns.slice(0,3).map(p=>`${p.industry||''}/${p.intent||''}: ${p.win_rate ? (Number(p.win_rate)*100).toFixed(0)+'%' : '—'} win rate`).join('; ')
+      const context = `You are Steve BGE, senior sales AI for Traffik Boosters digital marketing agency. Live data as of now: Pipeline: ${pipeline.length} deals total, ${won.length} won, $${totalVal.toFixed(0)} total pipeline value. Stage breakdown: ${['new','contacted','proposal','closing','won','lost'].map(s=>s+':'+pipeline.filter(p=>p.stage?.toLowerCase()===s).length).join(', ')}. Leads: ${leads.length} total, ${leads.filter(l=>l.status==='qualified').length} qualified, ${leads.filter(l=>l.priority_level==='high').length} high priority. AI Pattern Intelligence: ${topPatterns||'loading'}. Latest KPI snapshot: ${JSON.stringify(kpis[0]||{})}. Answer concisely in 2-3 sentences. Use dollar signs and percentages where relevant.`
       let reply = ''
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1128,6 +1149,25 @@ async function loadControlContent(el) {
         </div>
       </div>
 
+      <!-- AI Intelligence Feed -->
+      <div class="stat-card border border-blue-500/20" id="ai-intel-section">
+        <h3 class="font-space font-semibold text-sm mb-3 flex items-center gap-2">
+          <i data-lucide="brain" style="width:14px;height:14px;color:#60a5fa"></i>
+          AI Learning Feed
+          <span class="badge badge-blue ml-auto">Live</span>
+        </h3>
+        <div id="ai-intel-content" class="text-xs text-slate-500">Loading AI data...</div>
+      </div>
+
+      <!-- Rep Performance Intelligence -->
+      <div class="stat-card border border-green-500/20">
+        <h3 class="font-space font-semibold text-sm mb-3 flex items-center gap-2">
+          <i data-lucide="trophy" style="width:14px;height:14px;color:#34d399"></i>
+          Rep Performance Intelligence
+        </h3>
+        <div id="rep-perf-content" class="text-xs text-slate-500">Loading rep data...</div>
+      </div>
+
       <!-- STARZ-OS Core Engines -->
       <div class="stat-card border border-nebula-purple/30">
         <h3 class="font-space font-semibold text-sm mb-4 flex items-center gap-2">
@@ -1212,6 +1252,71 @@ async function loadControlContent(el) {
     </div>`
 
   lucide.createIcons()
+
+  // Load AI Intelligence data async
+  Promise.all([
+    sb('ai', 'learning_log', 'select=agent,objection_type,intent,industry,confidence,outcome,revenue,created_at&order=created_at.desc&limit=15').catch(()=>[]),
+    sb('ai', 'v_steve_patterns', 'select=*&order=win_rate.desc&limit=10').catch(()=>[]),
+    sb('sales', 'v_rep_performance', 'select=*&order=close_rate.desc&limit=10').catch(()=>[]),
+  ]).then(([learning, patterns, repPerf]) => {
+    const aiEl = document.getElementById('ai-intel-content')
+    if (aiEl) {
+      if (learning.length) {
+        aiEl.innerHTML = `
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              ${patterns.slice(0,4).map(p=>`
+                <div class="p-2 rounded-lg bg-black/20 border border-blue-500/10">
+                  <div class="text-[10px] font-semibold text-blue-300 capitalize">${p.industry||'—'}</div>
+                  <div class="text-[10px] text-slate-400">${p.intent||'—'} · ${p.objection_type||'—'}</div>
+                  <div class="flex justify-between mt-1">
+                    <span class="text-green-400 font-mono text-[10px]">${p.win_rate ? (Number(p.win_rate)*100).toFixed(0)+'%' : '—'} win</span>
+                    <span class="text-nebula-cyan font-mono text-[10px]">${fmt(p.avg_revenue||0)}</span>
+                  </div>
+                </div>`).join('')}
+            </div>
+            <h4 class="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Recent Learning Events</h4>
+            <table class="data-table">
+              <thead><tr><th>Agent</th><th>Industry</th><th>Intent</th><th>Outcome</th><th>Confidence</th><th>Revenue</th><th>Time</th></tr></thead>
+              <tbody>${learning.map(l=>`<tr>
+                <td class="text-nebula-purple">${l.agent||'—'}</td>
+                <td class="text-slate-400 capitalize">${l.industry||'—'}</td>
+                <td>${l.intent||'—'}</td>
+                <td><span class="badge ${l.outcome==='won'?'badge-green':l.outcome==='lost'?'badge-red':'badge-gray'}">${l.outcome||'—'}</span></td>
+                <td><span class="font-mono text-nebula-amber">${l.confidence ? (Number(l.confidence)*100).toFixed(0)+'%' : '—'}</span></td>
+                <td class="font-mono text-green-400">${fmt(l.revenue||0)}</td>
+                <td class="text-slate-400">${ago(l.created_at)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>`
+      } else {
+        aiEl.innerHTML = '<div class="text-slate-500 text-center py-4">No AI learning data yet</div>'
+      }
+    }
+
+    const repEl = document.getElementById('rep-perf-content')
+    if (repEl) {
+      if (repPerf.length) {
+        repEl.innerHTML = `
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Rep ID</th><th>Deals Won</th><th>Total Deals</th><th>Close Rate</th><th>Avg Deal</th></tr></thead>
+            <tbody>${repPerf.map((r,i)=>`<tr class="${i===0?'bg-amber-500/5':''}">
+              <td class="font-mono font-bold ${i===0?'text-amber-400':i===1?'text-slate-300':i===2?'text-amber-700':'text-slate-500'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td class="font-mono text-xs text-slate-400">${String(r.user_id||'—').slice(0,8)}...</td>
+              <td><span class="text-green-400 font-mono">${r.deals_won||0}</span></td>
+              <td>${r.total_deals||0}</td>
+              <td><span class="font-mono text-nebula-cyan font-bold">${r.close_rate ? (Number(r.close_rate)*100).toFixed(1)+'%' : '—'}</span></td>
+              <td class="font-mono text-nebula-amber">${fmt(r.avg_deal_value||0)}</td>
+            </tr>`).join('')}</tbody>
+          </table>`
+      } else {
+        repEl.innerHTML = '<div class="text-slate-500 text-center py-4">No rep performance data yet</div>'
+      }
+    }
+  }).catch(e => {
+    const aiEl = document.getElementById('ai-intel-content')
+    if (aiEl) aiEl.innerHTML = `<div class="text-red-400 text-xs">Error loading AI data: ${e.message}</div>`
+  })
 }
 
 async function invokeEngine(slug, logId) {
@@ -1442,7 +1547,7 @@ async function loadBGEContent(el) {
       sb('finance', 'commissions', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
       sb('analytics', 'rep_performance_daily', 'select=*&order=date.desc&limit=50').catch(()=>[]),
       sb('dialer', 'calls', 'select=id,phone_number,call_status,duration,sentiment,deal_heat_score,ai_tip,objection,proposal_ready,stripe_checkout_url,detected_buying_signal,started_at,ended_at,created_at&order=created_at.desc&limit=30').catch(()=>[]),
-      sb('kpis', 'rep_leaderboard', 'select=*&limit=20').catch(()=>[]),
+      sb('sales', 'v_rep_performance', 'select=*&order=close_rate.desc&limit=20').catch(()=>[]),
     ])
 
     const totalCommEarned = commissions.reduce((s,c)=>s+(Number(c.amount)||Number(c.commission_amount)||0),0)
@@ -1611,21 +1716,20 @@ async function loadBGEContent(el) {
           <h2 class="font-space font-bold text-base">🏆 BGE Leaderboard</h2>
           ${leaderboard.length ? `
           <table class="data-table">
-            <thead><tr><th>#</th><th>Rep</th><th>Calls</th><th>Closes</th><th>Revenue</th><th>Score</th><th>Rank</th></tr></thead>
+            <thead><tr><th>#</th><th>Rep</th><th>Won</th><th>Total</th><th>Close Rate</th><th>Avg Deal</th></tr></thead>
             <tbody>${leaderboard.map((r,i)=>`<tr class="${i===0?'bg-amber-500/10':''}">
               <td class="font-mono font-bold ${i===0?'text-amber-400':i===1?'text-slate-300':i===2?'text-amber-700':'text-slate-500'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-              <td class="font-medium">${r.rep_name||r.name||r.rep_id||'—'}</td>
-              <td>${r.calls_made||r.total_calls||'—'}</td>
-              <td><span class="text-green-400 font-mono">${r.deals_closed||r.closes||'—'}</span></td>
-              <td class="font-mono text-nebula-cyan">${fmt(r.revenue||r.total_revenue||0)}</td>
-              <td><span class="font-mono text-nebula-purple">${r.score||r.performance_score||'—'}</span></td>
-              <td>${r.rank||r.tier||'—'}</td>
+              <td class="font-mono text-xs text-slate-300">${String(r.user_id||'—').slice(0,8)}...</td>
+              <td><span class="text-green-400 font-mono font-bold">${r.deals_won||0}</span></td>
+              <td>${r.total_deals||0}</td>
+              <td><span class="font-mono text-nebula-cyan font-bold">${r.close_rate ? (Number(r.close_rate)*100).toFixed(1)+'%' : '—'}</span></td>
+              <td class="font-mono text-nebula-amber">${fmt(r.avg_deal_value||0)}</td>
             </tr>`).join('')}</tbody>
           </table>` : `
-          <div class="text-center text-slate-500 py-8">Leaderboard data loading...</div>`}
+          <div class="text-center text-slate-500 py-8">No leaderboard data found</div>`}
           ${repPerf.length ? `
           <div>
-            <h3 class="text-sm font-semibold text-slate-200 mb-3">Rep Performance — Last 7 Days</h3>
+            <h3 class="text-sm font-semibold text-slate-200 mb-3">Daily Performance — Last 7 Days</h3>
             <table class="data-table">
               <thead><tr><th>Date</th><th>Rep</th><th>Calls</th><th>Connects</th><th>Closes</th><th>Revenue</th></tr></thead>
               <tbody>${repPerf.slice(0,15).map(r=>`<tr>
