@@ -282,6 +282,10 @@
       <i data-lucide="briefcase" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Contractors</div>
     </button>
+    <button onclick="openWindow('zara')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative animate-pulse-slow" style="background:linear-gradient(145deg,#fda4af 0%,#f43f5e 45%,#881337 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(244,63,94,0.65),0 2px 6px rgba(0,0,0,0.55);">
+      <i data-lucide="heart-handshake" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Zara HR</div>
+    </button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -2060,6 +2064,339 @@ async function loadHRContent(el) {
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
+// ── ZARA HR DIRECTOR ──────────────────────────────────────────────────────────
+async function loadZaraContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [workforce, users, onboarding, invites, alerts, metrics] = await Promise.all([
+      sb('hr', 'v_workforce_overview', 'select=*&limit=1').catch(()=>[]),
+      sb('hr', 'users', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
+      sb('hr', 'onboarding_log', 'select=*&order=sent_at.desc&limit=50').catch(()=>[]),
+      sb('hr', 'user_invites', 'select=*&order=invited_at.desc&limit=50').catch(()=>[]),
+      sb('hr', 'alerts', 'select=*&order=created_at.desc&limit=30').catch(()=>[]),
+      sb('hr', 'performance_metrics', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
+    ])
+
+    const wf = workforce[0] || {}
+    const openAlerts = alerts.filter(a => a.status !== 'resolved')
+    const pendingInvites = invites.filter(i => i.status === 'pending')
+    const completedOnboarding = onboarding.filter(o => o.status === 'delivered' || o.status === 'completed')
+
+    let activeTab = 'overview'
+    const tabs = [
+      { id:'overview',    label:'🏢 Workforce' },
+      { id:'onboarding',  label:'🎯 Onboarding' },
+      { id:'invites',     label:'📨 Invites' },
+      { id:'performance', label:'📊 Performance' },
+      { id:'alerts',      label:`🚨 Alerts ${openAlerts.length ? '('+openAlerts.length+')' : ''}` },
+      { id:'team',        label:'👥 Team' },
+    ]
+
+    const renderTab = (tab) => {
+
+      if (tab === 'overview') return `
+        <div class="space-y-4">
+          <!-- Zara Header -->
+          <div class="stat-card border border-rose-500/20 bg-rose-500/5">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-2xl shrink-0">👩‍💼</div>
+              <div>
+                <div class="font-space font-bold text-lg text-white">Zara</div>
+                <div class="text-rose-300 text-sm">HR Director — Traffik Boosters</div>
+                <div class="text-[10px] text-slate-400 mt-1">Manages hiring, onboarding, compliance, and workforce intelligence</div>
+              </div>
+              <div class="ml-auto flex gap-2">
+                <span class="badge badge-red">${openAlerts.length} Open Alerts</span>
+                <span class="badge badge-amber">${pendingInvites.length} Pending Invites</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Workforce Stats -->
+          <div class="grid grid-cols-5 gap-3">
+            <div class="stat-card text-center border border-white/10">
+              <div class="text-2xl font-bold text-white font-mono">${wf.total_users||users.length||'—'}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Total Staff</div>
+            </div>
+            <div class="stat-card text-center border border-blue-500/20">
+              <div class="text-2xl font-bold text-blue-400 font-mono">${wf.sales_reps||'—'}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Sales Reps</div>
+            </div>
+            <div class="stat-card text-center border border-nebula-purple/20">
+              <div class="text-2xl font-bold text-nebula-purple font-mono">${wf.contractors||'—'}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Contractors</div>
+            </div>
+            <div class="stat-card text-center border border-nebula-cyan/20">
+              <div class="text-2xl font-bold text-nebula-cyan font-mono">${wf.developers||'—'}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Developers</div>
+            </div>
+            <div class="stat-card text-center border border-red-500/20">
+              <div class="text-2xl font-bold text-red-400 font-mono">${wf.inactive_users||'—'}</div>
+              <div class="text-[10px] text-slate-400 mt-1">Inactive</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="stat-card border border-rose-500/20">
+            <h3 class="text-sm font-semibold mb-3 text-rose-300">⚡ Zara Quick Actions</h3>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="window._zaraInvite()" class="py-2 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold transition-all">📨 Send Invite</button>
+              <button onclick="window._zaraOnboard()" class="py-2 px-3 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all">🎯 Trigger Onboarding</button>
+              <button onclick="window._zaraAlert()" class="py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold transition-all">🚨 Review Alerts</button>
+              <button onclick="window._zaraReport()" class="py-2 px-3 rounded-lg bg-nebula-purple/20 hover:bg-nebula-purple/30 text-purple-300 text-xs font-semibold transition-all">📊 Generate Report</button>
+            </div>
+            <div id="zara-action-log" class="text-[10px] mt-3 text-slate-500 font-mono">Ready</div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="stat-card">
+              <h3 class="text-xs font-semibold text-slate-300 mb-2">Recent Onboarding</h3>
+              <div class="space-y-2">
+                ${onboarding.slice(0,5).map(o=>`
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-white truncate">${o.full_name||o.email||'—'}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span class="badge badge-gray text-[9px]">${o.role_key||'—'}</span>
+                      ${statusBadge(o.status)}
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>
+            <div class="stat-card">
+              <h3 class="text-xs font-semibold text-slate-300 mb-2">Open Alerts</h3>
+              <div class="space-y-2">
+                ${openAlerts.slice(0,5).map(a=>`
+                  <div class="flex items-start gap-2 text-xs">
+                    <span class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${a.severity==='critical'?'bg-red-500':a.severity==='warning'?'bg-amber-500':'bg-blue-500'}"></span>
+                    <div class="min-w-0">
+                      <div class="text-white truncate">${a.message||'—'}</div>
+                      <div class="text-slate-500 text-[9px]">${a.category||'—'} · ${ago(a.created_at)}</div>
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`
+
+      if (tab === 'onboarding') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">Onboarding Log</h2>
+            <div class="flex gap-2">
+              <span class="badge badge-green">${completedOnboarding.length} Completed</span>
+              <span class="badge badge-amber">${onboarding.filter(o=>o.status==='pending').length} Pending</span>
+            </div>
+          </div>
+          <div class="stat-card border border-green-500/20 mb-2">
+            <div class="flex items-center gap-3">
+              <input type="email" id="zara-onboard-email" placeholder="Email to onboard..." class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-rose-500/50">
+              <select id="zara-onboard-role" class="bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-rose-500/50">
+                <option value="bge_contractor">BGE Contractor</option>
+                <option value="sales_rep">Sales Rep</option>
+                <option value="developer">Developer</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button onclick="window._zaraOnboard()" class="py-1.5 px-4 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold transition-all shrink-0">🎯 Trigger Zara Onboarding</button>
+            </div>
+            <div id="zara-onboard-log" class="text-[10px] mt-2 text-slate-500 font-mono">Ready</div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Sent</th></tr></thead>
+            <tbody>${onboarding.map(o=>`<tr>
+              <td class="font-medium">${o.full_name||'—'}</td>
+              <td class="text-slate-400 text-xs">${o.email||'—'}</td>
+              <td><span class="badge badge-gray text-[9px]">${o.role_key||'—'}</span></td>
+              <td>${statusBadge(o.status)}</td>
+              <td class="text-slate-400">${ago(o.sent_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      if (tab === 'invites') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">User Invites</h2>
+            <div class="flex gap-2">
+              <span class="badge badge-amber">${pendingInvites.length} Pending</span>
+              <span class="badge badge-green">${invites.filter(i=>i.status==='accepted').length} Accepted</span>
+            </div>
+          </div>
+          <div class="stat-card border border-amber-500/20 mb-2">
+            <div class="flex items-center gap-3">
+              <input type="email" id="zara-invite-email" placeholder="Email to invite..." class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
+              <select id="zara-invite-role" class="bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
+                <option value="bge_contractor">BGE Contractor</option>
+                <option value="sales_rep">Sales Rep</option>
+                <option value="developer">Developer</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button onclick="window._zaraInvite()" class="py-1.5 px-4 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold transition-all shrink-0">📨 Send Invite</button>
+            </div>
+            <div id="zara-invite-log" class="text-[10px] mt-2 text-slate-500 font-mono">Ready</div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Invited</th><th>Accepted</th></tr></thead>
+            <tbody>${invites.map(i=>`<tr>
+              <td class="font-mono text-xs">${i.email||'—'}</td>
+              <td><span class="badge badge-gray text-[9px]">${i.role_key||'—'}</span></td>
+              <td>${statusBadge(i.status)}</td>
+              <td class="text-slate-400">${ago(i.invited_at)}</td>
+              <td class="text-slate-400">${i.accepted_at ? ago(i.accepted_at) : '—'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      if (tab === 'performance') {
+        // Group metrics by user and type
+        const byType = {}
+        metrics.forEach(m => {
+          if (!byType[m.metric_type]) byType[m.metric_type] = []
+          byType[m.metric_type].push(m)
+        })
+        return `
+        <div class="space-y-4">
+          <h2 class="font-space font-bold text-base">Performance Metrics</h2>
+          ${Object.keys(byType).length ? Object.entries(byType).map(([type, rows]) => `
+            <div class="stat-card">
+              <h3 class="text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider">${type.replace(/_/g,' ')}</h3>
+              <table class="data-table">
+                <thead><tr><th>User ID</th><th>Value</th><th>Period Start</th><th>Period End</th></tr></thead>
+                <tbody>${rows.slice(0,10).map(m=>`<tr>
+                  <td class="font-mono text-xs text-slate-400">${String(m.user_id||'—').slice(0,8)}...</td>
+                  <td class="font-mono text-nebula-cyan font-bold">${Number(m.metric_value||0).toLocaleString()}</td>
+                  <td class="text-slate-400">${m.metric_period_start||'—'}</td>
+                  <td class="text-slate-400">${m.metric_period_end||'—'}</td>
+                </tr>`).join('')}</tbody>
+              </table>
+            </div>`).join('') : '<div class="text-center text-slate-500 py-8">No performance metrics yet</div>'}
+        </div>`
+      }
+
+      if (tab === 'alerts') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">HR Alerts</h2>
+            <div class="flex gap-2">
+              <span class="badge badge-red">${alerts.filter(a=>a.severity==='critical').length} Critical</span>
+              <span class="badge badge-amber">${alerts.filter(a=>a.severity==='warning').length} Warnings</span>
+              <span class="badge badge-green">${alerts.filter(a=>a.status==='resolved').length} Resolved</span>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Severity</th><th>Category</th><th>Message</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+            <tbody>${alerts.map(a=>`<tr>
+              <td><span class="badge ${a.severity==='critical'?'badge-red':a.severity==='warning'?'badge-amber':'badge-blue'}">${a.severity||'—'}</span></td>
+              <td class="text-slate-400 text-xs">${a.category||'—'}</td>
+              <td class="text-xs max-w-xs truncate">${a.message||'—'}</td>
+              <td>${statusBadge(a.status)}</td>
+              <td class="text-slate-400">${ago(a.created_at)}</td>
+              <td>${a.status!=='resolved'?`<button onclick="window._zaraResolveAlert('${a.id}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">✓ Resolve</button>`:'<span class="text-slate-600 text-[9px]">Done</span>'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      if (tab === 'team') return `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">Team Directory — ${users.length} members</h2>
+            <span class="badge badge-green">${users.filter(u=>u.role_status==='active').length} Active</span>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role Status</th><th>Joined</th></tr></thead>
+            <tbody>${users.map(u=>`<tr>
+              <td class="font-medium">${u.full_name||'—'}</td>
+              <td class="text-slate-400 text-xs font-mono">${u.email||'—'}</td>
+              <td>${statusBadge(u.role_status)}</td>
+              <td class="text-slate-400">${ago(u.created_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+
+      return ''
+    }
+
+    const renderZara = () => {
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <div class="flex gap-1 mb-4 shrink-0 border-b border-slate-700/40 pb-3 flex-wrap">
+            ${tabs.map(t=>`
+              <button onclick="window._zaraTab('${t.id}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-rose-500/30 text-white border border-rose-500/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                ${t.label}
+              </button>`).join('')}
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            ${renderTab(activeTab)}
+          </div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._zaraTab = (tab) => { activeTab = tab; renderZara() }
+
+    window._zaraInvite = async () => {
+      const emailEl = document.getElementById('zara-invite-email')
+      const roleEl = document.getElementById('zara-invite-role')
+      const logEl = document.getElementById('zara-invite-log') || document.getElementById('zara-action-log')
+      const email = emailEl?.value?.trim()
+      if (!email) { if(logEl){logEl.textContent='⚠ Enter an email first';logEl.className='text-[10px] mt-2 text-amber-400 font-mono'} return }
+      if(logEl){logEl.className='text-[10px] mt-2 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Sending invite...'}
+      try {
+        const data = await callEngine('core-automation-engine', 'invite_user', { email, role_key: roleEl?.value||'bge_contractor' })
+        if(logEl){logEl.className='text-[10px] mt-2 text-green-400 font-mono';logEl.textContent='✓ Invite sent to '+email}
+        showRealtimeToast(`📨 Invite sent to ${email}`, 'green')
+        if(emailEl) emailEl.value = ''
+      } catch(e) {
+        if(logEl){logEl.className='text-[10px] mt-2 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
+      }
+    }
+
+    window._zaraOnboard = async () => {
+      const emailEl = document.getElementById('zara-onboard-email')
+      const roleEl = document.getElementById('zara-onboard-role')
+      const logEl = document.getElementById('zara-onboard-log') || document.getElementById('zara-action-log')
+      const email = emailEl?.value?.trim()
+      if (!email) { if(logEl){logEl.textContent='⚠ Enter an email first';logEl.className='text-[10px] mt-2 text-amber-400 font-mono'} return }
+      if(logEl){logEl.className='text-[10px] mt-2 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Triggering Zara onboarding...'}
+      try {
+        const data = await callEngine('core-automation-engine', 'trigger_zara_onboarding', { email, role_key: roleEl?.value||'bge_contractor' })
+        if(logEl){logEl.className='text-[10px] mt-2 text-green-400 font-mono';logEl.textContent='✓ Zara onboarding triggered for '+email}
+        showRealtimeToast(`🎯 Zara onboarding started for ${email}`, 'green')
+        if(emailEl) emailEl.value = ''
+      } catch(e) {
+        if(logEl){logEl.className='text-[10px] mt-2 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
+      }
+    }
+
+    window._zaraAlert = () => { activeTab = 'alerts'; renderZara() }
+    window._zaraReport = async () => {
+      const logEl = document.getElementById('zara-action-log')
+      if(logEl){logEl.className='text-[10px] mt-3 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Generating HR report...'}
+      try {
+        const data = await callEngine('core-automation-engine', 'generate_hr_report', {})
+        if(logEl){logEl.className='text-[10px] mt-3 text-green-400 font-mono';logEl.textContent='✓ '+(data.message||'HR report generated')}
+      } catch(e) {
+        if(logEl){logEl.className='text-[10px] mt-3 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
+      }
+    }
+
+    window._zaraResolveAlert = async (alertId) => {
+      try {
+        await callEngine('core-automation-engine', 'resolve_hr_alert', { alert_id: alertId })
+        showRealtimeToast('✓ Alert resolved', 'green')
+        // Refresh
+        const contentEl = Object.entries(windows).find(([,w])=>w.appId==='zara')?.[0]
+        if(contentEl) loadZaraContent(document.getElementById('content-'+contentEl))
+      } catch(e) {
+        showRealtimeToast('✗ '+e.message, 'red')
+      }
+    }
+
+    renderZara()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
 // ── CONTRACTOR DASHBOARD ─────────────────────────────────────────────────────
 async function loadContractorContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
@@ -2359,6 +2696,7 @@ const appConfigs = {
   bge:       { name:'BGE Sales Floor',    icon:'phone-call',       w:1080, h:720 },
   hr:        { name:'HR Command',         icon:'users-round',      w:1060, h:720 },
   contractors: { name:'Contractor Dashboard', icon:'briefcase',     w:1080, h:740 },
+  zara:        { name:'Zara — HR Director',   icon:'heart-handshake', w:1080, h:740 },
 }
 
 const loaders = {
@@ -2373,7 +2711,8 @@ const loaders = {
   control:     loadControlContent,
   bge:         loadBGEContent,
   hr:          loadHRContent,
-  contractors: loadContractorContent
+  contractors: loadContractorContent,
+  zara:        loadZaraContent
 }
 
 function openWindow(appId) {
