@@ -273,6 +273,10 @@
       <i data-lucide="phone-call" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">BGE Floor</div>
     </button>
+    <button onclick="openWindow('hr')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative" style="background:linear-gradient(145deg,#86efac 0%,#22c55e 45%,#14532d 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(34,197,94,0.65),0 2px 6px rgba(0,0,0,0.55);">
+      <i data-lucide="users-round" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">HR Command</div>
+    </button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -1705,6 +1709,253 @@ async function loadBGEContent(el) {
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
+// ── HR COMMAND ───────────────────────────────────────────────────────────────
+async function loadHRContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+
+  let activeTab = 'recruit'
+  const tabs = [
+    { id:'recruit',     label:'🤖 Auto Recruit' },
+    { id:'onboarding',  label:'🎯 Onboarding' },
+    { id:'performance', label:'📊 Performance' },
+  ]
+
+  try {
+    const [contractors, leads, repPerf] = await Promise.all([
+      sb('public', 'v_bge_contractor_profiles', 'select=*&limit=100').catch(()=>[]),
+      sb('public', 'v_bge_lead_assignments', 'select=*&order=assigned_at.desc&limit=200').catch(()=>[]),
+      sb('analytics', 'rep_performance_daily', 'select=*&order=date.desc&limit=50').catch(()=>[]),
+    ])
+
+    const activeContractors = contractors.filter(c => c.status === 'active' || c.active === true)
+    const threshold = 15
+    const belowThreshold = activeContractors.length < threshold
+
+    const renderTab = (tab) => {
+      if (tab === 'recruit') return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">Auto Recruit Mode</h2>
+            <span class="badge ${belowThreshold ? 'badge-red' : 'badge-green'}">${belowThreshold ? '⚠ Below Threshold' : '✓ Healthy'}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-green-400 font-mono">${activeContractors.length}</div><div class="text-[10px] text-slate-400 mt-1">Active Contractors</div></div>
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-nebula-amber font-mono">${threshold}</div><div class="text-[10px] text-slate-400 mt-1">Target Threshold</div></div>
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-nebula-cyan font-mono">${contractors.length}</div><div class="text-[10px] text-slate-400 mt-1">Total BGEs</div></div>
+          </div>
+          <div class="stat-card border border-nebula-purple/20">
+            <h3 class="text-sm font-semibold mb-3">Recruit Actions</h3>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Threshold</label>
+                <input type="number" id="hr-threshold" value="${threshold}" min="1" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-purple/50">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Invite Emails (comma separated)</label>
+                <input type="text" id="hr-emails" placeholder="a@x.com, b@y.com" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-nebula-purple/50">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="window._hrRunRecruit()" class="py-2 px-4 rounded-lg bg-nebula-purple/30 hover:bg-nebula-purple/50 text-purple-300 text-xs font-semibold transition-all">🤖 Run Auto Recruit</button>
+              <button onclick="window._hrPostJobs()" class="py-2 px-4 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs font-semibold transition-all">📢 Post Jobs Only</button>
+            </div>
+            <div id="hr-recruit-log" class="text-[10px] mt-3 text-slate-500 font-mono">Ready</div>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200 mb-3">Current BGE Contractors</h3>
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Leads</th><th>Closed</th></tr></thead>
+              <tbody>${contractors.slice(0,15).map(c=>`<tr>
+                <td class="font-medium">${c.name||c.full_name||'—'}</td>
+                <td class="text-slate-400 text-xs">${c.email||c.contractor_email||'—'}</td>
+                <td>${statusBadge(c.status||'active')}</td>
+                <td><span class="font-mono text-nebula-cyan">${c.leads_assigned||c.active_leads||'—'}</span></td>
+                <td><span class="font-mono text-green-400">${c.deals_closed||c.closes||'—'}</span></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>`
+
+      if (tab === 'onboarding') return `
+        <div class="space-y-5">
+          <h2 class="font-space font-bold text-base">BGE Onboarding System</h2>
+          <div class="stat-card border border-green-500/20">
+            <h3 class="text-sm font-semibold mb-3">Run Full Onboarding</h3>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Select Contractor</label>
+                <select id="hr-onboard-contractor" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-green-500/50">
+                  <option value="">-- choose contractor --</option>
+                  ${contractors.map(c=>`<option value="${c.id}">${c.name||c.full_name||'—'} (${c.email||'no email'})</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 mb-1 block">Starter Leads to Assign</label>
+                <input type="number" id="hr-starter-leads" value="10" min="1" class="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-green-500/50">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="window._hrRunOnboarding()" class="py-2 px-4 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all">🎯 Run Full Onboarding</button>
+              <button onclick="window._hrLogFirstCall()" class="py-2 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all">📞 Log First Call Complete</button>
+            </div>
+            <div id="hr-onboard-log" class="text-[10px] mt-3 text-slate-500 font-mono">Select a contractor and run onboarding</div>
+          </div>
+          <div class="stat-card">
+            <h3 class="text-sm font-semibold mb-3">Day 1 Checklist (sent automatically)</h3>
+            <div class="space-y-2">
+              ${['Read BGE Quickstart Guide','Practice opener script (10 reps)','Complete first 10 outreach calls','Log call outcomes in CRM','Book at least 1 follow-up call'].map(t=>`
+                <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                  <span class="text-green-400 text-xs">✓</span>
+                  <span class="text-xs text-slate-300">${t}</span>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>`
+
+      if (tab === 'performance') {
+        const reps = contractors.filter(c => c.status === 'active' || c.active === true)
+        const dailyTarget = 30
+        return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <h2 class="font-space font-bold text-base">Performance Mode</h2>
+            <button onclick="window._hrFlagCoaching()" class="py-1.5 px-4 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold transition-all">⚑ Flag Low Performers</button>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-white font-mono">${reps.length}</div><div class="text-[10px] text-slate-400 mt-1">Active Reps</div></div>
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-green-400 font-mono">${dailyTarget}</div><div class="text-[10px] text-slate-400 mt-1">Daily Call Target</div></div>
+            <div class="stat-card text-center"><div class="text-2xl font-bold text-nebula-amber font-mono">8%</div><div class="text-[10px] text-slate-400 mt-1">Min Conversion</div></div>
+          </div>
+          ${repPerf.length ? `
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200 mb-3">Rep Performance — Last 7 Days</h3>
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Rep</th><th>Calls</th><th>Connects</th><th>Closes</th><th>Revenue</th><th>Status</th></tr></thead>
+              <tbody>${repPerf.slice(0,20).map(r=>`<tr>
+                <td class="text-slate-400">${r.date||r.kpi_date||'—'}</td>
+                <td class="font-medium">${r.rep_name||r.rep_id||'—'}</td>
+                <td>${r.calls_made||r.calls||'—'}</td>
+                <td>${r.connects||r.connected||'—'}</td>
+                <td><span class="text-green-400 font-mono">${r.closes||r.deals_closed||'—'}</span></td>
+                <td class="font-mono text-nebula-cyan">${fmt(r.revenue||0)}</td>
+                <td>${(r.calls_made||0) >= dailyTarget ? '<span class="badge badge-green">On Target</span>' : '<span class="badge badge-amber">Below</span>'}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>` : '<div class="text-center text-slate-500 py-8">No performance data found</div>'}
+          <div id="hr-coaching-log" class="text-[10px] text-slate-500 font-mono">Ready</div>
+        </div>`
+      }
+      return ''
+    }
+
+    const renderHR = () => {
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <div class="flex gap-1 mb-4 shrink-0 border-b border-slate-700/40 pb-3">
+            ${tabs.map(t=>`
+              <button onclick="window._hrTab('${t.id}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-nebula-purple/30 text-white border border-nebula-purple/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                ${t.label}
+              </button>`).join('')}
+            <div class="ml-auto flex items-center gap-2">
+              <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <span class="text-[10px] text-slate-400">HR Live</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto" id="hr-tab-content">
+            ${renderTab(activeTab)}
+          </div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._hrTab = (tab) => { activeTab = tab; renderHR() }
+
+    window._hrRunRecruit = async () => {
+      const log = document.getElementById('hr-recruit-log')
+      if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Running auto recruit...' }
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
+          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'auto_recruit', payload:{ threshold: Number(document.getElementById('hr-threshold')?.value||15) } })
+        })
+        const data = await res.json()
+        if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ ' + (data.message||'Auto recruit triggered') }
+      } catch(e) {
+        if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
+      }
+    }
+
+    window._hrPostJobs = async () => {
+      const log = document.getElementById('hr-recruit-log')
+      if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Posting jobs...' }
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/outreach-engine`, {
+          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'post_job', payload:{ title:'Make Money as a BGE at Traffik Boosters', platforms:['craigslist','indeed','monster'] } })
+        })
+        const data = await res.json()
+        if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ Jobs posted: ' + (data.message||'Success') }
+      } catch(e) {
+        if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
+      }
+    }
+
+    window._hrRunOnboarding = async () => {
+      const log = document.getElementById('hr-onboard-log')
+      const contractorId = document.getElementById('hr-onboard-contractor')?.value
+      const starterLeads = document.getElementById('hr-starter-leads')?.value || 10
+      if (!contractorId) { if(log){log.textContent='⚠ Select a contractor first';log.className='text-[10px] mt-3 text-amber-400 font-mono'} return }
+      if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Running full onboarding...' }
+      try {
+        const contractor = contractors.find(c=>String(c.id)===String(contractorId))
+        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
+          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'onboard_contractor', payload:{ contractor_id:contractorId, email:contractor?.email, name:contractor?.name||contractor?.full_name, starter_leads:Number(starterLeads) } })
+        })
+        const data = await res.json()
+        if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ Onboarding complete: ' + (data.message||'Success') }
+      } catch(e) {
+        if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
+      }
+    }
+
+    window._hrLogFirstCall = async () => {
+      const log = document.getElementById('hr-onboard-log')
+      const contractorId = document.getElementById('hr-onboard-contractor')?.value
+      if (!contractorId) { if(log){log.textContent='⚠ Select a contractor first';log.className='text-[10px] mt-3 text-amber-400 font-mono'} return }
+      if (log) { log.className = 'text-[10px] mt-3 text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Logging milestone...' }
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
+          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'create_task', payload:{ user_id:contractorId, title:'First call completed (milestone logged)', priority:'medium', category:'onboarding_milestone' } })
+        })
+        const data = await res.json()
+        if (log) { log.className = 'text-[10px] mt-3 text-green-400 font-mono'; log.textContent = '✓ First call milestone logged' }
+      } catch(e) {
+        if (log) { log.className = 'text-[10px] mt-3 text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
+      }
+    }
+
+    window._hrFlagCoaching = async () => {
+      const log = document.getElementById('hr-coaching-log')
+      if (log) { log.className = 'text-[10px] text-nebula-amber font-mono loading-pulse'; log.textContent = '⟳ Flagging low performers...' }
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/core-automation-engine`, {
+          method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'flag_coaching', payload:{ daily_target:30, min_conversion:8 } })
+        })
+        const data = await res.json()
+        if (log) { log.className = 'text-[10px] text-green-400 font-mono'; log.textContent = '✓ ' + (data.message||'Low performers flagged for coaching') }
+      } catch(e) {
+        if (log) { log.className = 'text-[10px] text-red-400 font-mono'; log.textContent = '✗ ' + e.message }
+      }
+    }
+
+    renderHR()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
 // ── WINDOW MANAGER ───────────────────────────────────────────────────────────
 const windows = {}; let zIndex = 1000; let windowCount = 0
 
@@ -1719,6 +1970,7 @@ const appConfigs = {
   files:     { name:'Work Orders',        icon:'folder-open',      w:980,  h:660 },
   control:   { name:'Engine Control',     icon:'terminal',         w:980,  h:720 },
   bge:       { name:'BGE Sales Floor',    icon:'phone-call',       w:1080, h:720 },
+  hr:        { name:'HR Command',         icon:'users-round',      w:1060, h:720 },
 }
 
 const loaders = {
@@ -1731,7 +1983,8 @@ const loaders = {
   marketing: loadMarketingContent,
   files:     loadFilesContent,
   control:   loadControlContent,
-  bge:       loadBGEContent
+  bge:       loadBGEContent,
+  hr:        loadHRContent
 }
 
 function openWindow(appId) {
