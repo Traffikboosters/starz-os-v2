@@ -979,49 +979,314 @@ async function loadMarketingContent(el) {
 async function loadFilesContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
-    const workOrders = await sb('deals', 'work_orders', 'select=*&order=created_at.desc&limit=100')
-    const pending = workOrders.filter(w => w.fulfillment_status === 'pending' || w.status === 'pending')
-    const active = workOrders.filter(w => w.status === 'active' || w.execution_status === 'active')
-    const totalVal = workOrders.reduce((s,w)=>s+(Number(w.total_amount)||0),0)
-    el.innerHTML = `
-      <div class="space-y-5">
-        <h2 class="font-space font-bold text-lg">Work Orders — ${workOrders.length} total</h2>
-        <div class="grid grid-cols-3 gap-3">
-          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Pending</div><div class="text-xl font-bold text-amber-400 font-mono">${pending.length}</div></div>
-          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Active</div><div class="text-xl font-bold text-blue-400 font-mono">${active.length}</div></div>
-          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Total Value</div><div class="text-xl font-bold text-green-400 font-mono">${fmt(totalVal)}</div></div>
+    const [workOrders, devTasks, onboardingQueue] = await Promise.all([
+      sb('deals', 'work_orders', 'select=id,client_name,business_name,package,service_type,status,payment_status,fulfillment_status,execution_status,total_amount,deposit_amount,monthly_amount,rico_visible,rico_execution_locked,probation_ends_at,clearance_ends_at,production_released_at,paid_at,signed_at,created_at&order=created_at.desc&limit=50'),
+      sb('public', 'developer_tasks', 'select=id,work_order_id,assigned_to,task_type,status,priority,created_at&order=priority.asc&limit=200'),
+      sb('public', 'work_order_onboarding_queue', 'select=id,work_order_id,partner_name,partner_email,status,attempts,created_at&order=created_at.desc&limit=20').catch(()=>[]),
+    ])
+
+    // ── STATS ──────────────────────────────────────────────────────────────
+    const probation    = workOrders.filter(w => w.execution_status === 'probation_hold')
+    const readyForRico = workOrders.filter(w => w.fulfillment_status === 'ready_for_rico')
+    const inProgress   = workOrders.filter(w => ['in_progress','active'].includes(w.fulfillment_status||w.status))
+    const completed    = workOrders.filter(w => ['completed','done','fulfilled'].includes(w.fulfillment_status||w.status))
+    const totalRevenue = workOrders.reduce((s,w) => s + Number(w.total_amount||0), 0)
+
+    // ── HELPERS ────────────────────────────────────────────────────────────
+    const probationCountdown = (w) => {
+      const end = w.clearance_ends_at || w.probation_ends_at
+      if (!end) return null
+      const diff = new Date(end) - new Date()
+      if (diff <= 0) return '✅ Cleared'
+      const h = Math.floor(diff/3600000)
+      const d = Math.floor(h/24)
+      return d > 0 ? `⏳ ${d}d ${h%24}h remaining` : `⏳ ${h}h remaining`
+    }
+
+    const execColor = (s) => {
+      const m = { probation_hold:'text-amber-400', ready_for_rico:'text-blue-400',
+        in_progress:'text-green-400', completed:'text-emerald-400', on_hold:'text-red-400' }
+      return m[s] || 'text-slate-400'
+    }
+
+    const execBg = (s) => {
+      const m = { probation_hold:'bg-amber-500/15 border-amber-500/30',
+        ready_for_rico:'bg-blue-500/15 border-blue-500/30',
+        in_progress:'bg-green-500/15 border-green-500/30',
+        completed:'bg-emerald-500/15 border-emerald-500/30',
+        on_hold:'bg-red-500/15 border-red-500/30',
+        intake:'bg-slate-500/15 border-slate-500/30' }
+      return m[s] || 'bg-slate-700/20 border-slate-700/30'
+    }
+
+    const getTasksForOrder = (woId) => devTasks.filter(t => t.work_order_id === woId)
+
+    const taskBar = (woId) => {
+      const tasks = getTasksForOrder(woId)
+      if (!tasks.length) return ''
+      const done = tasks.filter(t => t.status === 'completed' || t.status === 'done').length
+      const pct = Math.round((done/tasks.length)*100)
+      return `<div class="flex items-center gap-2 mt-1">
+        <div class="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-full bg-cyan-400 rounded-full" style="width:${pct}%"></div>
         </div>
-        <table class="data-table">
-          <thead><tr><th>Client</th><th>Service</th><th>Status</th><th>Fulfillment</th><th>Amount</th><th>Payment</th><th>Created</th></tr></thead>
-          <tbody>${workOrders.map(w => `<tr>
-            <td class="font-medium">${w.client_name||w.business_name||'—'}</td>
-            <td class="text-slate-400">${w.service_type||w.department||'—'}</td>
-            <td>${statusBadge(w.status)}</td>
-            <td>${statusBadge(w.fulfillment_status)}</td>
-            <td class="font-mono text-nebula-cyan">${fmt(w.total_amount||0)}</td>
-            <td>${w.payment_status==='paid'?'<span class="badge badge-green">Paid</span>':'<span class="badge badge-amber">Pending</span>'}</td>
-            <td class="text-slate-400">${ago(w.created_at)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
+        <span class="text-[9px] text-slate-500">${done}/${tasks.length} tasks</span>
       </div>`
-  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
-}
+    }
 
-// ── CONTROL PANEL (ENGINE ACTIONS) ──────────────────────────────────────────
-async function rpc(schema, fn, body = {}) {
-  const headers = {
-    'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type': 'application/json',
-    'Accept-Profile': schema, 'Content-Profile': schema
-  }
-  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method:'POST', headers, body: JSON.stringify(body) })
-  const text = await res.text()
-  let data
-  try { data = JSON.parse(text) } catch { data = text }
-  if (!res.ok) throw new Error(`${fn}: ${res.status} — ${typeof data === 'object' ? JSON.stringify(data) : data}`)
-  return data
-}
+    let activeTab = 'pipeline'
+    let selectedWO = workOrders[0]?.id || null
 
+    const renderPipeline = () => `
+      <div class="space-y-2">
+        ${workOrders.length === 0 ? `
+          <div class="text-center py-12 text-slate-500">
+            <div class="text-4xl mb-3">📦</div>
+            <div class="text-sm">No work orders yet</div>
+            <div class="text-xs mt-1">Deals close → work orders appear here automatically</div>
+          </div>` :
+        workOrders.map(w => {
+          const tasks = getTasksForOrder(w.id)
+          const countdown = probationCountdown(w)
+          const isSelected = selectedWO === w.id
+          return `
+          <div onclick="window._ricoSelectWO('${w.id}')"
+            class="p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : execBg(w.execution_status||w.fulfillment_status)} hover:opacity-90">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="font-semibold text-sm text-white truncate">${w.business_name||w.client_name||'—'}</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded border ${execBg(w.execution_status)} ${execColor(w.execution_status)} font-semibold">
+                    ${(w.execution_status||'intake').replace(/_/g,' ').toUpperCase()}
+                  </span>
+                  ${w.rico_visible ? '<span class="text-[9px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded px-1">👁 Rico</span>' : ''}
+                  ${w.rico_execution_locked ? '<span class="text-[9px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1">🔒 Locked</span>' : '<span class="text-[9px] text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1">🔓 Active</span>'}
+                </div>
+                <div class="flex items-center gap-3 text-[10px] text-slate-400 mb-1">
+                  <span>📦 ${w.package||w.service_type||'—'}</span>
+                  <span>💰 $${Number(w.total_amount||0).toLocaleString()}</span>
+                  <span>📅 ${ago(w.created_at)}</span>
+                </div>
+                ${countdown ? `<div class="text-[10px] text-amber-300 mb-1">${countdown}</div>` : ''}
+                ${taskBar(w.id)}
+              </div>
+              <div class="flex flex-col gap-1 shrink-0">
+                ${w.rico_execution_locked ? `
+                  <button onclick="event.stopPropagation();window._ricoRelease('${w.id}')"
+                    class="py-1 px-2 rounded bg-green-500/20 border border-green-500/30 text-green-300 text-[9px] font-semibold hover:bg-green-500/30 transition-all">
+                    ▶ Release
+                  </button>` : `
+                  <button onclick="event.stopPropagation();window._ricoStartWork('${w.id}')"
+                    class="py-1 px-2 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[9px] font-semibold hover:bg-cyan-500/30 transition-all">
+                    ⚡ Start
+                  </button>`}
+                <button onclick="event.stopPropagation();window._ricoGenTasks('${w.id}')"
+                  class="py-1 px-2 rounded bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[9px] font-semibold hover:bg-purple-500/30 transition-all">
+                  🤖 Gen Tasks
+                </button>
+              </div>
+            </div>
+          </div>`
+        }).join('')}
+      </div>`
+
+    const renderTasks = () => {
+      if (!selectedWO) return '<div class="text-center text-slate-500 py-8">Select a work order to view tasks</div>'
+      const wo = workOrders.find(w => w.id === selectedWO)
+      const tasks = getTasksForOrder(selectedWO)
+      return `
+        <div class="space-y-3">
+          <div class="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 mb-4">
+            <div class="font-semibold text-sm text-white">${wo?.business_name||wo?.client_name||'—'}</div>
+            <div class="text-xs text-slate-400">${wo?.package||wo?.service_type||'—'} · $${Number(wo?.total_amount||0).toLocaleString()}</div>
+          </div>
+          ${tasks.length === 0 ? `
+            <div class="text-center text-slate-500 py-6">
+              <div class="text-3xl mb-2">📋</div>
+              <div class="text-xs">No tasks yet</div>
+              <button onclick="window._ricoGenTasks('${selectedWO}')"
+                class="mt-3 py-1.5 px-4 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold hover:bg-purple-500/30 transition-all">
+                🤖 Generate Tasks
+              </button>
+            </div>` :
+          `<table class="data-table">
+            <thead><tr><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>${tasks.map(t => `<tr>
+              <td class="font-medium text-xs">${t.task_type||'—'}</td>
+              <td class="text-xs text-slate-400">${t.assigned_to||'—'}</td>
+              <td class="font-mono text-center">${t.priority||'—'}</td>
+              <td>${statusBadge(t.status||'pending')}</td>
+              <td>
+                <div class="flex gap-1">
+                  <button onclick="window._ricoUpdateTask('${t.id}','in_progress')" class="py-0.5 px-1.5 rounded bg-blue-500/20 text-blue-300 text-[9px] hover:bg-blue-500/30">▶</button>
+                  <button onclick="window._ricoUpdateTask('${t.id}','completed')" class="py-0.5 px-1.5 rounded bg-green-500/20 text-green-300 text-[9px] hover:bg-green-500/30">✓</button>
+                  <button onclick="window._ricoUpdateTask('${t.id}','blocked')" class="py-0.5 px-1.5 rounded bg-red-500/20 text-red-300 text-[9px] hover:bg-red-500/30">⛔</button>
+                </div>
+              </td>
+            </tr>`).join('')}</tbody>
+          </table>`}
+        </div>`
+    }
+
+    const renderOnboarding = () => `
+      <div class="space-y-4">
+        <h3 class="text-sm font-semibold text-slate-200">Onboarding Queue — ${onboardingQueue.length} entries</h3>
+        ${onboardingQueue.length === 0 ? '<div class="text-center text-slate-500 py-8">Queue is empty</div>' :
+        `<table class="data-table">
+          <thead><tr><th>Partner</th><th>Email</th><th>Status</th><th>Attempts</th><th>Created</th></tr></thead>
+          <tbody>${onboardingQueue.map(q => `<tr>
+            <td class="font-semibold">${q.partner_name||'—'}</td>
+            <td class="text-xs">${q.partner_email||'—'}</td>
+            <td>${statusBadge(q.status||'pending')}</td>
+            <td class="font-mono text-center text-cyan-400">${q.attempts||0}</td>
+            <td class="text-slate-400">${ago(q.created_at)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`}
+      </div>`
+
+    const tabs = [
+      { id:'pipeline',   label:`📦 Pipeline (${workOrders.length})` },
+      { id:'tasks',      label:`✅ Tasks (${devTasks.length})` },
+      { id:'onboarding', label:`🚀 Onboarding (${onboardingQueue.length})` },
+    ]
+
+    const renderRico = () => {
+      const content = activeTab === 'pipeline' ? renderPipeline()
+        : activeTab === 'tasks' ? renderTasks()
+        : renderOnboarding()
+
+      el.innerHTML = `
+        <div class="flex flex-col h-full">
+          <!-- Rico Header -->
+          <div class="relative overflow-hidden rounded-2xl mb-4 shrink-0" style="background:linear-gradient(135deg,rgba(2,132,199,0.15) 0%,rgba(6,182,212,0.1) 50%,rgba(2,132,199,0.05) 100%);border:1px solid rgba(2,132,199,0.3)">
+            <div class="relative flex items-center gap-5 p-4">
+              <div class="relative shrink-0">
+                <div class="absolute inset-0 rounded-full blur-xl opacity-60" style="background:radial-gradient(circle,#0284c7,transparent)"></div>
+                <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Rico.png"
+                  class="relative w-16 h-16 rounded-full object-cover"
+                  style="border:2px solid rgba(2,132,199,0.8);box-shadow:0 0 30px rgba(2,132,199,0.5)"
+                  onerror="this.outerHTML='<div class=\\'relative w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black text-white\\' style=\\'background:linear-gradient(135deg,#0284c7,#06b6d4);border:2px solid rgba(2,132,199,0.8)\\'>R</div>'" />
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-1">
+                  <span class="text-xl font-black text-white">Rico</span>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(2,132,199,0.2);border:1px solid rgba(2,132,199,0.4);color:#7dd3fc">FULFILLMENT DIRECTOR</span>
+                  <span class="flex items-center gap-1 text-[10px] text-green-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>LIVE
+                  </span>
+                </div>
+                <div class="text-xs text-slate-400">Work order execution · Task management · 3-day probation control · Developer dispatch</div>
+              </div>
+              <div class="grid grid-cols-5 gap-2 shrink-0">
+                ${[
+                  {label:'Total', val:workOrders.length, color:'#fff'},
+                  {label:'Probation', val:probation.length, color:'#fbbf24'},
+                  {label:'Ready', val:readyForRico.length, color:'#38bdf8'},
+                  {label:'Active', val:inProgress.length, color:'#4ade80'},
+                  {label:'Revenue', val:'$'+Math.round(totalRevenue/1000)+'k', color:'#34d399'},
+                ].map(s=>`
+                  <div class="text-center rounded-xl px-3 py-2 bg-white/5 border border-white/5">
+                    <div class="text-base font-black font-mono" style="color:${s.color}">${s.val}</div>
+                    <div class="text-[8px] uppercase tracking-wider text-slate-500">${s.label}</div>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex items-center gap-2 mb-3 shrink-0 flex-wrap">
+            ${tabs.map(t=>`
+              <button onclick="window._ricoTab('${t.id}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-cyan-500/30 text-white border border-cyan-500/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
+                ${t.label}
+              </button>`).join('')}
+            <div class="ml-auto flex items-center gap-2">
+              <button onclick="window._ricoRunEngine()" class="py-1 px-3 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[10px] font-semibold hover:bg-cyan-500/30 transition-all">
+                ⚡ Run Rico Engine
+              </button>
+              <button onclick="loadFilesContent(document.getElementById('content-${Object.keys(windows).find(k=>windows[k].appId==='files')||''}'))"
+                class="py-1 px-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold transition-all">↻ Refresh</button>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto">${content}</div>
+        </div>`
+      lucide.createIcons()
+    }
+
+    window._ricoTab = (tab) => { activeTab = tab; renderRico() }
+    window._ricoSelectWO = (id) => { selectedWO = id; activeTab = 'tasks'; renderRico() }
+
+    window._ricoRelease = async (woId) => {
+      showRealtimeToast('🔓 Releasing work order from probation...', 'amber')
+      await fetch(SB_URL+'/rest/v1/work_orders?id=eq.'+woId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'deals', 'Content-Profile': 'deals', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ rico_execution_locked: false, execution_status: 'ready_for_rico', production_released_at: new Date().toISOString() })
+      }).catch(()=>{})
+      showRealtimeToast('✓ Released to Rico for execution', 'green')
+      setTimeout(() => loadFilesContent(el), 1000)
+    }
+
+    window._ricoStartWork = async (woId) => {
+      showRealtimeToast('⚡ Starting fulfillment...', 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/rico-engine', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'start_fulfillment', work_order_id: woId, tenant_id: TENANT_ID })
+        })
+        await fetch(SB_URL+'/rest/v1/work_orders?id=eq.'+woId, {
+          method: 'PATCH',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'deals', 'Content-Profile': 'deals', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ fulfillment_status: 'in_progress', execution_status: 'in_progress' })
+        })
+        showRealtimeToast('✓ Fulfillment started!', 'green')
+        setTimeout(() => loadFilesContent(el), 1000)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._ricoGenTasks = async (woId) => {
+      showRealtimeToast('🤖 Generating tasks...', 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/rico-engine', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate_tasks', work_order_id: woId, tenant_id: TENANT_ID })
+        })
+        showRealtimeToast('✓ Tasks generated!', 'green')
+        setTimeout(() => loadFilesContent(el), 1500)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._ricoUpdateTask = async (taskId, status) => {
+      await fetch(SB_URL+'/rest/v1/developer_tasks?id=eq.'+taskId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ status })
+      }).catch(()=>{})
+      showRealtimeToast('✓ Task updated: '+status, 'green')
+      setTimeout(() => loadFilesContent(el), 800)
+    }
+
+    window._ricoRunEngine = async () => {
+      showRealtimeToast('⚡ Running Rico engine...', 'amber')
+      try {
+        const res = await fetch(SB_URL+'/functions/v1/rico-engine', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'run_all', tenant_id: TENANT_ID })
+        })
+        const data = await res.json()
+        showRealtimeToast('✓ Rico engine: '+(data.message||'done'), 'green')
+        setTimeout(() => loadFilesContent(el), 2000)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    renderRico()
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Rico Error: ${e.message}</div>` }
+}
 async function loadControlContent(el) {
   const log = (id, msg, type='info') => {
     const el = document.getElementById(id)
