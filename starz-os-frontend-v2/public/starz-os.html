@@ -2965,336 +2965,484 @@ async function loadInboxContent(el) {
 async function loadZaraContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
-    const [workforce, users, onboarding, invites, alerts, metrics] = await Promise.all([
-      sb('hr', 'v_workforce_overview', 'select=*&limit=1').catch(()=>[]),
-      sb('hr', 'users', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
-      sb('hr', 'onboarding_log', 'select=*&order=sent_at.desc&limit=50').catch(()=>[]),
-      sb('hr', 'user_invites', 'select=*&order=invited_at.desc&limit=50').catch(()=>[]),
-      sb('hr', 'alerts', 'select=*&order=created_at.desc&limit=30').catch(()=>[]),
-      sb('hr', 'performance_metrics', 'select=*&order=created_at.desc&limit=100').catch(()=>[]),
+    const [contractors, applications, compliance, lines, commProfiles, bgeProfiles, billingLedger] = await Promise.all([
+      sb('public', 'contractor_profiles', 'select=id,auth_user_id,full_name,email,phone_number,onboarding_stage,verification_status,crm_access_active,w9_signed,compliance_score,active,tier,created_at&order=created_at.desc&limit=100').catch(()=>[]),
+      sb('public', 'contractor_applications', 'select=id,full_name,email,phone,state,city,ai_readiness_score,ai_summary,created_at&order=created_at.desc&limit=50').catch(()=>[]),
+      sb('public', 'contractor_compliance', 'select=contractor_id,item,status&limit=500').catch(()=>[]),
+      sb('public', 'contractor_lines', 'select=contractor_id,phone_number,status,active&limit=200').catch(()=>[]),
+      sb('public', 'user_communication_profiles', 'select=user_id,dialpad_user_id,dialpad_phone,email_address&limit=200').catch(()=>[]),
+      sb('public', 'bge_profiles', 'select=user_id,subscription_status,leads_access,close_rate,deals_closed,revenue_generated,performance_score,assignment_paused&limit=200').catch(()=>[]),
+      sb('public', 'dialer_billing_ledger', 'select=contractor_id,amount,status,invoice_date&order=invoice_date.desc&limit=200').catch(()=>[]),
     ])
 
-    const wf = workforce[0] || {}
-    const openAlerts = alerts.filter(a => a.status !== 'resolved')
-    const pendingInvites = invites.filter(i => i.status === 'pending')
-    const completedOnboarding = onboarding.filter(o => o.status === 'delivered' || o.status === 'completed')
-
-    let activeTab = 'overview'
-    const tabs = [
-      { id:'overview',    label:'🏢 Workforce' },
-      { id:'onboarding',  label:'🎯 Onboarding' },
-      { id:'invites',     label:'📨 Invites' },
-      { id:'performance', label:'📊 Performance' },
-      { id:'alerts',      label:`🚨 Alerts ${openAlerts.length ? '('+openAlerts.length+')' : ''}` },
-      { id:'team',        label:'👥 Team' },
+    // ── PHASE MAP ──────────────────────────────────────────────────────────
+    const PHASES = [
+      { id:'apply',          label:'Apply',         icon:'📋', color:'slate' },
+      { id:'pre_qualified',  label:'Pre-Qualified',  icon:'✅', color:'blue' },
+      { id:'contract',       label:'Contract',       icon:'📄', color:'purple' },
+      { id:'account',        label:'Account',        icon:'🔐', color:'indigo' },
+      { id:'training',       label:'Training',       icon:'🧠', color:'amber' },
+      { id:'active',         label:'Active',         icon:'⚡', color:'green' },
+      { id:'leads',          label:'Leads Live',     icon:'🎯', color:'cyan' },
+      { id:'powerdial',      label:'PowerDial',      icon:'📞', color:'orange' },
+      { id:'monitored',      label:'AI Monitor',     icon:'🤖', color:'pink' },
+      { id:'earning',        label:'Earning',        icon:'💰', color:'emerald' },
     ]
 
-    const renderTab = (tab) => {
+    const phaseColor = (stage) => {
+      const map = { apply:'text-slate-400', pre_qualified:'text-blue-400', contract:'text-purple-400',
+        account:'text-indigo-400', training:'text-amber-400', active:'text-green-400',
+        leads:'text-cyan-400', powerdial:'text-orange-400', monitored:'text-pink-400',
+        earning:'text-emerald-400', start:'text-slate-500' }
+      return map[stage] || 'text-slate-400'
+    }
+    const phaseBg = (stage) => {
+      const map = { apply:'bg-slate-500/20 border-slate-500/30', pre_qualified:'bg-blue-500/20 border-blue-500/30',
+        contract:'bg-purple-500/20 border-purple-500/30', account:'bg-indigo-500/20 border-indigo-500/30',
+        training:'bg-amber-500/20 border-amber-500/30', active:'bg-green-500/20 border-green-500/30',
+        leads:'bg-cyan-500/20 border-cyan-500/30', powerdial:'bg-orange-500/20 border-orange-500/30',
+        monitored:'bg-pink-500/20 border-pink-500/30', earning:'bg-emerald-500/20 border-emerald-500/30',
+        start:'bg-slate-700/20 border-slate-700/30' }
+      return map[stage] || 'bg-slate-700/20 border-slate-700/30'
+    }
+    const phaseIdx = (stage) => PHASES.findIndex(p => p.id === stage)
 
-      if (tab === 'overview') return `
-        <div class="space-y-4">
-          <!-- Zara Header -->
-          <div class="stat-card border border-rose-500/20 bg-rose-500/5">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-2xl shrink-0">👩‍💼</div>
-              <div>
-                <div class="font-space font-bold text-lg text-white">Zara</div>
-                <div class="text-rose-300 text-sm">HR Director — Traffik Boosters</div>
-                <div class="text-[10px] text-slate-400 mt-1">Manages hiring, onboarding, compliance, and workforce intelligence</div>
-              </div>
-              <div class="ml-auto flex gap-2">
-                <span class="badge badge-red">${openAlerts.length} Open Alerts</span>
-                <span class="badge badge-amber">${pendingInvites.length} Pending Invites</span>
-              </div>
+    // ── STATS ──────────────────────────────────────────────────────────────
+    const total = contractors.length
+    const active = contractors.filter(c => c.active && c.onboarding_stage === 'active' || c.onboarding_stage === 'earning' || c.onboarding_stage === 'powerdial').length
+    const pending = contractors.filter(c => !['active','earning','powerdial','monitored'].includes(c.onboarding_stage||'start')).length
+    const totalApps = applications.length
+    const revenue = contractors.filter(c=>c.crm_access_active).length * 650
+
+    // ── LOOKUP HELPERS ─────────────────────────────────────────────────────
+    const getComms = (authId) => commProfiles.find(p => p.user_id === authId)
+    const getBGE = (authId) => bgeProfiles.find(p => p.user_id === authId)
+    const getLine = (cid) => lines.find(l => l.contractor_id === cid)
+    const getCompliance = (cid) => compliance.filter(c => c.contractor_id === cid)
+    const getBilling = (cid) => billingLedger.filter(b => b.contractor_id === cid)
+
+    let activeTab = 'pipeline'
+
+    const renderPipeline = () => {
+      // Phase funnel counts
+      const phaseCounts = {}
+      PHASES.forEach(p => { phaseCounts[p.id] = contractors.filter(c => (c.onboarding_stage||'start') === p.id).length })
+
+      return `
+        <!-- Zara Header -->
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-rose-500/10 to-pink-500/10 border border-rose-500/20 mb-4">
+          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+            class="w-16 h-16 rounded-full border-2 border-rose-500/50 object-cover shrink-0" onerror="this.style.display='none'" />
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-base text-white">Zara</span>
+              <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded px-1.5 py-0.5">HR COMMAND CENTER</span>
+              <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1"></span>
             </div>
+            <div class="text-xs text-slate-400">Contractor onboarding · Compliance · System access · Pipeline activation</div>
           </div>
-
-          <!-- Workforce Stats -->
-          <div class="grid grid-cols-5 gap-3">
-            <div class="stat-card text-center border border-white/10">
-              <div class="text-2xl font-bold text-white font-mono">${wf.total_users||users.length||'—'}</div>
-              <div class="text-[10px] text-slate-400 mt-1">Total Staff</div>
-            </div>
-            <div class="stat-card text-center border border-blue-500/20">
-              <div class="text-2xl font-bold text-blue-400 font-mono">${wf.sales_reps||'—'}</div>
-              <div class="text-[10px] text-slate-400 mt-1">Sales Reps</div>
-            </div>
-            <div class="stat-card text-center border border-nebula-purple/20">
-              <div class="text-2xl font-bold text-nebula-purple font-mono">${wf.contractors||'—'}</div>
-              <div class="text-[10px] text-slate-400 mt-1">Contractors</div>
-            </div>
-            <div class="stat-card text-center border border-nebula-cyan/20">
-              <div class="text-2xl font-bold text-nebula-cyan font-mono">${wf.developers||'—'}</div>
-              <div class="text-[10px] text-slate-400 mt-1">Developers</div>
-            </div>
-            <div class="stat-card text-center border border-red-500/20">
-              <div class="text-2xl font-bold text-red-400 font-mono">${wf.inactive_users||'—'}</div>
-              <div class="text-[10px] text-slate-400 mt-1">Inactive</div>
-            </div>
+          <div class="grid grid-cols-4 gap-3 shrink-0">
+            ${[
+              {label:'Total', val:total, color:'text-white'},
+              {label:'Active', val:active, color:'text-green-400'},
+              {label:'Pending', val:pending, color:'text-amber-400'},
+              {label:'MRR', val:'$'+revenue.toLocaleString(), color:'text-emerald-400'},
+            ].map(s=>`
+              <div class="text-center">
+                <div class="text-lg font-bold font-mono ${s.color}">${s.val}</div>
+                <div class="text-[9px] text-slate-500 uppercase">${s.label}</div>
+              </div>`).join('')}
           </div>
+        </div>
 
-          <!-- Quick Actions -->
-          <div class="stat-card border border-rose-500/20">
-            <h3 class="text-sm font-semibold mb-3 text-rose-300">⚡ Zara Quick Actions</h3>
-            <div class="grid grid-cols-4 gap-2">
-              <button onclick="window._zaraInvite()" class="py-2 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold transition-all">📨 Send Invite</button>
-              <button onclick="window._zaraOnboard()" class="py-2 px-3 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all">🎯 Trigger Onboarding</button>
-              <button onclick="window._zaraAlert()" class="py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold transition-all">🚨 Review Alerts</button>
-              <button onclick="window._zaraReport()" class="py-2 px-3 rounded-lg bg-nebula-purple/20 hover:bg-nebula-purple/30 text-purple-300 text-xs font-semibold transition-all">📊 Generate Report</button>
-            </div>
-            <div id="zara-action-log" class="text-[10px] mt-3 text-slate-500 font-mono">Ready</div>
-          </div>
+        <!-- Phase Funnel -->
+        <div class="grid grid-cols-10 gap-1 mb-4">
+          ${PHASES.map((p,i) => `
+            <div class="text-center p-2 rounded-lg border ${phaseBg(p.id)} cursor-pointer hover:opacity-90 transition-all">
+              <div class="text-lg">${p.icon}</div>
+              <div class="text-[8px] font-bold font-mono ${phaseColor(p.id)} mt-0.5">${phaseCounts[p.id]||0}</div>
+              <div class="text-[7px] text-slate-600 leading-tight mt-0.5">${p.label}</div>
+            </div>`).join('')}
+        </div>
 
-          <!-- Recent Activity -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="stat-card">
-              <h3 class="text-xs font-semibold text-slate-300 mb-2">Recent Onboarding</h3>
-              <div class="space-y-2">
-                ${onboarding.slice(0,5).map(o=>`
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="text-white truncate">${o.full_name||o.email||'—'}</span>
-                    <div class="flex items-center gap-2 shrink-0">
-                      <span class="badge badge-gray text-[9px]">${o.role_key||'—'}</span>
-                      ${statusBadge(o.status)}
+        <!-- Contractor Cards -->
+        <div class="space-y-2">
+          ${contractors.length === 0 ? `
+            <div class="text-center py-12 text-slate-500">
+              <div class="text-4xl mb-3">👥</div>
+              <div class="text-sm">No contractors yet</div>
+              <div class="text-xs mt-1">Applications appear here automatically</div>
+            </div>` :
+          contractors.map(c => {
+            const stage = c.onboarding_stage || 'start'
+            const comms = getComms(c.auth_user_id)
+            const bge = getBGE(c.auth_user_id)
+            const line = getLine(c.id)
+            const compItems = getCompliance(c.id)
+            const billing = getBilling(c.id)
+            const pIdx = phaseIdx(stage)
+            const progressPct = Math.round(((pIdx + 1) / PHASES.length) * 100)
+
+            return `
+            <div class="p-4 rounded-xl border ${phaseBg(stage)} transition-all">
+              <div class="flex items-start gap-3">
+                <!-- Avatar -->
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                  ${(c.full_name||'?').charAt(0).toUpperCase()}
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="font-semibold text-sm text-white">${c.full_name||'Unknown'}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded border ${phaseBg(stage)} ${phaseColor(stage)} font-semibold">
+                      ${PHASES.find(p=>p.id===stage)?.icon||'?'} ${PHASES.find(p=>p.id===stage)?.label||stage}
+                    </span>
+                    ${c.active ? '<span class="text-[9px] text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1.5 py-0.5">ACTIVE</span>' : ''}
+                    ${c.crm_access_active ? '<span class="text-[9px] text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded px-1.5 py-0.5">CRM ✓</span>' : ''}
+                    ${c.w9_signed ? '<span class="text-[9px] text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5">W9 ✓</span>' : ''}
+                  </div>
+
+                  <div class="flex items-center gap-4 text-[10px] text-slate-400 mb-2">
+                    <span>📧 ${c.email||'—'}</span>
+                    <span>📞 ${c.phone_number||'—'}</span>
+                    <span>🏆 ${c.tier||'standard'}</span>
+                    <span>📊 Score: ${c.compliance_score||0}</span>
+                  </div>
+
+                  <!-- Progress Bar -->
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full transition-all" style="width:${progressPct}%"></div>
                     </div>
-                  </div>`).join('')}
-              </div>
-            </div>
-            <div class="stat-card">
-              <h3 class="text-xs font-semibold text-slate-300 mb-2">Open Alerts</h3>
-              <div class="space-y-2">
-                ${openAlerts.slice(0,5).map(a=>`
-                  <div class="flex items-start gap-2 text-xs">
-                    <span class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${a.severity==='critical'?'bg-red-500':a.severity==='warning'?'bg-amber-500':'bg-blue-500'}"></span>
-                    <div class="min-w-0">
-                      <div class="text-white truncate">${a.message||'—'}</div>
-                      <div class="text-slate-500 text-[9px]">${a.category||'—'} · ${ago(a.created_at)}</div>
+                    <span class="text-[9px] text-slate-500">${progressPct}%</span>
+                  </div>
+
+                  <!-- Phase Steps -->
+                  <div class="flex gap-0.5 mb-3">
+                    ${PHASES.map((p,i) => `
+                      <div class="flex-1 h-1 rounded-full ${i <= pIdx ? 'bg-rose-400' : 'bg-slate-700'}" title="${p.label}"></div>
+                    `).join('')}
+                  </div>
+
+                  <!-- Communication Profile -->
+                  <div class="grid grid-cols-3 gap-2 text-[10px] mb-3">
+                    <div class="bg-black/20 rounded-lg p-2">
+                      <div class="text-slate-500 mb-0.5">📞 Dialpad</div>
+                      <div class="${comms?.dialpad_phone ? 'text-green-400' : 'text-slate-600'}">
+                        ${comms?.dialpad_phone || 'Not provisioned'}
+                      </div>
                     </div>
-                  </div>`).join('')}
+                    <div class="bg-black/20 rounded-lg p-2">
+                      <div class="text-slate-500 mb-0.5">📧 Corporate Email</div>
+                      <div class="${comms?.email_address ? 'text-green-400' : 'text-slate-600'}">
+                        ${comms?.email_address || 'Not created'}
+                      </div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-2">
+                      <div class="text-slate-500 mb-0.5">💰 Performance</div>
+                      <div class="text-emerald-400">
+                        ${bge ? `${bge.deals_closed||0} deals · $${(bge.revenue_generated||0).toLocaleString()}` : '—'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex gap-1.5 flex-wrap">
+                    ${stage === 'start' || stage === 'apply' ? `
+                      <button onclick="window._zaraAdvance('${c.id}','pre_qualified')"
+                        class="py-1 px-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-semibold hover:bg-blue-500/30 transition-all">
+                        ✅ Pre-Qualify
+                      </button>` : ''}
+                    ${stage === 'pre_qualified' ? `
+                      <button onclick="window._zaraSendContract('${c.id}','${c.email}')"
+                        class="py-1 px-2.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-semibold hover:bg-purple-500/30 transition-all">
+                        📄 Send Contract
+                      </button>` : ''}
+                    ${stage === 'contract' ? `
+                      <button onclick="window._zaraAdvance('${c.id}','account')"
+                        class="py-1 px-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-semibold hover:bg-indigo-500/30 transition-all">
+                        🔐 Create Account
+                      </button>` : ''}
+                    ${stage === 'account' ? `
+                      <button onclick="window._zaraAdvance('${c.id}','training')"
+                        class="py-1 px-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-semibold hover:bg-amber-500/30 transition-all">
+                        🧠 Start Training
+                      </button>` : ''}
+                    ${stage === 'training' ? `
+                      <button onclick="window._zaraActivate('${c.id}')"
+                        class="py-1 px-2.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 text-[10px] font-semibold hover:bg-green-500/30 transition-all">
+                        ⚡ Activate
+                      </button>` : ''}
+                    ${['active','leads','powerdial','monitored','earning'].includes(stage) ? `
+                      <button onclick="window._zaraProvisionDialpad('${c.id}','${c.auth_user_id}')"
+                        class="py-1 px-2.5 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[10px] font-semibold hover:bg-orange-500/30 transition-all">
+                        📞 ${comms?.dialpad_phone ? 'Re-sync Dialpad' : 'Provision Dialpad'}
+                      </button>
+                      <button onclick="window._zaraAssignLeads('${c.id}','${c.auth_user_id}')"
+                        class="py-1 px-2.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[10px] font-semibold hover:bg-cyan-500/30 transition-all">
+                        🎯 Assign Leads
+                      </button>` : ''}
+                    <button onclick="window._zaraSendMessage('${c.id}','${c.email}')"
+                      class="py-1 px-2.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-[10px] hover:bg-white/10 transition-all">
+                      💬 Message
+                    </button>
+                    <button onclick="window._zaraSuspend('${c.id}')"
+                      class="py-1 px-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] hover:bg-red-500/20 transition-all ml-auto">
+                      ⛔ Suspend
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </div>`
+          }).join('')}
         </div>`
-
-      if (tab === 'onboarding') return `
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="font-space font-bold text-base">Onboarding Log</h2>
-            <div class="flex gap-2">
-              <span class="badge badge-green">${completedOnboarding.length} Completed</span>
-              <span class="badge badge-amber">${onboarding.filter(o=>o.status==='pending').length} Pending</span>
-            </div>
-          </div>
-          <div class="stat-card border border-green-500/20 mb-2">
-            <div class="flex items-center gap-3">
-              <input type="email" id="zara-onboard-email" placeholder="Email to onboard..." class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-rose-500/50">
-              <select id="zara-onboard-role" class="bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-rose-500/50">
-                <option value="bge_contractor">BGE Contractor</option>
-                <option value="sales_rep">Sales Rep</option>
-                <option value="developer">Developer</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button onclick="window._zaraOnboard()" class="py-1.5 px-4 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold transition-all shrink-0">🎯 Trigger Zara Onboarding</button>
-            </div>
-            <div id="zara-onboard-log" class="text-[10px] mt-2 text-slate-500 font-mono">Ready</div>
-          </div>
-          <table class="data-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Sent</th></tr></thead>
-            <tbody>${onboarding.map(o=>`<tr>
-              <td class="font-medium">${o.full_name||'—'}</td>
-              <td class="text-slate-400 text-xs">${o.email||'—'}</td>
-              <td><span class="badge badge-gray text-[9px]">${o.role_key||'—'}</span></td>
-              <td>${statusBadge(o.status)}</td>
-              <td class="text-slate-400">${ago(o.sent_at)}</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>`
-
-      if (tab === 'invites') return `
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="font-space font-bold text-base">User Invites</h2>
-            <div class="flex gap-2">
-              <span class="badge badge-amber">${pendingInvites.length} Pending</span>
-              <span class="badge badge-green">${invites.filter(i=>i.status==='accepted').length} Accepted</span>
-            </div>
-          </div>
-          <div class="stat-card border border-amber-500/20 mb-2">
-            <div class="flex items-center gap-3">
-              <input type="email" id="zara-invite-email" placeholder="Email to invite..." class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
-              <select id="zara-invite-role" class="bg-black/30 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
-                <option value="bge_contractor">BGE Contractor</option>
-                <option value="sales_rep">Sales Rep</option>
-                <option value="developer">Developer</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button onclick="window._zaraInvite()" class="py-1.5 px-4 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold transition-all shrink-0">📨 Send Invite</button>
-            </div>
-            <div id="zara-invite-log" class="text-[10px] mt-2 text-slate-500 font-mono">Ready</div>
-          </div>
-          <table class="data-table">
-            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Invited</th><th>Accepted</th></tr></thead>
-            <tbody>${invites.map(i=>`<tr>
-              <td class="font-mono text-xs">${i.email||'—'}</td>
-              <td><span class="badge badge-gray text-[9px]">${i.role_key||'—'}</span></td>
-              <td>${statusBadge(i.status)}</td>
-              <td class="text-slate-400">${ago(i.invited_at)}</td>
-              <td class="text-slate-400">${i.accepted_at ? ago(i.accepted_at) : '—'}</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>`
-
-      if (tab === 'performance') {
-        // Group metrics by user and type
-        const byType = {}
-        metrics.forEach(m => {
-          if (!byType[m.metric_type]) byType[m.metric_type] = []
-          byType[m.metric_type].push(m)
-        })
-        return `
-        <div class="space-y-4">
-          <h2 class="font-space font-bold text-base">Performance Metrics</h2>
-          ${Object.keys(byType).length ? Object.entries(byType).map(([type, rows]) => `
-            <div class="stat-card">
-              <h3 class="text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider">${type.replace(/_/g,' ')}</h3>
-              <table class="data-table">
-                <thead><tr><th>User ID</th><th>Value</th><th>Period Start</th><th>Period End</th></tr></thead>
-                <tbody>${rows.slice(0,10).map(m=>`<tr>
-                  <td class="font-mono text-xs text-slate-400">${String(m.user_id||'—').slice(0,8)}...</td>
-                  <td class="font-mono text-nebula-cyan font-bold">${Number(m.metric_value||0).toLocaleString()}</td>
-                  <td class="text-slate-400">${m.metric_period_start||'—'}</td>
-                  <td class="text-slate-400">${m.metric_period_end||'—'}</td>
-                </tr>`).join('')}</tbody>
-              </table>
-            </div>`).join('') : '<div class="text-center text-slate-500 py-8">No performance metrics yet</div>'}
-        </div>`
-      }
-
-      if (tab === 'alerts') return `
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="font-space font-bold text-base">HR Alerts</h2>
-            <div class="flex gap-2">
-              <span class="badge badge-red">${alerts.filter(a=>a.severity==='critical').length} Critical</span>
-              <span class="badge badge-amber">${alerts.filter(a=>a.severity==='warning').length} Warnings</span>
-              <span class="badge badge-green">${alerts.filter(a=>a.status==='resolved').length} Resolved</span>
-            </div>
-          </div>
-          <table class="data-table">
-            <thead><tr><th>Severity</th><th>Category</th><th>Message</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
-            <tbody>${alerts.map(a=>`<tr>
-              <td><span class="badge ${a.severity==='critical'?'badge-red':a.severity==='warning'?'badge-amber':'badge-blue'}">${a.severity||'—'}</span></td>
-              <td class="text-slate-400 text-xs">${a.category||'—'}</td>
-              <td class="text-xs max-w-xs truncate">${a.message||'—'}</td>
-              <td>${statusBadge(a.status)}</td>
-              <td class="text-slate-400">${ago(a.created_at)}</td>
-              <td>${a.status!=='resolved'?`<button onclick="window._zaraResolveAlert('${a.id}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">✓ Resolve</button>`:'<span class="text-slate-600 text-[9px]">Done</span>'}</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>`
-
-      if (tab === 'team') return `
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="font-space font-bold text-base">Team Directory — ${users.length} members</h2>
-            <span class="badge badge-green">${users.filter(u=>u.role_status==='active').length} Active</span>
-          </div>
-          <table class="data-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role Status</th><th>Joined</th></tr></thead>
-            <tbody>${users.map(u=>`<tr>
-              <td class="font-medium">${u.full_name||'—'}</td>
-              <td class="text-slate-400 text-xs font-mono">${u.email||'—'}</td>
-              <td>${statusBadge(u.role_status)}</td>
-              <td class="text-slate-400">${ago(u.created_at)}</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>`
-
-      return ''
     }
 
+    const renderApplications = () => `
+      <div class="space-y-4">
+        <div class="flex items-center gap-3 mb-2">
+          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+            class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
+          <span class="font-semibold text-sm">New Applications — ${applications.length} pending review</span>
+        </div>
+        ${applications.length === 0 ? '<div class="text-center text-slate-500 py-8">No applications yet</div>' :
+        `<table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>AI Score</th><th>Summary</th><th>Action</th></tr></thead>
+          <tbody>${applications.map(a => `<tr>
+            <td class="font-semibold">${a.full_name||'—'}</td>
+            <td class="text-xs">${a.email||'—'}</td>
+            <td class="font-mono text-xs">${a.phone||'—'}</td>
+            <td class="text-xs text-slate-400">${a.city||''}${a.city&&a.state?', ':''}${a.state||''}</td>
+            <td><span class="font-mono font-bold ${(a.ai_readiness_score||0)>=70?'text-green-400':(a.ai_readiness_score||0)>=50?'text-amber-400':'text-red-400'}">${a.ai_readiness_score||0}</span></td>
+            <td class="text-xs text-slate-400 max-w-xs truncate">${a.ai_summary||'—'}</td>
+            <td>
+              <div class="flex gap-1">
+                <button onclick="window._zaraApproveApp('${a.id}','${a.email}','${a.full_name}')"
+                  class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">✓ Approve</button>
+                <button onclick="window._zaraRejectApp('${a.id}')"
+                  class="py-0.5 px-2 rounded bg-red-500/20 text-red-300 text-[9px] font-semibold hover:bg-red-500/30">✗ Reject</button>
+              </div>
+            </td>
+          </tr>`).join('')}</tbody>
+        </table>`}
+      </div>`
+
+    const renderCompliance = () => {
+      const complianceItems = ['w9_signed','id_verified','contract_signed','training_complete','dialpad_provisioned','leads_assigned']
+      return `
+        <div class="space-y-4">
+          <div class="flex items-center gap-3 mb-2">
+            <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+              class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
+            <span class="font-semibold text-sm">Compliance Tracking</span>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Contractor</th><th>W9</th><th>ID Verified</th><th>Contract</th><th>Training</th><th>Dialpad</th><th>Leads</th><th>Score</th></tr></thead>
+            <tbody>${contractors.map(c => {
+              const comms = getComms(c.auth_user_id)
+              const check = (val) => val ? '<span class="text-green-400">✓</span>' : '<span class="text-red-400">✗</span>'
+              return `<tr>
+                <td class="font-semibold text-sm">${c.full_name||'—'}</td>
+                <td class="text-center">${check(c.w9_signed)}</td>
+                <td class="text-center">${check(c.id_verified)}</td>
+                <td class="text-center">${check(['contract','account','training','active','leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
+                <td class="text-center">${check(['training','active','leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
+                <td class="text-center">${check(comms?.dialpad_phone)}</td>
+                <td class="text-center">${check(['leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
+                <td><span class="font-mono font-bold ${(c.compliance_score||0)>=80?'text-green-400':(c.compliance_score||0)>=50?'text-amber-400':'text-red-400'}">${c.compliance_score||0}</span></td>
+              </tr>`
+            }).join('')}</tbody>
+          </table>
+        </div>`
+    }
+
+    const renderPerformance = () => `
+      <div class="space-y-4">
+        <div class="flex items-center gap-3 mb-2">
+          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+            class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
+          <span class="font-semibold text-sm">Contractor Performance</span>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Contractor</th><th>Stage</th><th>Deals</th><th>Revenue</th><th>Close Rate</th><th>Score</th><th>Leads Access</th><th>Status</th></tr></thead>
+          <tbody>${contractors.map((c,i) => {
+            const bge = getBGE(c.auth_user_id)
+            return `<tr class="${i===0?'bg-amber-500/5':''}">
+              <td class="font-mono text-slate-500">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td class="font-semibold">${c.full_name||'—'}</td>
+              <td>${statusBadge(c.onboarding_stage||'start')}</td>
+              <td class="font-mono text-green-400 font-bold">${bge?.deals_closed||0}</td>
+              <td class="font-mono text-emerald-400">$${((bge?.revenue_generated||0)).toLocaleString()}</td>
+              <td class="font-mono text-cyan-400">${bge?.close_rate?(Number(bge.close_rate)*100).toFixed(1)+'%':'—'}</td>
+              <td><span class="font-mono font-bold ${(bge?.performance_score||0)>=80?'text-green-400':(bge?.performance_score||0)>=50?'text-amber-400':'text-red-400'}">${(bge?.performance_score||0).toFixed(0)}</span></td>
+              <td class="text-center">${bge?.leads_access?'<span class="text-green-400">✓</span>':'<span class="text-red-400">✗</span>'}</td>
+              <td>${bge?.assignment_paused?'<span class="badge bg-red-500/20 text-red-300 text-[9px]">PAUSED</span>':'<span class="badge bg-green-500/20 text-green-300 text-[9px]">ACTIVE</span>'}</td>
+            </tr>`
+          }).join('')}</tbody>
+        </table>
+      </div>`
+
+    const tabs = [
+      { id:'pipeline',     label:`👥 Pipeline (${total})` },
+      { id:'applications', label:`📋 Applications (${totalApps})` },
+      { id:'compliance',   label:'✅ Compliance' },
+      { id:'performance',  label:'🏆 Performance' },
+    ]
+
     const renderZara = () => {
+      const content = activeTab === 'pipeline' ? renderPipeline()
+        : activeTab === 'applications' ? renderApplications()
+        : activeTab === 'compliance' ? renderCompliance()
+        : renderPerformance()
+
       el.innerHTML = `
         <div class="flex flex-col h-full">
-          <div class="flex gap-1 mb-4 shrink-0 border-b border-slate-700/40 pb-3 flex-wrap">
+          <div class="flex items-center gap-2 mb-4 shrink-0 flex-wrap">
             ${tabs.map(t=>`
               <button onclick="window._zaraTab('${t.id}')"
                 class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-rose-500/30 text-white border border-rose-500/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
                 ${t.label}
               </button>`).join('')}
+            <div class="ml-auto flex items-center gap-2">
+              <button onclick="window._zaraRunOnboarding()" class="py-1 px-3 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold hover:bg-rose-500/30 transition-all">
+                🤖 Run Zara Engine
+              </button>
+              <button onclick="loadZaraContent(document.getElementById('content-${Object.keys(windows).find(k=>windows[k].appId==='zara')||''}'))"
+                class="py-1 px-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold transition-all">↻ Refresh</button>
+            </div>
           </div>
-          <div class="flex-1 overflow-y-auto">
-            ${renderTab(activeTab)}
-          </div>
+          <div class="flex-1 overflow-y-auto">${content}</div>
         </div>`
       lucide.createIcons()
     }
 
     window._zaraTab = (tab) => { activeTab = tab; renderZara() }
 
-    window._zaraInvite = async () => {
-      const emailEl = document.getElementById('zara-invite-email')
-      const roleEl = document.getElementById('zara-invite-role')
-      const logEl = document.getElementById('zara-invite-log') || document.getElementById('zara-action-log')
-      const email = emailEl?.value?.trim()
-      if (!email) { if(logEl){logEl.textContent='⚠ Enter an email first';logEl.className='text-[10px] mt-2 text-amber-400 font-mono'} return }
-      if(logEl){logEl.className='text-[10px] mt-2 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Sending invite...'}
-      try {
-        const data = await callEngine('core-automation-engine', 'invite_user', { email, role_key: roleEl?.value||'bge_contractor' })
-        if(logEl){logEl.className='text-[10px] mt-2 text-green-400 font-mono';logEl.textContent='✓ Invite sent to '+email}
-        showRealtimeToast(`📨 Invite sent to ${email}`, 'green')
-        if(emailEl) emailEl.value = ''
-      } catch(e) {
-        if(logEl){logEl.className='text-[10px] mt-2 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
-      }
+    window._zaraAdvance = async (contractorId, newStage) => {
+      showRealtimeToast('⟳ Advancing to '+newStage+'...', 'amber')
+      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ onboarding_stage: newStage })
+      })
+      showRealtimeToast('✓ Advanced to '+newStage, 'green')
+      setTimeout(() => loadZaraContent(el), 1000)
     }
 
-    window._zaraOnboard = async () => {
-      const emailEl = document.getElementById('zara-onboard-email')
-      const roleEl = document.getElementById('zara-onboard-role')
-      const logEl = document.getElementById('zara-onboard-log') || document.getElementById('zara-action-log')
-      const email = emailEl?.value?.trim()
-      if (!email) { if(logEl){logEl.textContent='⚠ Enter an email first';logEl.className='text-[10px] mt-2 text-amber-400 font-mono'} return }
-      if(logEl){logEl.className='text-[10px] mt-2 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Triggering Zara onboarding...'}
+    window._zaraActivate = async (contractorId) => {
+      showRealtimeToast('⚡ Activating contractor...', 'amber')
+      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ onboarding_stage: 'active', active: true, crm_access_active: true, crm_access_started_at: new Date().toISOString() })
+      })
       try {
-        const data = await callEngine('core-automation-engine', 'trigger_zara_onboarding', { email, role_key: roleEl?.value||'bge_contractor' })
-        if(logEl){logEl.className='text-[10px] mt-2 text-green-400 font-mono';logEl.textContent='✓ Zara onboarding triggered for '+email}
-        showRealtimeToast(`🎯 Zara onboarding started for ${email}`, 'green')
-        if(emailEl) emailEl.value = ''
-      } catch(e) {
-        if(logEl){logEl.className='text-[10px] mt-2 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
-      }
+        await fetch(SB_URL+'/functions/v1/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contractor_id: contractorId })
+        })
+      } catch(e) {}
+      showRealtimeToast('✓ Contractor activated!', 'green')
+      setTimeout(() => loadZaraContent(el), 1000)
     }
 
-    window._zaraAlert = () => { activeTab = 'alerts'; renderZara() }
-    window._zaraReport = async () => {
-      const logEl = document.getElementById('zara-action-log')
-      if(logEl){logEl.className='text-[10px] mt-3 text-nebula-amber font-mono loading-pulse';logEl.textContent='⟳ Generating HR report...'}
+    window._zaraSendContract = async (contractorId, email) => {
+      showRealtimeToast('📄 Sending contract to '+email+'...', 'amber')
       try {
-        const data = await callEngine('core-automation-engine', 'generate_hr_report', {})
-        if(logEl){logEl.className='text-[10px] mt-3 text-green-400 font-mono';logEl.textContent='✓ '+(data.message||'HR report generated')}
-      } catch(e) {
-        if(logEl){logEl.className='text-[10px] mt-3 text-red-400 font-mono';logEl.textContent='✗ '+e.message}
-      }
+        await fetch(SB_URL+'/functions/v1/zara-onboarding', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send_contract', contractor_id: contractorId, email })
+        })
+        await window._zaraAdvance(contractorId, 'contract')
+        showRealtimeToast('✓ Contract sent!', 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
     }
 
-    window._zaraResolveAlert = async (alertId) => {
+    window._zaraProvisionDialpad = async (contractorId, authUserId) => {
+      showRealtimeToast('📞 Provisioning Dialpad line...', 'amber')
       try {
-        await callEngine('core-automation-engine', 'resolve_hr_alert', { alert_id: alertId })
-        showRealtimeToast('✓ Alert resolved', 'green')
-        // Refresh
-        const contentEl = Object.entries(windows).find(([,w])=>w.appId==='zara')?.[0]
-        if(contentEl) loadZaraContent(document.getElementById('content-'+contentEl))
-      } catch(e) {
-        showRealtimeToast('✗ '+e.message, 'red')
-      }
+        const res = await fetch(SB_URL+'/functions/v1/dialpad-sync', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contractor_id: contractorId, auth_user_id: authUserId, action: 'provision' })
+        })
+        const data = await res.json()
+        showRealtimeToast('✓ Dialpad provisioned: '+(data.phone||data.dialpad_phone||'done'), 'green')
+        setTimeout(() => loadZaraContent(el), 1500)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._zaraAssignLeads = async (contractorId, authUserId) => {
+      showRealtimeToast('🎯 Assigning leads...', 'amber')
+      try {
+        const data = await callEngine('core-automation-engine', 'lead_distribution', { tenant_id: TENANT_ID, contractor_id: contractorId })
+        await window._zaraAdvance(contractorId, 'leads')
+        showRealtimeToast('✓ '+(data.message||'Leads assigned!'), 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._zaraSendMessage = async (contractorId, email) => {
+      const msg = prompt('Message to '+email+':')
+      if (!msg) return
+      try {
+        await fetch(SB_URL+'/functions/v1/hr-send-message', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contractor_id: contractorId, email, message: msg })
+        })
+        showRealtimeToast('✓ Message sent', 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._zaraSuspend = async (contractorId) => {
+      if (!confirm('Suspend this contractor?')) return
+      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ active: false, crm_access_active: false, onboarding_stage: 'apply' })
+      })
+      showRealtimeToast('⛔ Contractor suspended', 'amber')
+      setTimeout(() => loadZaraContent(el), 1000)
+    }
+
+    window._zaraApproveApp = async (appId, email, name) => {
+      showRealtimeToast('✓ Approving '+name+'...', 'green')
+      try {
+        await fetch(SB_URL+'/functions/v1/zara-onboarding', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve_application', application_id: appId, email, name })
+        })
+        showRealtimeToast('✓ Application approved — contractor profile created', 'green')
+        setTimeout(() => loadZaraContent(el), 1500)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    window._zaraRejectApp = async (appId) => {
+      if (!confirm('Reject this application?')) return
+      showRealtimeToast('✗ Application rejected', 'amber')
+    }
+
+    window._zaraRunOnboarding = async () => {
+      showRealtimeToast('🤖 Running Zara engine...', 'amber')
+      try {
+        const res = await fetch(SB_URL+'/functions/v1/zara-command-center', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'run_all', tenant_id: TENANT_ID })
+        })
+        const data = await res.json()
+        showRealtimeToast('✓ Zara engine complete: '+(data.message||'done'), 'green')
+        setTimeout(() => loadZaraContent(el), 2000)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
     }
 
     renderZara()
-  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Zara Error: ${e.message}</div>` }
 }
-
-// ── CONTRACTOR DASHBOARD ─────────────────────────────────────────────────────
 async function loadContractorContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
