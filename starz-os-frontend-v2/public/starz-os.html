@@ -980,7 +980,7 @@ async function loadFilesContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
     const [workOrders, devTasks, onboardingQueue] = await Promise.all([
-      sb('deals', 'work_orders', 'select=id,client_name,business_name,package,service_type,status,payment_status,fulfillment_status,execution_status,total_amount,deposit_amount,monthly_amount,rico_visible,rico_execution_locked,probation_ends_at,clearance_ends_at,production_released_at,paid_at,signed_at,created_at&order=created_at.desc&limit=50'),
+      sb('deals', 'work_orders', 'select=id,client_name,business_name,package,service_type,status,payment_status,fulfillment_status,execution_status,total_amount,deposit_amount,monthly_amount,rico_visible,rico_execution_locked,probation_ends_at,clearance_ends_at,production_released_at,paid_at,signed_at,created_at&order=created_at.desc&limit=50').catch(()=>[]),
       sb('public', 'developer_tasks', 'select=id,work_order_id,assigned_to,task_type,status,priority,created_at&order=priority.asc&limit=200'),
       sb('public', 'work_order_onboarding_queue', 'select=id,work_order_id,partner_name,partner_email,status,attempts,created_at&order=created_at.desc&limit=20').catch(()=>[]),
     ])
@@ -1162,7 +1162,7 @@ async function loadFilesContent(el) {
             <div class="relative flex items-center gap-5 p-4">
               <div class="relative shrink-0">
                 <div class="absolute inset-0 rounded-full blur-xl opacity-60" style="background:radial-gradient(circle,#0284c7,transparent)"></div>
-                <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Rico.png"
+                <img src="https://szguizvpiiuiyugrjeks.supabase.co/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Rico.png"
                   class="relative w-16 h-16 rounded-full object-cover"
                   style="border:2px solid rgba(2,132,199,0.8);box-shadow:0 0 30px rgba(2,132,199,0.5)"
                   onerror="this.outerHTML='<div class=\\'relative w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black text-white\\' style=\\'background:linear-gradient(135deg,#0284c7,#06b6d4);border:2px solid rgba(2,132,199,0.8)\\'>R</div>'" />
