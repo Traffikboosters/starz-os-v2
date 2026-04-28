@@ -2072,6 +2072,157 @@ async function loadHRContent(el) {
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
 }
 
+// ── POWERDIAL GLOBAL FUNCTIONS ───────────────────────────────────────────────
+window._pdActiveCall = { phone: null, queueId: null, callId: null, timerInterval: null }
+
+window._pdStartHUD = (phone, queueId) => {
+  const hud = document.getElementById('pd-live-hud')
+  const phoneEl = document.getElementById('pd-hud-phone')
+  const timerEl = document.getElementById('pd-hud-timer')
+  if (!hud) return
+  hud.classList.remove('hidden')
+  if (phoneEl) phoneEl.textContent = phone
+  window._pdActiveCall.phone = phone
+  window._pdActiveCall.queueId = queueId
+  let secs = 0
+  if (window._pdActiveCall.timerInterval) clearInterval(window._pdActiveCall.timerInterval)
+  window._pdActiveCall.timerInterval = setInterval(() => {
+    secs++
+    const m = Math.floor(secs/60)
+    const s = String(secs%60).padStart(2,'0')
+    if (timerEl) timerEl.textContent = m+':'+s
+  }, 1000)
+}
+
+window._pdStopHUD = () => {
+  const hud = document.getElementById('pd-live-hud')
+  if (hud) hud.classList.add('hidden')
+  if (window._pdActiveCall.timerInterval) clearInterval(window._pdActiveCall.timerInterval)
+  window._pdActiveCall = { phone: null, queueId: null, callId: null, timerInterval: null }
+}
+
+window._pdManualDial = async () => {
+  const input = document.getElementById('pd-manual-phone')
+  const phone = input?.value?.trim()
+  if (!phone) { showRealtimeToast('⚠ Enter a phone number first', 'amber'); return }
+  if (input) input.value = ''
+  window._pdCall(phone, null)
+}
+
+window._pdEndCall = async (disposition) => {
+  const notes = document.getElementById('pd-call-notes')?.value || ''
+  const queueId = window._pdActiveCall.queueId
+  const callId = window._pdActiveCall.callId
+  showRealtimeToast('✓ Call ended — ' + disposition, disposition === 'interested' ? 'green' : 'amber')
+  window._pdStopHUD()
+  if (callId) {
+    await fetch(SB_URL+'/rest/v1/calls?id=eq.'+callId, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ call_status: 'ended', ended_at: new Date().toISOString() })
+    }).catch(()=>{})
+  }
+  if (queueId) {
+    const statusMap = { interested:'interested', callback:'callback', not_interested:'dnc', voicemail:'voicemail', no_answer:'called', connected:'called', ended:'called' }
+    await fetch(SB_URL+'/rest/v1/call_queue?id=eq.'+queueId, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: statusMap[disposition] || 'called' })
+    }).catch(()=>{})
+  }
+  const winId = Object.keys(windows).find(k => windows[k].appId === 'powerdial')
+  if (winId) { const el = document.getElementById('content-'+winId); if(el) setTimeout(() => loadPowerDialContent(el), 1500) }
+}
+
+window._pdShowTransfer = () => {
+  const p = document.getElementById('pd-transfer-panel')
+  const c = document.getElementById('pd-conference-panel')
+  if (c) c.classList.add('hidden')
+  if (p) p.classList.toggle('hidden')
+}
+
+window._pdShowConference = () => {
+  const p = document.getElementById('pd-transfer-panel')
+  const c = document.getElementById('pd-conference-panel')
+  if (p) p.classList.add('hidden')
+  if (c) c.classList.toggle('hidden')
+}
+
+window._pdDoTransfer = async () => {
+  const to = document.getElementById('pd-transfer-to')?.value
+  if (!to) return
+  const digits = to.replace(/\D/g,'')
+  const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
+  const callId = window._pdActiveCall.callId
+  showRealtimeToast('↗ Transferring to '+e164+'…', 'amber')
+  if (callId) {
+    const res = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'transfer_call', call_id: callId, to_number: e164 })
+    })
+    const data = await res.json()
+    if (data?.error) { showRealtimeToast('✗ Transfer failed: '+data.error, 'red'); return }
+  }
+  showRealtimeToast('✓ Call transferred!', 'green')
+  document.getElementById('pd-transfer-panel')?.classList.add('hidden')
+  window._pdEndCall('connected')
+}
+
+window._pdDoConference = async () => {
+  const to = document.getElementById('pd-conference-to')?.value
+  if (!to) return
+  const digits = to.replace(/\D/g,'')
+  const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
+  showRealtimeToast('👥 Adding '+e164+' to call…', 'amber')
+  await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'initiate_call', user_id: '4566842998267904', phone_number: e164 })
+  })
+  showRealtimeToast('✓ 3rd party dialed — tap Merge in Dialpad app', 'green')
+  document.getElementById('pd-conference-panel')?.classList.add('hidden')
+}
+
+window._pdStartVideo = async () => {
+  showRealtimeToast('🎥 Opening Dialpad video…', 'amber')
+  window.open('https://dialpad.com', '_blank')
+}
+
+window._pdCall = async (phone, queueId) => {
+  if (!phone) { showRealtimeToast('⚠ No phone number', 'amber'); return }
+  const digits = phone.replace(/\D/g, '')
+  const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
+  showRealtimeToast('📞 Dialing '+e164+' via Dialpad...', 'green')
+  try {
+    const dialRes = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'initiate_call', user_id: '4566842998267904', phone_number: e164 })
+    })
+    const txt = await dialRes.text()
+    const data = txt ? JSON.parse(txt) : {}
+    if (dialRes.ok) {
+      showRealtimeToast('✓ Call placed: '+e164, 'green')
+      window._pdStartHUD(e164, queueId)
+      await fetch(SB_URL+'/rest/v1/calls', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ phone: e164, phone_number: e164, direction: 'outbound', status: 'ringing', call_status: 'ringing', started_at: new Date().toISOString() })
+      }).catch(()=>{})
+      if (queueId) await fetch(SB_URL+'/rest/v1/call_queue?id=eq.'+queueId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ last_call_at: new Date().toISOString(), call_attempts: 1, status: 'calling' })
+      }).catch(()=>{})
+    } else {
+      showRealtimeToast('⚠ '+(data?.error?.message||data?.message||'Call error'), 'amber')
+    }
+  } catch(e) {
+    showRealtimeToast('✗ '+e.message, 'red')
+  }
+}
+
 // ── POWERDIAL — CALL FLOOR ────────────────────────────────────────────────────
 async function loadPowerDialContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
