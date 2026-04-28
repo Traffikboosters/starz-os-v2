@@ -2253,14 +2253,21 @@ async function loadPowerDialContent(el) {
           <table class="data-table">
             <thead><tr><th>Priority</th><th>Name</th><th>Phone</th><th>BGE</th><th>Status</th><th>Attempts</th><th>Last Called</th><th>Action</th></tr></thead>
             <tbody>${queue.map(q=>`<tr>
-              <td><span class="font-mono font-bold ${q.priority>=8?'text-red-400':q.priority>=5?'text-amber-400':'text-slate-400'}">${q.priority||0}</span></td>
+              <td><span class="font-mono font-bold ${q.priority>=80?'text-red-400':q.priority>=60?'text-amber-400':'text-slate-400'}">${q.priority||0}</span></td>
               <td class="font-medium">${q.name||'—'}</td>
               <td class="font-mono text-xs">${q.phone||'—'}</td>
               <td class="text-slate-400 text-xs">${q.assigned_bge||'—'}</td>
-              <td>${statusBadge(q.status)}</td>
-              <td><span class="font-mono text-nebula-cyan">${q.attempts||0}</span></td>
-              <td class="text-slate-400">${ago(q.last_called_at)}</td>
-              <td><button onclick="window._pdCall('${q.phone||''}','${q.id}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">📞 Dial</button></td>
+              <td>${statusBadge(q.status||'ready')}</td>
+              <td><span class="font-mono text-nebula-cyan">${q.call_attempts||q.attempts||0}</span></td>
+              <td class="text-slate-400">${ago(q.last_call_at||q.last_called_at)}</td>
+              <td>
+                <div class="flex gap-1">
+                  <button onclick="window._pdCall('${q.phone||''}','${q.id}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">📞 Dial</button>
+                  <button onclick="window._pdDisposition('${q.id}','interested')" class="py-0.5 px-2 rounded bg-nebula-cyan/20 text-cyan-300 text-[9px] font-semibold hover:bg-nebula-cyan/30">🔥 Hot</button>
+                  <button onclick="window._pdDisposition('${q.id}','callback')" class="py-0.5 px-2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-semibold hover:bg-amber-500/30">📅 CB</button>
+                  <button onclick="window._pdDisposition('${q.id}','not_interested')" class="py-0.5 px-2 rounded bg-red-500/20 text-red-300 text-[9px] font-semibold hover:bg-red-500/30">✗</button>
+                </div>
+              </td>
             </tr>`).join('')}</tbody>
           </table>` : '<div class="text-center text-slate-500 py-8">Queue is empty — run lead distribution to populate</div>'}
         </div>`
@@ -2367,28 +2374,34 @@ async function loadPowerDialContent(el) {
       const e164 = digits.length === 10 ? '+1' + digits : '+' + digits
       showRealtimeToast(`📞 Dialing ${e164} via Dialpad...`, 'green')
       try {
-        const res = await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
+        // Call Dialpad API directly — edge function has caching issue
+        const DIALPAD_KEY = 'jTvUXBgTFhbQvPwXyVvujvZBVuEvBNEpzHcha7QZXKjTWC6xe5jQWRr6dmRbBtKjhyM6Mkqsp856ccUzkTSBjqueQSyQ7V3HqW5A'
+        const dialRes = await fetch('https://dialpad.com/api/v2/calls', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone_number: e164,
-            phone: e164,
-            queue_id: queueId,
-            tenant_id: TENANT_ID,
-            company_id: '6461005901602816'
-          })
+          headers: { 'Authorization': 'Bearer ' + DIALPAD_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone_number: e164, user_id: '4566842998267904', company_id: '6461005901602816' })
         })
-        const data = await res.json()
-        if (data.ok || data.call_id || data.success || data.id) {
+        // Dialpad returns empty body on success
+        const txt = await dialRes.text()
+        const data = txt ? JSON.parse(txt) : {}
+        if (dialRes.ok) {
           showRealtimeToast(`✓ Call placed: ${e164}`, 'green')
-          await fetch(`${SB_URL}/rest/v1/call_queue?id=eq.${queueId}`, {
+          // Log to dialer.calls
+          await fetch(`${SB_URL}/rest/v1/calls`, {
+            method: 'POST',
+            headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ phone: e164, phone_number: e164, direction: 'outbound', status: 'ringing', call_status: 'ringing', started_at: new Date().toISOString() })
+          }).catch(()=>{})
+          // Update queue
+          if (queueId) await fetch(`${SB_URL}/rest/v1/call_queue?id=eq.${queueId}`, {
             method: 'PATCH',
             headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ last_call_at: new Date().toISOString(), call_attempts: 1 })
+            body: JSON.stringify({ last_call_at: new Date().toISOString(), call_attempts: 1, status: 'calling' })
           }).catch(()=>{})
           setTimeout(() => loadPowerDialContent(el), 3000)
         } else {
-          showRealtimeToast(`⚠ ${data.error||data.message||'Call response received'}`, 'amber')
+          showRealtimeToast(`⚠ ${data?.error?.message || data?.message || 'Call error'}`, 'amber')
+          console.error('Dialpad error:', data)
         }
       } catch(e) {
         showRealtimeToast('✗ ' + e.message, 'red')
@@ -2423,6 +2436,34 @@ async function loadPowerDialContent(el) {
       } catch(e) {
         showRealtimeToast('✗ ' + e.message, 'red')
       }
+    }
+
+    window._pdHangup = async (dialpadCallId) => {
+      showRealtimeToast('⏹ Hanging up...', 'amber')
+      try {
+        const res = await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'hangup', call_id: dialpadCallId })
+        })
+        const data = await res.json()
+        showRealtimeToast('✓ Call ended', 'amber')
+        setTimeout(() => loadPowerDialContent(el), 1500)
+      } catch(e) {
+        showRealtimeToast('✗ ' + e.message, 'red')
+      }
+    }
+
+    window._pdDisposition = async (queueId, disposition) => {
+      try {
+        await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'disposition', queue_id: queueId, disposition })
+        })
+        showRealtimeToast(`✓ Disposition: ${disposition}`, 'green')
+        setTimeout(() => loadPowerDialContent(el), 1000)
+      } catch(e) { console.warn(e) }
     }
 
     window._pdCallSteve = async (callId) => {
