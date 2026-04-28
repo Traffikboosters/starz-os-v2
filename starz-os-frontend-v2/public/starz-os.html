@@ -2377,7 +2377,7 @@ async function loadPowerDialContent(el) {
         // Call via Supabase edge function (handles CORS + keeps API key server-side)
         const dialRes = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'initiate_call', user_id: '4566842998267904', phone_number: e164 })
         })
         // Dialpad returns empty body on success
