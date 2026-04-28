@@ -2374,12 +2374,11 @@ async function loadPowerDialContent(el) {
       const e164 = digits.length === 10 ? '+1' + digits : '+' + digits
       showRealtimeToast(`📞 Dialing ${e164} via Dialpad...`, 'green')
       try {
-        // Call Dialpad API directly — edge function has caching issue
-        const DIALPAD_KEY = 'jTvUXBgTFhbQvPwXyVvujvZBVuEvBNEpzHcha7QZXKjTWC6xe5jQWRr6dmRbBtKjhyM6Mkqsp856ccUzkTSBjqueQSyQ7V3HqW5A'
-        const dialRes = await fetch('https://dialpad.com/api/v2/calls', {
+        // Call via Supabase edge function (handles CORS + keeps API key server-side)
+        const dialRes = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + DIALPAD_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone_number: e164, user_id: '4566842998267904', company_id: '6461005901602816' })
+          headers: { 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'initiate_call', user_id: '4566842998267904', phone_number: e164 })
         })
         // Dialpad returns empty body on success
         const txt = await dialRes.text()
