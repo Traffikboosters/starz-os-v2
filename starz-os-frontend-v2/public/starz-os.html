@@ -2078,7 +2078,7 @@ async function loadPowerDialContent(el) {
   try {
     const [calls, queue, callFloor, repPerf] = await Promise.all([
       sb('dialer', 'calls', 'select=id,lead_id,phone_number,phone,call_status,status,duration,sentiment,deal_heat_score,deal_stage,ai_tip,objection,proposal_ready,stripe_checkout_url,detected_buying_signal,started_at,ended_at,created_at,dialpad_user_id,direction,needs_assist,revenue&order=created_at.desc&limit=50'),
-      sb('dialer', 'call_queue', 'select=id,lead_id,name,phone,status,priority,attempts,last_called_at,assigned_bge,dialpad_contact_id&order=priority.desc&limit=50').catch(()=>[]),
+      sb('dialer', 'call_queue', 'select=id,lead_id,name,phone,status,priority,attempts,last_called_at,last_call_at,call_attempts,assigned_bge,dialpad_contact_id&order=priority.desc&limit=100').catch(()=>[]),
       sb('dialer', 'v_call_floor', 'select=*&limit=30').catch(()=>[]),
       sb('sales', 'v_rep_performance', 'select=*&order=close_rate.desc&limit=10').catch(()=>[]),
     ])
@@ -2363,27 +2363,35 @@ async function loadPowerDialContent(el) {
 
     window._pdCall = async (phone, queueId) => {
       if (!phone) { showRealtimeToast('⚠ No phone number', 'amber'); return }
-      showRealtimeToast(`📞 Dialing ${phone} via Dialpad...`, 'green')
+      const digits = phone.replace(/\D/g, '')
+      const e164 = digits.length === 10 ? '+1' + digits : '+' + digits
+      showRealtimeToast(`📞 Dialing ${e164} via Dialpad...`, 'green')
       try {
-        // Call the dedicated dialpad-call edge function
         const res = await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone_number: phone,
+            phone_number: e164,
+            phone: e164,
             queue_id: queueId,
-            tenant_id: TENANT_ID
+            tenant_id: TENANT_ID,
+            company_id: '6461005901602816'
           })
         })
         const data = await res.json()
-        if (data.ok || data.call_id || data.success) {
-          showRealtimeToast(`✓ Call connected: ${phone}`, 'green')
+        if (data.ok || data.call_id || data.success || data.id) {
+          showRealtimeToast(`✓ Call placed: ${e164}`, 'green')
+          await fetch(`${SB_URL}/rest/v1/call_queue?id=eq.${queueId}`, {
+            method: 'PATCH',
+            headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ last_call_at: new Date().toISOString(), call_attempts: 1 })
+          }).catch(()=>{})
           setTimeout(() => loadPowerDialContent(el), 3000)
         } else {
-          showRealtimeToast(`⚠ ${data.error||data.message||'Call initiated'}`, 'amber')
+          showRealtimeToast(`⚠ ${data.error||data.message||'Call response received'}`, 'amber')
         }
       } catch(e) {
-        showRealtimeToast('✗ Call failed: ' + e.message, 'red')
+        showRealtimeToast('✗ ' + e.message, 'red')
       }
     }
 
