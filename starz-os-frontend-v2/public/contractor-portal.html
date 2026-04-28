@@ -1,231 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BGE Portal — Traffik Boosters</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    * { font-family: 'DM Sans', sans-serif; }
-    .mono { font-family: 'DM Mono', monospace; }
-    body { background: #080c14; color: #e2e8f0; min-height: 100vh; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BGE Portal — Traffik Boosters</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #00e5a0;
+  --green-dim: rgba(0,229,160,0.12);
+  --green-border: rgba(0,229,160,0.25);
+  --bg: #06080f;
+  --bg2: #0c1018;
+  --bg3: #111620;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8edf5;
+  --muted: #4a5568;
+  --amber: #f6ad55;
+  --red: #fc6b6b;
+  --blue: #63b3ed;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden}
+.syne{font-family:'Syne',sans-serif}
+.mono{font-family:'Courier New',monospace}
 
-    .bg-grid {
-      background-image:
-        linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px);
-      background-size: 32px 32px;
-    }
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,229,160,0.08) 0%,transparent 70%)}
+.login-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,160,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.04) 1px,transparent 1px);background-size:40px 40px}
+.login-card{position:relative;z-index:1;width:100%;max-width:400px;padding:48px 40px;background:var(--bg2);border:1px solid var(--green-border);border-radius:24px;box-shadow:0 0 80px rgba(0,229,160,0.06),0 40px 80px rgba(0,0,0,0.6)}
+.login-logo{width:52px;height:52px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+.login-title{text-align:center;font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;letter-spacing:-0.5px}
+.login-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.field input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 16px;font-size:14px;font-family:'Outfit',sans-serif;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--green-border);box-shadow:0 0 0 3px rgba(0,229,160,0.08)}
+.login-err{background:rgba(252,107,107,0.1);border:1px solid rgba(252,107,107,0.25);border-radius:8px;color:var(--red);font-size:12px;padding:10px 14px;margin-bottom:14px;display:none}
+.btn-login{width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;background:var(--green);color:#000;transition:all .2s;margin-top:4px;letter-spacing:.02em}
+.btn-login:hover{background:#00ffb3;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,229,160,0.3)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-footer{text-align:center;font-size:11px;color:var(--muted);margin-top:20px}
 
-    .card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 20px;
-    }
+/* ── PORTAL ── */
+#portal{display:none;min-height:100vh;flex-direction:column}
+.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:rgba(6,8,15,0.9);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-icon{width:32px;height:32px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:9px;display:flex;align-items:center;justify-content:center}
+.tb-brand{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.tb-brand span{color:var(--green)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.live-dot::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px 5px 5px}
+.user-av{width:26px;height:26px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--green)}
+.user-name{font-size:12px;font-weight:500;color:var(--text)}
+.btn-out{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500;transition:all .15s}
+.btn-out:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
 
-    .card-green {
-      background: rgba(16,185,129,0.06);
-      border: 1px solid rgba(16,185,129,0.2);
-      border-radius: 16px;
-      padding: 20px;
-    }
+/* ── LAYOUT ── */
+.body-wrap{display:flex;flex:1;height:calc(100vh - 56px)}
+.sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;background:var(--bg)}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;background:none;color:var(--muted);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.nav-item.active{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-weight:600}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-divider{height:1px;background:var(--border);margin:12px 4px}
+.sidebar-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:4px}
+.sc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.sc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px}
+.sc-label{color:var(--muted)}
+.sc-val{font-family:'Courier New',monospace;font-weight:600;font-size:13px}
 
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 13px;
-      transition: all 0.15s; cursor: pointer; border: none; outline: none;
-    }
-    .btn-green { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-    .btn-green:hover { background: rgba(16,185,129,0.3); }
-    .btn-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
-    .btn-red:hover { background: rgba(239,68,68,0.25); }
-    .btn-gray { background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
-    .btn-gray:hover { background: rgba(255,255,255,0.1); }
-    .btn-primary { background: #10b981; color: #000; }
-    .btn-primary:hover { background: #059669; }
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:28px;background:var(--bg)}
+.page{display:none}.page.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page-header{margin-bottom:24px}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--muted)}
 
-    .tab { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: #64748b; }
-    .tab.active { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
-    .tab:hover:not(.active) { color: #cbd5e1; background: rgba(255,255,255,0.04); }
+/* ── COMPONENTS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.card-accent{background:rgba(0,229,160,0.05);border:1px solid var(--green-border);border-radius:16px;padding:20px;margin-bottom:14px}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center}
+.kpi-n{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.kpi-l{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.02em}
+.b-green{background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.2)}
+.b-red{background:rgba(252,107,107,0.12);color:var(--red);border:1px solid rgba(252,107,107,0.2)}
+.b-amber{background:rgba(246,173,85,0.12);color:var(--amber);border:1px solid rgba(246,173,85,0.2)}
+.b-blue{background:rgba(99,179,237,0.12);color:var(--blue);border:1px solid rgba(99,179,237,0.2)}
+.b-gray{background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border)}
 
-    .badge { display:inline-flex; align-items:center; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
-    .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
-    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-    .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
-    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
-    .badge-gray { background: rgba(255,255,255,0.06); color: #64748b; border: 1px solid rgba(255,255,255,0.08); }
+/* LEADS */
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input{flex:1;max-width:260px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 14px;font-size:13px;outline:none;font-family:'Outfit',sans-serif}
+.search-bar input:focus{border-color:var(--green-border)}
+.search-bar select{background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 14px;font-size:13px;outline:none;font-family:'Outfit',sans-serif}
+.leads-table{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.lead-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:16px;padding:14px 18px;border-bottom:1px solid var(--border);transition:background .1s;cursor:default}
+.lead-row:last-child{border-bottom:none}
+.lead-row:hover{background:rgba(255,255,255,.02)}
+.lead-name{font-weight:600;font-size:14px;color:#fff;margin-bottom:3px}
+.lead-meta{font-size:11px;color:var(--muted)}
+.days-chip{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;padding:4px 10px;border-radius:8px}
+.days-ok{background:rgba(0,229,160,0.1);color:var(--green)}
+.days-warn{background:rgba(246,173,85,0.1);color:var(--amber)}
+.days-crit{background:rgba(252,107,107,0.1);color:var(--red)}
+.call-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .15s;white-space:nowrap}
+.call-btn:hover{background:rgba(0,229,160,0.2);transform:translateY(-1px)}
 
-    .lead-row { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.1s; cursor: pointer; }
-    .lead-row:hover { background: rgba(255,255,255,0.03); }
+/* DIAL */
+.active-call-card{background:rgba(0,229,160,0.06);border:1px solid var(--green-border);border-radius:16px;padding:20px;margin-bottom:16px;display:none}
+.call-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.call-av{width:44px;height:44px;background:rgba(0,229,160,0.15);border:2px solid var(--green-border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.call-info .call-n{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff}
+.call-info .call-p{font-size:12px;color:var(--muted);font-family:'Courier New',monospace;margin-top:2px}
+.call-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-end{padding:10px;background:rgba(252,107,107,0.12);border:1px solid rgba(252,107,107,0.25);border-radius:10px;color:var(--red);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-end:hover{background:rgba(252,107,107,0.22)}
+.btn-steve{padding:10px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:10px;color:#a78bfa;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-steve:hover{background:rgba(139,92,246,0.22)}
+.whisper-box{margin-top:12px;padding:12px 14px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:10px;display:none}
+.whisper-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#8b5cf6;margin-bottom:6px}
+.whisper-text{font-size:13px;color:#c4b5fd;line-height:1.5}
 
-    .heat-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow:hidden; }
-    .heat-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.queue-table{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.queue-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.queue-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff}
 
-    .login-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(16,185,129,0.15);
-      border-radius: 24px;
-      padding: 48px;
-      width: 100%;
-      max-width: 420px;
-    }
-
-    input, select, textarea {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      color: #e2e8f0;
-      padding: 10px 14px;
-      font-size: 13px;
-      width: 100%;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input:focus, select:focus { border-color: rgba(16,185,129,0.4); }
-
-    .spinner { width:20px; height:20px; border:2px solid rgba(16,185,129,0.2); border-top-color:#10b981; border-radius:50%; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .pulse { animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-
-    .slide-in { animation: slideIn 0.3s ease-out; }
-    @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-  </style>
+/* SPINNER */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--muted);font-size:13px;gap:10px}
+.spin{width:18px;height:18px;border:2px solid rgba(0,229,160,0.2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:13px}
+.err-msg{text-align:center;padding:32px;color:var(--red);font-size:13px}
+</style>
 </head>
-<body class="bg-grid">
+<body>
 
-<!-- ── LOGIN SCREEN ─────────────────────────────────────────────────────── -->
-<div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
-  <div class="login-card slide-in">
-    <!-- Logo -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 mb-4">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-        </svg>
-      </div>
-      <h1 class="text-2xl font-bold text-white">BGE Portal</h1>
-      <p class="text-slate-400 text-sm mt-1">Traffik Boosters — Business Growth Experts</p>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-bg"></div>
+  <div class="login-lines"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
     </div>
-
-    <div class="space-y-4">
-      <div>
-        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Email Address</label>
-        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div>
-        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div id="login-error" class="text-red-400 text-xs hidden p-3 rounded-lg bg-red-500/10 border border-red-500/20"></div>
-      <button onclick="doLogin()" class="btn btn-primary w-full mt-2" id="login-btn">
-        Sign In
-      </button>
-    </div>
-
-    <p class="text-center text-xs text-slate-600 mt-6">Authorized BGE contractors only</p>
+    <div class="login-title syne">BGE Portal</div>
+    <div class="login-sub">Traffik Boosters · Business Growth Experts</div>
+    <div id="login-err" class="login-err"></div>
+    <div class="field"><label>Email</label><input type="email" id="em" placeholder="you@traffikboosters.com" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input type="password" id="pw" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login syne" id="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-footer">Authorized BGE contractors only</div>
   </div>
 </div>
 
-<!-- ── PORTAL SCREEN ────────────────────────────────────────────────────── -->
-<div id="portal-screen" class="hidden min-h-screen flex flex-col">
-
-  <!-- Top Bar -->
-  <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+<!-- PORTAL -->
+<div id="portal" style="display:none;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
         </svg>
       </div>
-      <div>
-        <div class="text-sm font-semibold text-white">BGE Portal</div>
-        <div class="text-[10px] text-slate-500">Traffik Boosters</div>
-      </div>
+      <span class="tb-brand syne">BGE<span> Portal</span></span>
     </div>
-
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 bg-emerald-500 rounded-full pulse"></span>
-        <span class="text-xs text-slate-400">Live</span>
+    <div class="tb-right">
+      <div class="live-dot">Live</div>
+      <div class="user-pill">
+        <div class="user-av" id="u-av">?</div>
+        <span class="user-name" id="u-name">Loading</span>
       </div>
-      <div id="user-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8">
-        <div class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400" id="user-avatar">?</div>
-        <span class="text-xs text-slate-300" id="user-name">Loading...</span>
-      </div>
-      <button onclick="doLogout()" class="btn btn-gray" style="padding:6px 14px;font-size:11px;">Sign Out</button>
+      <button class="btn-out" onclick="doLogout()">Sign out</button>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="flex-1 flex overflow-hidden">
-
-    <!-- Sidebar -->
-    <div class="w-52 shrink-0 border-r border-white/5 p-4 flex flex-col gap-1">
-      <button onclick="showTab('leads')" class="tab active text-left w-full" id="tab-leads">
-        📋 My Leads
-      </button>
-      <button onclick="showTab('dial')" class="tab text-left w-full" id="tab-dial">
-        📞 PowerDial
-      </button>
-      <button onclick="showTab('earnings')" class="tab text-left w-full" id="tab-earnings">
-        💰 Earnings
-      </button>
-      <button onclick="showTab('stats')" class="tab text-left w-full" id="tab-stats">
-        📊 My Stats
-      </button>
-
-      <!-- Today's Stats -->
-      <div class="mt-6 p-3 rounded-xl bg-white/3 border border-white/6">
-        <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-3">Today</div>
-        <div class="space-y-2">
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400">Calls Made</span>
-            <span class="mono text-white font-semibold" id="stat-calls">—</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400">Leads Active</span>
-            <span class="mono text-emerald-400 font-semibold" id="stat-leads">—</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400">Revenue</span>
-            <span class="mono text-amber-400 font-semibold" id="stat-revenue">—</span>
-          </div>
-        </div>
+  <div class="body-wrap">
+    <div class="sidebar">
+      <button class="nav-item active" id="nav-leads" onclick="showPage('leads')"><span class="nav-icon">📋</span>My Leads</button>
+      <button class="nav-item" id="nav-dial" onclick="showPage('dial')"><span class="nav-icon">📞</span>PowerDial</button>
+      <button class="nav-item" id="nav-earn" onclick="showPage('earn')"><span class="nav-icon">💰</span>Earnings</button>
+      <button class="nav-item" id="nav-stats" onclick="showPage('stats')"><span class="nav-icon">📊</span>My Stats</button>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-card">
+        <div class="sc-title">Today</div>
+        <div class="sc-row"><span class="sc-label">Calls</span><span class="sc-val" id="s-calls">—</span></div>
+        <div class="sc-row"><span class="sc-label">Leads</span><span class="sc-val" style="color:var(--green)" id="s-leads">—</span></div>
+        <div class="sc-row"><span class="sc-label">Revenue</span><span class="sc-val" style="color:var(--amber)" id="s-rev">—</span></div>
       </div>
-
-      <!-- Lock check status -->
-      <div class="mt-4 p-3 rounded-xl bg-white/3 border border-white/6">
-        <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-2">Access</div>
-        <div id="lock-status" class="text-xs text-slate-400">Checking...</div>
+      <div class="sidebar-card" style="margin-top:8px">
+        <div class="sc-title">Access</div>
+        <div id="access-status" style="font-size:12px;color:var(--muted)">Checking...</div>
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-6">
-
-      <!-- MY LEADS TAB -->
-      <div id="view-leads" class="slide-in">
-        <div class="flex items-center justify-between mb-5">
-          <div>
-            <h2 class="text-lg font-bold text-white">My Assigned Leads</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Your active pipeline — 10-day close window per lead</p>
-          </div>
-          <button onclick="loadLeads()" class="btn btn-gray" style="padding:6px 14px;font-size:11px;">↻ Refresh</button>
+    <div class="content">
+      <!-- LEADS -->
+      <div class="page active" id="page-leads">
+        <div class="page-header">
+          <div class="page-title">My Assigned Leads</div>
+          <div class="page-sub">Active pipeline — 10-day close window per lead</div>
         </div>
-
-        <!-- Filter bar -->
-        <div class="flex gap-2 mb-4">
-          <input type="text" id="lead-search" placeholder="Search leads..." oninput="filterLeads(this.value)" style="max-width:240px;">
-          <select id="lead-filter" onchange="filterLeads()" style="max-width:160px;">
+        <div class="search-bar">
+          <input type="text" id="lead-search" placeholder="🔍  Search leads..." oninput="filterLeads(this.value)">
+          <select id="lead-filter" onchange="filterLeads()">
             <option value="">All Status</option>
             <option value="new">New</option>
             <option value="contacted">Contacted</option>
@@ -233,539 +223,345 @@
             <option value="closing">Closing</option>
           </select>
         </div>
+        <div id="leads-list" class="leads-table"><div class="loading"><div class="spin"></div>Loading leads...</div></div>
+      </div>
 
-        <div id="leads-list" class="card" style="padding:0;overflow:hidden;">
-          <div class="flex items-center justify-center py-12">
-            <div class="spinner"></div>
+      <!-- DIAL -->
+      <div class="page" id="page-dial">
+        <div class="page-header">
+          <div class="page-title">PowerDial</div>
+          <div class="page-sub">Call your leads — powered by Dialpad</div>
+        </div>
+        <div class="active-call-card" id="active-call">
+          <div class="call-header">
+            <div class="call-av">📞</div>
+            <div class="call-info">
+              <div class="call-n" id="call-name">Calling...</div>
+              <div class="call-p" id="call-phone"></div>
+            </div>
+            <div style="margin-left:auto"><span class="badge b-green" style="animation:blink 1.5s infinite">● LIVE</span></div>
           </div>
+          <div class="call-actions">
+            <button class="btn-end" onclick="endCall()">⏹ End Call</button>
+            <button class="btn-steve" onclick="getSteveWhisper()">🧠 Steve Assist</button>
+          </div>
+          <div class="whisper-box" id="whisper-box">
+            <div class="whisper-label">🧠 Steve says</div>
+            <div class="whisper-text" id="whisper-text"></div>
+          </div>
+        </div>
+        <div class="queue-table">
+          <div class="queue-header">
+            <span class="queue-title">Call Queue</span>
+            <span class="badge b-gray" id="q-count">0 leads</span>
+          </div>
+          <div id="dial-queue"><div class="loading"><div class="spin"></div>Loading queue...</div></div>
         </div>
       </div>
 
-      <!-- POWERDIAL TAB -->
-      <div id="view-dial" class="hidden slide-in">
-        <div class="mb-5">
-          <h2 class="text-lg font-bold text-white">PowerDial</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Call your leads directly — Dialpad handles the connection</p>
+      <!-- EARNINGS -->
+      <div class="page" id="page-earn">
+        <div class="page-header">
+          <div class="page-title">My Earnings</div>
+          <div class="page-sub">Commission tracking and payout history</div>
         </div>
-
-        <!-- Current Call Display -->
-        <div id="active-call" class="card-green mb-4 hidden">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.45-.45a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-              </svg>
-            </div>
-            <div>
-              <div class="text-sm font-semibold text-emerald-300" id="call-name">Calling...</div>
-              <div class="text-xs text-slate-400 mono" id="call-phone"></div>
-            </div>
-            <div class="ml-auto">
-              <span class="badge badge-green pulse">● LIVE</span>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="endCall()" class="btn btn-red flex-1">⏹ End Call</button>
-            <button onclick="getSteveWhisper()" class="btn btn-gray flex-1">🧠 Steve Assist</button>
-          </div>
-          <div id="steve-whisper" class="mt-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 hidden">
-            <div class="text-[10px] text-purple-400 font-semibold mb-1">🧠 STEVE SAYS</div>
-            <div class="text-xs text-purple-200" id="whisper-text"></div>
-          </div>
-        </div>
-
-        <!-- Call Queue -->
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div class="p-4 border-b border-white/5">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-semibold">Call Queue</span>
-              <span class="badge badge-gray" id="queue-count">0 leads</span>
-            </div>
-          </div>
-          <div id="dial-queue">
-            <div class="flex items-center justify-center py-8">
-              <div class="spinner"></div>
-            </div>
-          </div>
-        </div>
+        <div id="earn-content"><div class="loading"><div class="spin"></div>Loading earnings...</div></div>
       </div>
 
-      <!-- EARNINGS TAB -->
-      <div id="view-earnings" class="hidden slide-in">
-        <div class="mb-5">
-          <h2 class="text-lg font-bold text-white">My Earnings</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Commission tracking and payout history</p>
+      <!-- STATS -->
+      <div class="page" id="page-stats">
+        <div class="page-header">
+          <div class="page-title">My Performance</div>
+          <div class="page-sub">Close rate, call history and ranking</div>
         </div>
-        <div id="earnings-content">
-          <div class="flex items-center justify-center py-12">
-            <div class="spinner"></div>
-          </div>
-        </div>
+        <div id="stats-content"><div class="loading"><div class="spin"></div>Loading stats...</div></div>
       </div>
-
-      <!-- STATS TAB -->
-      <div id="view-stats" class="hidden slide-in">
-        <div class="mb-5">
-          <h2 class="text-lg font-bold text-white">My Performance</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Close rate, call stats, and ranking</p>
-        </div>
-        <div id="stats-content">
-          <div class="flex items-center justify-center py-12">
-            <div class="spinner"></div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
-const TENANT_ID = '11111111-1111-1111-1111-111111111111'
+(function() {
+  var SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co';
+  var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y';
+  var TENANT_ID = '11111111-1111-1111-1111-111111111111';
+  var client = window.supabase.createClient(SB_URL, SB_ANON);
+  var me = null, contractorId = null, allLeads = [], currentCall = null;
 
-const sb = window.supabase.createClient(SB_URL, SB_ANON)
+  function $(id){return document.getElementById(id);}
+  function fmt(n){n=Number(n)||0;return n>=1000?'$'+(n/1000).toFixed(1)+'K':'$'+n.toFixed(0);}
+  function ago(ts){if(!ts)return '—';var d=Math.floor((Date.now()-new Date(ts).getTime())/86400000);return d===0?'today':d+'d ago';}
 
-let currentUser = null
-let contractorProfile = null
-let allLeads = []
-let currentCall = null
+  // REST helper — bypasses .schema() entirely
+  async function rest(schema, table, params) {
+    params = params || '';
+    var res = await fetch(SB_URL+'/rest/v1/'+table+'?'+params, {
+      headers: {
+        'apikey': SB_ANON,
+        'Authorization': 'Bearer '+SB_ANON,
+        'Accept-Profile': schema,
+        'Content-Profile': schema
+      }
+    });
+    if (!res.ok) throw new Error(table+': '+res.status);
+    return res.json();
+  }
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim()
-  const password = document.getElementById('login-password').value
-  const btn = document.getElementById('login-btn')
-  const err = document.getElementById('login-error')
-
-  err.classList.add('hidden')
-  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div>'
-  btn.disabled = true
-
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password })
-    if (error) throw error
-
-    const role = data.user?.user_metadata?.role
-    if (!['contractor', 'rep', 'admin'].includes(role)) {
-      await sb.auth.signOut()
-      throw new Error('Access denied. This portal is for BGE contractors only.')
+  // ── AUTH ──
+  window.doLogin = async function() {
+    var email = $('em').value.trim(), pass = $('pw').value;
+    var err = $('login-err'), btn = $('login-btn');
+    err.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    try {
+      var r = await client.auth.signInWithPassword({email:email, password:pass});
+      if (r.error) throw r.error;
+      var role = r.data.user.user_metadata && r.data.user.user_metadata.role;
+      if (!['contractor','rep','admin'].includes(role)) {
+        await client.auth.signOut();
+        throw new Error('Access denied — BGE contractors only');
+      }
+      initPortal(r.data.user);
+    } catch(e) {
+      err.textContent = e.message || 'Login failed';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign In →';
     }
+  };
 
-    await initPortal(data.user)
-  } catch(e) {
-    err.textContent = e.message
-    err.classList.remove('hidden')
-    btn.innerHTML = 'Sign In'
-    btn.disabled = false
-  }
-}
+  window.doLogout = async function() {
+    await client.auth.signOut();
+    $('portal').style.display = 'none';
+    $('login-screen').style.display = 'flex';
+    me = null;
+  };
 
-async function doLogout() {
-  await sb.auth.signOut()
-  document.getElementById('portal-screen').classList.add('hidden')
-  document.getElementById('login-screen').classList.remove('hidden')
-  currentUser = null
-  contractorProfile = null
-}
+  $('pw').addEventListener('keydown', function(e){if(e.key==='Enter') window.doLogin();});
 
-// Enter key on password
-document.getElementById('login-password')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin()
-})
-
-// ── INIT PORTAL ───────────────────────────────────────────────────────────────
-async function initPortal(user) {
-  currentUser = user
-  document.getElementById('login-screen').classList.add('hidden')
-  document.getElementById('portal-screen').classList.remove('hidden')
-
-  // Set user info
-  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'BGE'
-  document.getElementById('user-name').textContent = name
-  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase()
-
-  // Load contractor profile
-  try {
-    const { data } = await supabase
-      .schema('public')
-      .from('contractors')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    contractorProfile = data
-  } catch(e) {
-    console.warn('No contractor profile found:', e.message)
+  // ── INIT ──
+  async function initPortal(user) {
+    me = user;
+    $('login-screen').style.display = 'none';
+    $('portal').style.display = 'flex';
+    var name = (user.user_metadata&&user.user_metadata.full_name) || user.email.split('@')[0];
+    $('u-name').textContent = name;
+    $('u-av').textContent = name.charAt(0).toUpperCase();
+    try {
+      var rows = await rest('public','contractors','select=contractor_id&email=eq.'+encodeURIComponent(user.email)+'&limit=1');
+      if (rows&&rows[0]) contractorId = rows[0].contractor_id;
+    } catch(e){}
+    checkAccess();
+    loadLeads();
+    loadSidebarStats();
   }
 
-  // Run lock check
-  await checkAccess()
-
-  // Load initial data
-  await loadLeads()
-  await loadSidebarStats()
-}
-
-async function checkAccess() {
-  const el = document.getElementById('lock-status')
-  if (!contractorProfile) {
-    el.innerHTML = '<span class="text-amber-400">⚠ Profile not linked</span>'
-    return
+  async function checkAccess() {
+    var el = $('access-status');
+    if (!contractorId) { el.innerHTML = '<span style="color:var(--amber)">⚠ Profile not linked</span>'; return; }
+    try {
+      var res = await fetch(SB_URL+'/functions/v1/contractor_portal-lock_check', {
+        method:'POST', headers:{'Authorization':'Bearer '+SB_ANON,'Content-Type':'application/json'},
+        body: JSON.stringify({contractor_id:contractorId, lead_id:null})
+      });
+      var d = await res.json();
+      el.innerHTML = d.allowed===false
+        ? (d.reasons||[]).map(function(r){return '<div style="color:var(--red);font-size:11px">✗ '+r.replace(/_/g,' ')+'</div>';}).join('')
+        : '<span style="color:var(--green)">✓ Full access</span>';
+    } catch(e){ el.innerHTML = '<span style="color:var(--muted)">Unavailable</span>'; }
   }
-  try {
-    const res = await fetch(`${SB_URL}/functions/v1/contractor_portal-lock_check`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contractor_id: contractorProfile.contractor_id, lead_id: null })
-    })
-    const data = await res.json()
-    if (data.allowed === false) {
-      el.innerHTML = data.reasons?.map(r =>
-        `<div class="text-red-400">✗ ${r.replace(/_/g,' ')}</div>`
-      ).join('') || '<span class="text-red-400">Access restricted</span>'
-    } else {
-      el.innerHTML = '<span class="text-emerald-400">✓ Full access</span>'
+
+  async function loadSidebarStats() {
+    try {
+      var today = new Date().toISOString().split('T')[0];
+      var calls = await rest('dialer','calls','select=id,revenue&user_id=eq.'+me.id+'&created_at=gte.'+today);
+      $('s-calls').textContent = calls.length;
+      var rev = calls.reduce(function(s,c){return s+(Number(c.revenue)||0);},0);
+      $('s-rev').textContent = fmt(rev);
+    } catch(e){}
+  }
+
+  // ── LEADS ──
+  async function loadLeads() {
+    $('leads-list').innerHTML = '<div class="loading"><div class="spin"></div>Loading leads...</div>';
+    try {
+      var q = 'select=lead_id,assignment_date&tenant_id=eq.'+TENANT_ID+'&order=assignment_date.desc&limit=50';
+      if (contractorId) q += '&contractor_id=eq.'+contractorId;
+      var asgn = await rest('public','contractor_lead_assignments',q);
+      $('s-leads').textContent = asgn.length;
+      if (!asgn.length) { $('leads-list').innerHTML = '<div class="empty">No leads assigned yet</div>'; return; }
+      var ids = asgn.map(function(a){return a.lead_id;}).filter(Boolean);
+      var leads = await rest('crm','leads','select=id,name,business_name,phone,email,status,lead_score,close_probability,industry&id=in.('+ids.join(',')+')&limit=50');
+      allLeads = leads.map(function(l){
+        var a = asgn.find(function(a){return a.lead_id===l.id;});
+        var days = a ? Math.floor((Date.now()-new Date(a.assignment_date).getTime())/86400000) : 0;
+        return Object.assign({},l,{days_assigned:days,days_left:Math.max(0,10-days)});
+      });
+      renderLeads(allLeads);
+    } catch(e){ $('leads-list').innerHTML = '<div class="err-msg">'+e.message+'</div>'; }
+  }
+
+  function renderLeads(leads) {
+    if (!leads.length) { $('leads-list').innerHTML = '<div class="empty">No leads found</div>'; return; }
+    var sc = {new:'b-blue',contacted:'b-amber',qualified:'b-green',closing:'b-green',won:'b-green',lost:'b-red'};
+    $('leads-list').innerHTML = leads.map(function(l) {
+      var dc = l.days_left<=2?'days-crit':l.days_left<=5?'days-warn':'days-ok';
+      return '<div class="lead-row">'+
+        '<div>'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'+
+            '<span class="lead-name">'+(l.name||l.business_name||'—')+'</span>'+
+            '<span class="badge '+(sc[l.status]||'b-gray')+'">'+(l.status||'new')+'</span>'+
+          '</div>'+
+          '<div class="lead-meta">'+(l.business_name||l.industry||'—')+' · '+(l.phone||'No phone')+'</div>'+
+        '</div>'+
+        '<div class="days-chip '+dc+'">'+l.days_left+'d</div>'+
+        '<button class="call-btn" onclick="triggerDial(\''+l.id+'\',\''+escQ(l.phone||'')+'\',\''+escQ(l.name||l.business_name||'Lead')+'\')">'+
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6z"/></svg>'+
+          'Call'+
+        '</button>'+
+      '</div>';
+    }).join('');
+  }
+
+  function escQ(s){return (s||'').replace(/'/g,"\\'");}
+
+  window.filterLeads = function(q) {
+    var s = (document.getElementById('lead-search').value||'').toLowerCase();
+    var st = document.getElementById('lead-filter').value;
+    renderLeads(allLeads.filter(function(l){
+      return (!s||(l.name||'').toLowerCase().includes(s)||(l.business_name||'').toLowerCase().includes(s)||(l.phone||'').includes(s)) &&
+             (!st||(l.status||'')===st);
+    }));
+  };
+
+  // ── DIAL ──
+  function loadDialQueue() {
+    var queue = allLeads.filter(function(l){return l.phone&&!['won','lost'].includes(l.status);}).sort(function(a,b){return (b.lead_score||0)-(a.lead_score||0);});
+    $('q-count').textContent = queue.length+' leads';
+    if (!queue.length) { $('dial-queue').innerHTML = '<div class="empty">No callable leads</div>'; return; }
+    $('dial-queue').innerHTML = queue.map(function(l){
+      var dc = l.days_left<=2?'days-crit':l.days_left<=5?'days-warn':'days-ok';
+      return '<div class="lead-row">'+
+        '<div><div class="lead-name">'+(l.name||l.business_name||'—')+'</div><div class="lead-meta mono">'+(l.phone||'—')+'</div></div>'+
+        '<div class="days-chip '+dc+'">'+l.days_left+'d</div>'+
+        '<button class="call-btn" onclick="triggerDial(\''+l.id+'\',\''+escQ(l.phone||'')+'\',\''+escQ(l.name||l.business_name||'Lead')+'\')">'+
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6z"/></svg>'+
+          'Dial'+
+        '</button>'+
+      '</div>';
+    }).join('');
+  }
+
+  window.triggerDial = async function(leadId, phone, name) {
+    if (!phone) { alert('No phone number for this lead'); return; }
+    showPage('dial');
+    currentCall = {leadId:leadId, phone:phone, name:name};
+    $('call-name').textContent = name;
+    $('call-phone').textContent = phone;
+    $('active-call').style.display = 'block';
+    $('whisper-box').style.display = 'none';
+    try {
+      await fetch(SB_URL+'/functions/v1/dialpad-call', {
+        method:'POST', headers:{'Authorization':'Bearer '+SB_ANON,'Content-Type':'application/json'},
+        body: JSON.stringify({phone_number:phone, lead_id:leadId, tenant_id:TENANT_ID, user_id:me&&me.id})
+      });
+    } catch(e){ console.warn('Dial API:', e.message); }
+  };
+
+  window.endCall = function() { $('active-call').style.display='none'; currentCall=null; loadSidebarStats(); };
+
+  window.getSteveWhisper = async function() {
+    $('whisper-box').style.display = 'block';
+    $('whisper-text').textContent = 'Steve is analyzing the lead...';
+    try {
+      var r = await fetch(SB_URL+'/functions/v1/steve_call_whisper', {
+        method:'POST', headers:{'Authorization':'Bearer '+SB_ANON,'Content-Type':'application/json'},
+        body: JSON.stringify({lead_id:currentCall&&currentCall.leadId, tenant_id:TENANT_ID})
+      });
+      var d = await r.json();
+      $('whisper-text').textContent = d.whisper||d.tip||d.message||'Focus on urgency and ROI. Ask about their biggest challenge today.';
+    } catch(e) { $('whisper-text').textContent = 'Focus on urgency and ROI. Listen for buying signals and close on a specific date.'; }
+  };
+
+  // ── EARNINGS ──
+  async function loadEarnings() {
+    $('earn-content').innerHTML = '<div class="loading"><div class="spin"></div>Loading earnings...</div>';
+    try {
+      var data = await rest('finance','commissions','select=*&user_id=eq.'+me.id+'&order=created_at.desc&limit=50');
+      if (!data.length) { $('earn-content').innerHTML = '<div class="empty">No earnings records yet</div>'; return; }
+      var total = data.reduce(function(s,c){return s+(Number(c.amount)||0);},0);
+      var paid = data.filter(function(c){return c.status==='paid';}).reduce(function(s,c){return s+(Number(c.amount)||0);},0);
+      $('earn-content').innerHTML =
+        '<div class="grid3">'+
+          '<div class="kpi"><div class="kpi-n">'+fmt(total)+'</div><div class="kpi-l">Total Earned</div></div>'+
+          '<div class="kpi" style="border-color:var(--green-border)"><div class="kpi-n" style="color:var(--green)">'+fmt(paid)+'</div><div class="kpi-l">Paid Out</div></div>'+
+          '<div class="kpi" style="border-color:rgba(246,173,85,.25)"><div class="kpi-n" style="color:var(--amber)">'+fmt(total-paid)+'</div><div class="kpi-l">Pending</div></div>'+
+        '</div>'+
+        '<div class="leads-table">'+
+          data.map(function(c){
+            return '<div class="lead-row">'+
+              '<div><div class="lead-name">'+fmt(c.amount||0)+'</div><div class="lead-meta">'+(c.description||c.source||'Commission')+' · '+ago(c.created_at)+'</div></div>'+
+              '<span class="badge '+(c.status==='paid'?'b-green':c.status==='pending'?'b-amber':'b-gray')+'">'+(c.status||'—')+'</span>'+
+            '</div>';
+          }).join('')+
+        '</div>';
+    } catch(e){ $('earn-content').innerHTML = '<div class="err-msg">'+e.message+'</div>'; }
+  }
+
+  // ── STATS ──
+  async function loadStats() {
+    $('stats-content').innerHTML = '<div class="loading"><div class="spin"></div>Loading stats...</div>';
+    try {
+      var calls = await rest('dialer','calls','select=call_status,duration,revenue,created_at&user_id=eq.'+me.id+'&limit=200');
+      var today = calls.filter(function(c){return new Date(c.created_at).toDateString()===new Date().toDateString();});
+      var perfs = await rest('sales','v_rep_performance','select=*&user_id=eq.'+me.id+'&limit=1');
+      var perf = perfs[0]||{};
+      $('stats-content').innerHTML =
+        '<div class="grid4">'+
+          '<div class="kpi" style="border-color:var(--green-border);background:rgba(0,229,160,.04)"><div class="kpi-n" style="color:var(--green)">'+(perf.close_rate?(Number(perf.close_rate)*100).toFixed(1)+'%':'—')+'</div><div class="kpi-l">Close Rate</div></div>'+
+          '<div class="kpi"><div class="kpi-n">'+(perf.deals_won||0)+'</div><div class="kpi-l">Deals Won</div></div>'+
+          '<div class="kpi" style="border-color:rgba(246,173,85,.25)"><div class="kpi-n" style="color:var(--amber)">'+(perf.avg_deal_value?fmt(perf.avg_deal_value):'—')+'</div><div class="kpi-l">Avg Deal</div></div>'+
+          '<div class="kpi" style="border-color:rgba(99,179,237,.25)"><div class="kpi-n" style="color:var(--blue)">'+calls.length+'</div><div class="kpi-l">Total Calls</div></div>'+
+        '</div>'+
+        '<div class="card"><div class="card-title">Today\'s Activity</div><div class="grid3">'+
+          '<div class="kpi"><div class="kpi-n">'+today.length+'</div><div class="kpi-l">Calls Made</div></div>'+
+          '<div class="kpi"><div class="kpi-n" style="color:var(--green)">'+today.filter(function(c){return c.call_status==='completed';}).length+'</div><div class="kpi-l">Completed</div></div>'+
+          '<div class="kpi"><div class="kpi-n" style="color:var(--amber)">'+fmt(today.reduce(function(s,c){return s+(Number(c.revenue)||0);},0))+'</div><div class="kpi-l">Revenue</div></div>'+
+        '</div></div>'+
+        '<div class="card"><div class="card-title">Rules</div>'+
+          '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)">'+
+            '<span>⏱ <strong style="color:var(--amber)">10-day</strong> close window</span>'+
+            '<span>📅 <strong style="color:var(--amber)">8AM–8PM</strong> lead timezone</span>'+
+            '<span>🔄 No contact → <strong style="color:var(--red)">auto reassign</strong></span>'+
+            '<span>📦 Max <strong style="color:var(--green)">70 leads/day</strong></span>'+
+          '</div>'+
+        '</div>';
+    } catch(e){ $('stats-content').innerHTML = '<div class="err-msg">'+e.message+'</div>'; }
+  }
+
+  // ── TABS ──
+  window.showPage = function(p) {
+    ['leads','dial','earn','stats'].forEach(function(x){
+      $('page-'+x).classList.remove('active');
+      $('nav-'+x).classList.remove('active');
+    });
+    $('page-'+p).classList.add('active');
+    $('nav-'+p).classList.add('active');
+    if (p==='dial') loadDialQueue();
+    if (p==='earn') loadEarnings();
+    if (p==='stats') loadStats();
+  };
+
+  // ── SESSION RESTORE ──
+  client.auth.getSession().then(function(r){
+    var s = r.data&&r.data.session;
+    if (s&&s.user) {
+      var role = s.user.user_metadata&&s.user.user_metadata.role;
+      if (['contractor','rep','admin'].includes(role)) initPortal(s.user);
     }
-  } catch(e) {
-    el.innerHTML = '<span class="text-slate-500">Access check unavailable</span>'
-  }
-}
+  });
 
-// ── DATA LOADERS ──────────────────────────────────────────────────────────────
-async function loadSidebarStats() {
-  try {
-    if (!contractorProfile) return
-    const { data: calls } = await supabase
-      .schema('dialer')
-      .from('calls')
-      .select('id,revenue,created_at')
-      .eq('user_id', currentUser.id)
-      .gte('created_at', new Date().toISOString().split('T')[0])
-
-    document.getElementById('stat-calls').textContent = calls?.length || 0
-    const rev = calls?.reduce((s,c) => s + (Number(c.revenue)||0), 0) || 0
-    document.getElementById('stat-revenue').textContent = rev > 0 ? '$' + rev.toLocaleString() : '$0'
-  } catch(e) { console.warn('Stats error:', e.message) }
-}
-
-async function loadLeads() {
-  const el = document.getElementById('leads-list')
-  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
-
-  try {
-    // Get assignments for this contractor
-    let assignmentsQuery = supabase
-      .schema('public')
-      .from('contractor_lead_assignments')
-      .select('lead_id, assignment_date')
-      .eq('tenant_id', TENANT_ID)
-      .order('assignment_date', { ascending: false })
-      .limit(50)
-
-    if (contractorProfile) {
-      assignmentsQuery = assignmentsQuery.eq('contractor_id', contractorProfile.contractor_id)
-    }
-
-    const { data: assignments } = await assignmentsQuery
-
-    if (!assignments?.length) {
-      el.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No leads assigned yet</div>'
-      document.getElementById('stat-leads').textContent = '0'
-      return
-    }
-
-    // Get lead details
-    const leadIds = assignments.map(a => a.lead_id).filter(Boolean)
-    const { data: leads } = await supabase
-      .schema('crm')
-      .from('leads')
-      .select('id,name,business_name,phone,email,status,lead_score,close_probability,assigned_at,last_activity_at,industry')
-      .in('id', leadIds)
-      .limit(50)
-
-    // Merge assignment date
-    allLeads = (leads || []).map(l => {
-      const a = assignments.find(a => a.lead_id === l.id)
-      const days = a ? Math.floor((Date.now() - new Date(a.assignment_date).getTime()) / 86400000) : 0
-      return { ...l, assignment_date: a?.assignment_date, days_assigned: days, days_left: Math.max(0, 10 - days) }
-    })
-
-    document.getElementById('stat-leads').textContent = allLeads.length
-    renderLeads(allLeads)
-  } catch(e) {
-    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
-  }
-}
-
-function renderLeads(leads) {
-  const el = document.getElementById('leads-list')
-  if (!leads.length) {
-    el.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No leads found</div>'
-    return
-  }
-
-  const statusColor = { new:'badge-blue', contacted:'badge-amber', qualified:'badge-green', closing:'badge-green', won:'badge-green', lost:'badge-red' }
-
-  el.innerHTML = leads.map(l => `
-    <div class="lead-row" onclick="selectLead('${l.id}')">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-sm font-semibold text-white truncate">${l.name || l.business_name || '—'}</span>
-            <span class="badge ${statusColor[l.status?.toLowerCase()] || 'badge-gray'} shrink-0">${l.status || 'new'}</span>
-          </div>
-          <div class="text-xs text-slate-400 truncate">${l.business_name || l.industry || '—'} · ${l.phone || 'No phone'}</div>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-xs font-semibold ${l.days_left <= 2 ? 'text-red-400' : l.days_left <= 5 ? 'text-amber-400' : 'text-slate-400'} mono">${l.days_left}d left</div>
-          <div class="text-[10px] text-slate-500 mt-0.5">Score: ${l.lead_score || '—'}</div>
-        </div>
-      </div>
-      ${l.close_probability ? `
-      <div class="mt-2">
-        <div class="heat-bar">
-          <div class="heat-fill ${Number(l.close_probability) >= 0.7 ? 'bg-emerald-500' : Number(l.close_probability) >= 0.4 ? 'bg-amber-500' : 'bg-slate-500'}"
-               style="width:${Math.min(100, Number(l.close_probability) * 100).toFixed(0)}%"></div>
-        </div>
-      </div>` : ''}
-    </div>`).join('')
-}
-
-function filterLeads(q) {
-  const search = (document.getElementById('lead-search')?.value || '').toLowerCase()
-  const status = document.getElementById('lead-filter')?.value || ''
-  const filtered = allLeads.filter(l => {
-    const matchSearch = !search || (l.name||'').toLowerCase().includes(search) || (l.business_name||'').toLowerCase().includes(search) || (l.phone||'').includes(search)
-    const matchStatus = !status || (l.status||'').toLowerCase() === status
-    return matchSearch && matchStatus
-  })
-  renderLeads(filtered)
-}
-
-function selectLead(id) {
-  const lead = allLeads.find(l => l.id === id)
-  if (!lead) return
-  showTab('dial')
-  // Pre-populate the dial queue with this lead
-  loadDialQueue(lead)
-}
-
-async function loadDialQueue(preselect) {
-  const el = document.getElementById('dial-queue')
-  const countEl = document.getElementById('queue-count')
-
-  // Use current leads as dial queue sorted by priority
-  const queue = [...allLeads].filter(l => l.phone && !['won','lost'].includes(l.status?.toLowerCase()))
-    .sort((a,b) => (b.lead_score||0) - (a.lead_score||0))
-
-  countEl.textContent = queue.length + ' leads'
-
-  if (!queue.length) {
-    el.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">No callable leads in queue</div>'
-    return
-  }
-
-  el.innerHTML = queue.map(l => `
-    <div class="lead-row flex items-center justify-between gap-3">
-      <div class="min-w-0">
-        <div class="text-sm font-semibold text-white truncate">${l.name || l.business_name || '—'}</div>
-        <div class="text-xs text-slate-400 mono">${l.phone || '—'}</div>
-      </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <span class="text-[10px] text-slate-500">${l.days_left}d left</span>
-        <button onclick="startCall('${l.id}','${(l.phone||'').replace(/'/g,"\\'")}','${(l.name||l.business_name||'Lead').replace(/'/g,"\\'")}');event.stopPropagation()"
-          class="btn btn-green" style="padding:5px 12px;font-size:11px;">
-          📞 Dial
-        </button>
-      </div>
-    </div>`).join('')
-}
-
-async function startCall(leadId, phone, name) {
-  if (!phone) { alert('No phone number for this lead'); return }
-  currentCall = { leadId, phone, name }
-  document.getElementById('call-name').textContent = name
-  document.getElementById('call-phone').textContent = phone
-  document.getElementById('active-call').classList.remove('hidden')
-  document.getElementById('steve-whisper').classList.add('hidden')
-
-  try {
-    const res = await fetch(`${SB_URL}/functions/v1/dialpad-call`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone_number: phone, lead_id: leadId, tenant_id: TENANT_ID, user_id: currentUser?.id })
-    })
-    const data = await res.json()
-    console.log('Call initiated:', data)
-  } catch(e) {
-    console.warn('Call error:', e.message)
-  }
-}
-
-async function endCall() {
-  document.getElementById('active-call').classList.add('hidden')
-  document.getElementById('steve-whisper').classList.add('hidden')
-  currentCall = null
-  await loadSidebarStats()
-}
-
-async function getSteveWhisper() {
-  const whisperEl = document.getElementById('steve-whisper')
-  const textEl = document.getElementById('whisper-text')
-  whisperEl.classList.remove('hidden')
-  textEl.textContent = 'Steve is thinking...'
-
-  try {
-    const res = await fetch(`${SB_URL}/functions/v1/steve_call_whisper`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: currentCall?.leadId, tenant_id: TENANT_ID })
-    })
-    const data = await res.json()
-    textEl.textContent = data.whisper || data.tip || data.message || 'Focus on urgency and ROI. Ask about their biggest challenge.'
-  } catch(e) {
-    textEl.textContent = 'Focus on urgency and ROI. Listen for pain points and close on a specific date.'
-  }
-}
-
-async function loadEarnings() {
-  const el = document.getElementById('earnings-content')
-  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
-
-  try {
-    const { data } = await supabase
-      .schema('finance')
-      .from('commissions')
-      .select('*')
-      .eq('user_id', currentUser?.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-
-    if (!data?.length) {
-      el.innerHTML = '<div class="text-center py-10 text-slate-500 text-sm">No earnings records yet</div>'
-      return
-    }
-
-    const total = data.reduce((s,c) => s + (Number(c.amount)||0), 0)
-    const paid = data.filter(c => c.status === 'paid').reduce((s,c) => s + (Number(c.amount)||0), 0)
-
-    el.innerHTML = `
-      <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="card text-center">
-          <div class="text-2xl font-bold text-white mono">$${total.toLocaleString()}</div>
-          <div class="text-xs text-slate-400 mt-1">Total Earned</div>
-        </div>
-        <div class="card text-center">
-          <div class="text-2xl font-bold text-emerald-400 mono">$${paid.toLocaleString()}</div>
-          <div class="text-xs text-slate-400 mt-1">Paid Out</div>
-        </div>
-        <div class="card text-center">
-          <div class="text-2xl font-bold text-amber-400 mono">$${(total-paid).toLocaleString()}</div>
-          <div class="text-xs text-slate-400 mt-1">Pending</div>
-        </div>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden;">
-        <div class="p-4 border-b border-white/5 text-sm font-semibold">Commission History</div>
-        ${data.map(c => `
-          <div class="lead-row flex items-center justify-between">
-            <div>
-              <div class="text-sm font-medium text-white">$${Number(c.amount||0).toLocaleString()}</div>
-              <div class="text-xs text-slate-400">${c.description || c.source || '—'} · ${c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</div>
-            </div>
-            <span class="badge ${c.status==='paid'?'badge-green':c.status==='pending'?'badge-amber':'badge-gray'}">${c.status||'—'}</span>
-          </div>`).join('')}
-      </div>`
-  } catch(e) {
-    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
-  }
-}
-
-async function loadStats() {
-  const el = document.getElementById('stats-content')
-  el.innerHTML = '<div class="flex items-center justify-center py-10"><div class="spinner"></div></div>'
-
-  try {
-    const [callsRes, perfRes] = await Promise.all([
-      sb.schema('dialer').from('calls').select('call_status,duration,revenue,created_at').eq('user_id', currentUser?.id).limit(100),
-      sb.schema('sales').from('v_rep_performance').select('*').eq('user_id', currentUser?.id).single()
-    ])
-
-    const calls = callsRes.data || []
-    const perf = perfRes.data || {}
-    const today = calls.filter(c => new Date(c.created_at).toDateString() === new Date().toDateString())
-
-    el.innerHTML = `
-      <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="card-green">
-          <div class="text-3xl font-bold text-emerald-400 mono">${perf.close_rate ? (Number(perf.close_rate)*100).toFixed(1)+'%' : '—'}</div>
-          <div class="text-xs text-slate-400 mt-1">Close Rate</div>
-        </div>
-        <div class="card">
-          <div class="text-3xl font-bold text-white mono">${perf.deals_won || 0}</div>
-          <div class="text-xs text-slate-400 mt-1">Deals Won</div>
-        </div>
-        <div class="card">
-          <div class="text-3xl font-bold text-amber-400 mono">${perf.avg_deal_value ? '$'+Number(perf.avg_deal_value).toLocaleString() : '—'}</div>
-          <div class="text-xs text-slate-400 mt-1">Avg Deal Value</div>
-        </div>
-        <div class="card">
-          <div class="text-3xl font-bold text-blue-400 mono">${calls.length}</div>
-          <div class="text-xs text-slate-400 mt-1">Total Calls</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="text-sm font-semibold mb-3">Today's Activity</div>
-        <div class="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <div class="text-xl font-bold mono">${today.length}</div>
-            <div class="text-[10px] text-slate-400">Calls Made</div>
-          </div>
-          <div>
-            <div class="text-xl font-bold mono text-emerald-400">${today.filter(c=>c.call_status==='completed').length}</div>
-            <div class="text-[10px] text-slate-400">Completed</div>
-          </div>
-          <div>
-            <div class="text-xl font-bold mono text-amber-400">$${today.reduce((s,c)=>s+(Number(c.revenue)||0),0).toLocaleString()}</div>
-            <div class="text-[10px] text-slate-400">Revenue</div>
-          </div>
-        </div>
-      </div>`
-  } catch(e) {
-    el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Error: ${e.message}</div>`
-  }
-}
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function showTab(tab) {
-  ['leads','dial','earnings','stats'].forEach(t => {
-    document.getElementById('view-'+t).classList.add('hidden')
-    document.getElementById('tab-'+t).classList.remove('active')
-  })
-  document.getElementById('view-'+tab).classList.remove('hidden')
-  document.getElementById('tab-'+tab).classList.add('active')
-
-  if (tab === 'dial') loadDialQueue()
-  if (tab === 'earnings') loadEarnings()
-  if (tab === 'stats') loadStats()
-}
-
-// ── AUTO-LOGIN CHECK ──────────────────────────────────────────────────────────
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session?.user) {
-    const role = session.user.user_metadata?.role
-    if (['contractor','rep','admin'].includes(role)) {
-      initPortal(session.user)
-    }
-  }
-})
-
-sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT') {
-    document.getElementById('portal-screen').classList.add('hidden')
-    document.getElementById('login-screen').classList.remove('hidden')
-  }
-})
+})();
 </script>
 </body>
 </html>
