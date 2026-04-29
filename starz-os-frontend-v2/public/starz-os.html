@@ -293,6 +293,7 @@
       <i data-lucide="phone-outgoing" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">PowerDial</div>
     </button>
+    <button onclick="openWindow('traffik')" class="dock-item w-12 h-12 rounded-xl flex items-center justify-center group relative animate-pulse-slow" style="background:linear-gradient(145deg,#00ff87 0%,#00cc6a 45%,#005c30 100%) !important;box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(0,255,135,0.65),0 2px 6px rgba(0,0,0,0.55);"><i data-lucide="globe" class="w-6 h-6 text-white relative z-10"></i><div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">TB.AI Site</div></button>
     <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
@@ -2537,6 +2538,8 @@ window._pdCall = async (phone, queueId) => {
 }
 
 // ── POWERDIAL — CALL FLOOR ────────────────────────────────────────────────────
+
+
 async function loadPowerDialContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
@@ -4294,6 +4297,7 @@ const appConfigs = {
   zara:        { name:'Zara — HR Director',   icon:'heart-handshake',  w:1200, h:800 },
   inbox:       { name:'Reply Inbox',          icon:'mail-open',        w:1080, h:720 },
   powerdial:   { name:'PowerDial — Call Floor', icon:'phone-outgoing', w:1200, h:760 },
+  traffik:     { name:'TraffikBoosters.AI — Public Site', icon:'globe', w:1400, h:860 },
 }
 const loaders = {
   dashboard:   loadDashboardContent,
@@ -4310,7 +4314,8 @@ const loaders = {
   contractors: loadContractorContent,
   zara:        loadZaraContent,
   inbox:       loadInboxContent,
-  powerdial:   loadPowerDialContent
+  powerdial:   loadPowerDialContent,
+  traffik:     loadTraffikSiteContent
 }
 
 function openWindow(appId) {
