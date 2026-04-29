@@ -4278,6 +4278,23 @@ async function loadContractorContent(el) {
   } catch(e) { el.innerHTML = '<div class="p-8 text-center text-red-400">Portal Error: '+e.message+'</div>'; }
 }
 
+const appConfigs = {
+  dashboard:   { name:'Command Dashboard',    icon:'layout-dashboard', w:980,  h:680 },
+  sales:       { name:'Sales War Room',       icon:'trending-up',      w:1060, h:680 },
+  steve:       { name:'Steve BGE Console',    icon:'bot',              w:760,  h:640 },
+  crm:         { name:'CRM',                 icon:'users',            w:1040, h:680 },
+  calls:       { name:'Call Floor',           icon:'phone',            w:900,  h:680 },
+  finance:     { name:'Finance Core',         icon:'dollar-sign',      w:980,  h:700 },
+  marketing:   { name:'Marketing Hub',        icon:'megaphone',        w:980,  h:680 },
+  files:       { name:'Rico — Fulfillment',   icon:'briefcase',        w:1280, h:760 },
+  control:     { name:'Engine Control',       icon:'terminal',         w:980,  h:720 },
+  bge:         { name:'BGE Sales Floor',      icon:'phone-call',       w:1080, h:720 },
+  hr:          { name:'HR Command',           icon:'users-round',      w:1060, h:720 },
+  contractors: { name:'Contractor Portal',    icon:'briefcase',        w:1080, h:740 },
+  zara:        { name:'Zara — HR Director',   icon:'heart-handshake',  w:1200, h:800 },
+  inbox:       { name:'Reply Inbox',          icon:'mail-open',        w:1080, h:720 },
+  powerdial:   { name:'PowerDial — Call Floor', icon:'phone-outgoing', w:1200, h:760 },
+}
 const loaders = {
   dashboard:   loadDashboardContent,
   sales:       loadSalesContent,
