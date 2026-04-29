@@ -3276,349 +3276,372 @@ async function loadInboxContent(el) {
 async function loadZaraContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
-    const [contractors, applications, compliance, lines, commProfiles, bgeProfiles, billingLedger] = await Promise.all([
-      sb('public', 'contractor_profiles', 'select=id,auth_user_id,full_name,email,phone_number,onboarding_stage,verification_status,crm_access_active,w9_signed,compliance_score,active,tier,created_at&order=created_at.desc&limit=100').catch(()=>[]),
-      sb('public', 'contractor_applications', 'select=id,full_name,email,phone,state,city,ai_readiness_score,ai_summary,created_at&order=created_at.desc&limit=50').catch(()=>[]),
-      sb('public', 'contractor_compliance', 'select=contractor_id,item,status&limit=500').catch(()=>[]),
-      sb('public', 'contractor_lines', 'select=contractor_id,phone_number,status,active&limit=200').catch(()=>[]),
-      sb('public', 'user_communication_profiles', 'select=user_id,dialpad_user_id,dialpad_phone,email_address&limit=200').catch(()=>[]),
-      sb('public', 'bge_profiles', 'select=user_id,subscription_status,leads_access,close_rate,deals_closed,revenue_generated,performance_score,assignment_paused&limit=200').catch(()=>[]),
-      sb('public', 'dialer_billing_ledger', 'select=contractor_id,amount,status,invoice_date&order=invoice_date.desc&limit=200').catch(()=>[]),
+    const [staff, invites, onboarding, contractors, applications, messages] = await Promise.all([
+      sb('hr', 'users', 'select=id,email,full_name,role_status,created_at&order=created_at.desc').catch(()=>[]),
+      sb('hr', 'user_invites', 'select=id,email,role_key,status,invited_at,accepted_at&order=invited_at.desc&limit=50').catch(()=>[]),
+      sb('hr', 'onboarding_log', 'select=id,email,full_name,role_key,status,sent_at&order=sent_at.desc&limit=50').catch(()=>[]),
+      sb('public', 'contractor_profiles', 'select=id,full_name,email,phone_number,onboarding_stage,active,w9_signed,compliance_score,created_at&order=created_at.desc&limit=50').catch(()=>[]),
+      sb('public', 'contractor_applications', 'select=id,full_name,email,phone,state,city,ai_readiness_score,created_at&order=created_at.desc&limit=20').catch(()=>[]),
+      sb('hr', 'staff_messages', 'select=id,subject,body,channel,delivery_status,created_at&order=created_at.desc&limit=20').catch(()=>[]),
     ])
 
-    // ── PHASE MAP ──────────────────────────────────────────────────────────
+    const activeStaff = staff.filter(s => s.role_status === 'active').length
+    const pendingInvites = invites.filter(i => i.status === 'pending').length
+    const activeContractors = contractors.filter(c => c.active).length
+    const newApps = applications.length
+
     const PHASES = [
-      { id:'apply',          label:'Apply',         icon:'📋', color:'slate' },
-      { id:'pre_qualified',  label:'Pre-Qualified',  icon:'✅', color:'blue' },
-      { id:'contract',       label:'Contract',       icon:'📄', color:'purple' },
-      { id:'account',        label:'Account',        icon:'🔐', color:'indigo' },
-      { id:'training',       label:'Training',       icon:'🧠', color:'amber' },
-      { id:'active',         label:'Active',         icon:'⚡', color:'green' },
-      { id:'leads',          label:'Leads Live',     icon:'🎯', color:'cyan' },
-      { id:'powerdial',      label:'PowerDial',      icon:'📞', color:'orange' },
-      { id:'monitored',      label:'AI Monitor',     icon:'🤖', color:'pink' },
-      { id:'earning',        label:'Earning',        icon:'💰', color:'emerald' },
+      { id:'apply', label:'Apply', icon:'📋' },
+      { id:'pre_qualified', label:'Pre-Qual', icon:'✅' },
+      { id:'contract', label:'Contract', icon:'📄' },
+      { id:'account', label:'Account', icon:'🔐' },
+      { id:'training', label:'Training', icon:'🧠' },
+      { id:'active', label:'Active', icon:'⚡' },
+      { id:'leads', label:'Leads', icon:'🎯' },
+      { id:'powerdial', label:'PowerDial', icon:'📞' },
+      { id:'monitored', label:'Monitor', icon:'🤖' },
+      { id:'earning', label:'Earning', icon:'💰' },
     ]
 
-    const phaseColor = (stage) => {
-      const map = { apply:'text-slate-400', pre_qualified:'text-blue-400', contract:'text-purple-400',
+    const phaseBg = (s) => {
+      const m = { apply:'bg-slate-500/15 border-slate-500/30', pre_qualified:'bg-blue-500/15 border-blue-500/30',
+        contract:'bg-purple-500/15 border-purple-500/30', account:'bg-indigo-500/15 border-indigo-500/30',
+        training:'bg-amber-500/15 border-amber-500/30', active:'bg-green-500/15 border-green-500/30',
+        leads:'bg-cyan-500/15 border-cyan-500/30', powerdial:'bg-orange-500/15 border-orange-500/30',
+        monitored:'bg-pink-500/15 border-pink-500/30', earning:'bg-emerald-500/15 border-emerald-500/30' }
+      return m[s] || 'bg-slate-700/15 border-slate-700/30'
+    }
+    const phaseColor = (s) => {
+      const m = { apply:'text-slate-400', pre_qualified:'text-blue-400', contract:'text-purple-400',
         account:'text-indigo-400', training:'text-amber-400', active:'text-green-400',
-        leads:'text-cyan-400', powerdial:'text-orange-400', monitored:'text-pink-400',
-        earning:'text-emerald-400', start:'text-slate-500' }
-      return map[stage] || 'text-slate-400'
+        leads:'text-cyan-400', powerdial:'text-orange-400', monitored:'text-pink-400', earning:'text-emerald-400' }
+      return m[s] || 'text-slate-400'
     }
-    const phaseBg = (stage) => {
-      const map = { apply:'bg-slate-500/20 border-slate-500/30', pre_qualified:'bg-blue-500/20 border-blue-500/30',
-        contract:'bg-purple-500/20 border-purple-500/30', account:'bg-indigo-500/20 border-indigo-500/30',
-        training:'bg-amber-500/20 border-amber-500/30', active:'bg-green-500/20 border-green-500/30',
-        leads:'bg-cyan-500/20 border-cyan-500/30', powerdial:'bg-orange-500/20 border-orange-500/30',
-        monitored:'bg-pink-500/20 border-pink-500/30', earning:'bg-emerald-500/20 border-emerald-500/30',
-        start:'bg-slate-700/20 border-slate-700/30' }
-      return map[stage] || 'bg-slate-700/20 border-slate-700/30'
-    }
-    const phaseIdx = (stage) => PHASES.findIndex(p => p.id === stage)
 
-    // ── STATS ──────────────────────────────────────────────────────────────
-    const total = contractors.length
-    const active = contractors.filter(c => c.active && c.onboarding_stage === 'active' || c.onboarding_stage === 'earning' || c.onboarding_stage === 'powerdial').length
-    const pending = contractors.filter(c => !['active','earning','powerdial','monitored'].includes(c.onboarding_stage||'start')).length
-    const totalApps = applications.length
-    const revenue = contractors.filter(c=>c.crm_access_active).length * 650
+    let activeTab = 'staff'
+    let zaraChatHistory = []
 
-    // ── LOOKUP HELPERS ─────────────────────────────────────────────────────
-    const getComms = (authId) => commProfiles.find(p => p.user_id === authId)
-    const getBGE = (authId) => bgeProfiles.find(p => p.user_id === authId)
-    const getLine = (cid) => lines.find(l => l.contractor_id === cid)
-    const getCompliance = (cid) => compliance.filter(c => c.contractor_id === cid)
-    const getBilling = (cid) => billingLedger.filter(b => b.contractor_id === cid)
-
-    let activeTab = 'pipeline'
-
-    const renderPipeline = () => {
-      // Phase funnel counts
-      const phaseCounts = {}
-      PHASES.forEach(p => { phaseCounts[p.id] = contractors.filter(c => (c.onboarding_stage||'start') === p.id).length })
-
-      return `
-        <!-- Zara Header -->
-        <div class="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-rose-500/10 to-pink-500/10 border border-rose-500/20 mb-4">
-          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
-            class="w-16 h-16 rounded-full border-2 border-rose-500/50 object-cover shrink-0" onerror="this.style.display='none'" />
+    const renderHeader = () => `
+      <div class="relative overflow-hidden rounded-2xl mb-4 shrink-0" style="background:linear-gradient(135deg,rgba(244,63,94,0.15) 0%,rgba(168,85,247,0.1) 50%,rgba(244,63,94,0.05) 100%);border:1px solid rgba(244,63,94,0.3)">
+        <div class="relative flex items-center gap-5 p-4">
+          <div class="relative shrink-0">
+            <div class="absolute inset-0 rounded-full blur-xl opacity-60" style="background:radial-gradient(circle,#f43f5e,transparent)"></div>
+            <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+              class="relative w-20 h-20 rounded-full object-cover"
+              style="border:2px solid rgba(244,63,94,0.8);box-shadow:0 0 30px rgba(244,63,94,0.5)"
+              onerror="this.outerHTML='<div style=\'width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f43f5e,#a855f7);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:white;border:2px solid rgba(244,63,94,0.8);box-shadow:0 0 30px rgba(244,63,94,0.5)\'>Z</div>'" />
+          </div>
           <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="font-bold text-base text-white">Zara</span>
-              <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded px-1.5 py-0.5">HR COMMAND CENTER</span>
-              <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1"></span>
+            <div class="flex items-center gap-3 mb-1">
+              <span class="text-2xl font-black text-white">Zara</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(244,63,94,0.2);border:1px solid rgba(244,63,94,0.4);color:#fda4af">HR DIRECTOR</span>
+              <span class="flex items-center gap-1 text-[10px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>LIVE</span>
             </div>
-            <div class="text-xs text-slate-400">Contractor onboarding · Compliance · System access · Pipeline activation</div>
+            <div class="text-xs text-slate-400 mb-2">Recruiting · Onboarding · Compliance · State Laws · Benefits · Staff Management</div>
+            <div class="flex gap-3 text-[10px] flex-wrap">
+              <span class="text-slate-400">👥 Staff: <strong class="text-white">${activeStaff}</strong></span>
+              <span class="text-slate-400">📨 Pending Invites: <strong class="text-amber-300">${pendingInvites}</strong></span>
+              <span class="text-slate-400">⚡ Contractors: <strong class="text-green-300">${activeContractors}</strong></span>
+              <span class="text-slate-400">📋 Applications: <strong class="text-blue-300">${newApps}</strong></span>
+            </div>
           </div>
-          <div class="grid grid-cols-4 gap-3 shrink-0">
-            ${[
-              {label:'Total', val:total, color:'text-white'},
-              {label:'Active', val:active, color:'text-green-400'},
-              {label:'Pending', val:pending, color:'text-amber-400'},
-              {label:'MRR', val:'$'+revenue.toLocaleString(), color:'text-emerald-400'},
-            ].map(s=>`
-              <div class="text-center">
-                <div class="text-lg font-bold font-mono ${s.color}">${s.val}</div>
-                <div class="text-[9px] text-slate-500 uppercase">${s.label}</div>
-              </div>`).join('')}
+          <div class="flex flex-col gap-2 shrink-0">
+            <button onclick="window._zaraAskAI()" class="py-2 px-4 rounded-xl text-xs font-bold transition-all" style="background:linear-gradient(135deg,#f43f5e,#a855f7);color:white;box-shadow:0 4px 15px rgba(244,63,94,0.4)">
+              🧠 Ask Zara
+            </button>
+            <button onclick="window._zaraRunEngine()" class="py-1.5 px-3 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold hover:bg-rose-500/30 transition-all">
+              ⚡ Run Zara Engine
+            </button>
+          </div>
+        </div>
+      </div>`
+
+    const renderStaff = () => `
+      <div class="space-y-3">
+        <!-- Invite New Member -->
+        <div class="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20">
+          <div class="text-xs font-semibold text-rose-300 mb-2">📨 Invite New Team Member</div>
+          <div class="flex gap-2">
+            <input id="zara-invite-email" type="email" placeholder="Email address..." class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-rose-500/50" />
+            <select id="zara-invite-role" class="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white outline-none">
+              <option value="bge_contractor">Sales Contractor</option>
+              <option value="developer">Developer</option>
+              <option value="sales_rep">Sales Rep</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+            </select>
+            <button onclick="window._zaraSendInvite()" class="py-1.5 px-4 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold hover:bg-rose-500/30 transition-all">
+              Send Invite
+            </button>
           </div>
         </div>
 
+        <!-- Staff Table -->
+        <div>
+          <div class="text-xs font-semibold text-slate-300 mb-2">👥 Current Staff (${staff.length})</div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+            <tbody>${staff.map(u => `<tr>
+              <td class="font-semibold">${u.full_name||'—'}</td>
+              <td class="text-xs text-slate-400">${u.email||'—'}</td>
+              <td class="text-xs">${u.role_status||'—'}</td>
+              <td><span class="text-[9px] px-1.5 py-0.5 rounded ${u.role_status==='active'?'bg-green-500/20 text-green-400':'bg-slate-700 text-slate-400'}">${u.role_status||'—'}</span></td>
+              <td class="text-slate-400 text-xs">${ago(u.created_at)}</td>
+              <td>
+                <div class="flex gap-1">
+                  <button onclick="window._zaraMessageStaff('${u.id}','${u.email}','${u.full_name}')" class="py-0.5 px-2 rounded bg-blue-500/20 text-blue-300 text-[9px] hover:bg-blue-500/30">💬 Msg</button>
+                  <button onclick="window._zaraViewOnboarding('${u.id}')" class="py-0.5 px-2 rounded bg-purple-500/20 text-purple-300 text-[9px] hover:bg-purple-500/30">📋 Log</button>
+                </div>
+              </td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+
+        <!-- Pending Invites -->
+        ${invites.length ? `
+        <div>
+          <div class="text-xs font-semibold text-slate-300 mb-2">📨 Pending Invites (${invites.length})</div>
+          <table class="data-table">
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Sent</th><th>Action</th></tr></thead>
+            <tbody>${invites.map(i => `<tr>
+              <td class="text-xs">${i.email||'—'}</td>
+              <td class="text-xs text-slate-400">${i.role_key||'—'}</td>
+              <td><span class="text-[9px] px-1.5 py-0.5 rounded ${i.status==='accepted'?'bg-green-500/20 text-green-400':i.status==='pending'?'bg-amber-500/20 text-amber-400':'bg-slate-700 text-slate-400'}">${i.status}</span></td>
+              <td class="text-slate-400 text-xs">${ago(i.invited_at)}</td>
+              <td><button onclick="window._zaraResendInvite('${i.email}','${i.role_key}')" class="py-0.5 px-2 rounded bg-rose-500/20 text-rose-300 text-[9px] hover:bg-rose-500/30">↻ Resend</button></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`
+
+    const renderContractors = () => `
+      <div class="space-y-3">
         <!-- Phase Funnel -->
-        <div class="grid grid-cols-10 gap-1 mb-4">
-          ${PHASES.map((p,i) => `
-            <div class="text-center p-2 rounded-lg border ${phaseBg(p.id)} cursor-pointer hover:opacity-90 transition-all">
-              <div class="text-lg">${p.icon}</div>
-              <div class="text-[8px] font-bold font-mono ${phaseColor(p.id)} mt-0.5">${phaseCounts[p.id]||0}</div>
-              <div class="text-[7px] text-slate-600 leading-tight mt-0.5">${p.label}</div>
-            </div>`).join('')}
+        <div class="grid grid-cols-10 gap-1 mb-3">
+          ${PHASES.map(p => {
+            const count = contractors.filter(c => (c.onboarding_stage||'apply') === p.id).length
+            return `<div class="text-center p-2 rounded-lg border ${phaseBg(p.id)}">
+              <div class="text-base">${p.icon}</div>
+              <div class="text-[9px] font-bold font-mono ${phaseColor(p.id)}">${count}</div>
+              <div class="text-[7px] text-slate-600 leading-tight">${p.label}</div>
+            </div>`
+          }).join('')}
         </div>
 
-        <!-- Contractor Cards -->
+        <!-- Applications -->
+        ${applications.length ? `
+        <div class="p-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
+          <div class="text-xs font-semibold text-blue-300 mb-2">📋 New Applications (${applications.length})</div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Location</th><th>AI Score</th><th>Action</th></tr></thead>
+            <tbody>${applications.map(a => `<tr>
+              <td class="font-semibold">${a.full_name||'—'}</td>
+              <td class="text-xs">${a.email||'—'}</td>
+              <td class="text-xs text-slate-400">${a.city||''}${a.city&&a.state?', ':''}${a.state||''}</td>
+              <td><span class="font-mono font-bold ${(a.ai_readiness_score||0)>=70?'text-green-400':(a.ai_readiness_score||0)>=50?'text-amber-400':'text-red-400'}">${a.ai_readiness_score||0}</span></td>
+              <td>
+                <div class="flex gap-1">
+                  <button onclick="window._zaraApproveApp('${a.id}','${a.email}','${a.full_name}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] hover:bg-green-500/30">✓ Approve</button>
+                  <button onclick="window._zaraRejectApp('${a.id}')" class="py-0.5 px-2 rounded bg-red-500/20 text-red-300 text-[9px] hover:bg-red-500/30">✗ Reject</button>
+                </div>
+              </td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+
+        <!-- Contractor Pipeline -->
         <div class="space-y-2">
           ${contractors.length === 0 ? `
-            <div class="text-center py-12 text-slate-500">
-              <div class="text-4xl mb-3">👥</div>
+            <div class="text-center py-8 text-slate-500">
+              <div class="text-3xl mb-2">👥</div>
               <div class="text-sm">No contractors yet</div>
-              <div class="text-xs mt-1">Applications appear here automatically</div>
             </div>` :
           contractors.map(c => {
-            const stage = c.onboarding_stage || 'start'
-            const comms = getComms(c.auth_user_id)
-            const bge = getBGE(c.auth_user_id)
-            const line = getLine(c.id)
-            const compItems = getCompliance(c.id)
-            const billing = getBilling(c.id)
-            const pIdx = phaseIdx(stage)
-            const progressPct = Math.round(((pIdx + 1) / PHASES.length) * 100)
-
+            const stage = c.onboarding_stage || 'apply'
+            const pIdx = PHASES.findIndex(p => p.id === stage)
+            const pct = Math.round(((pIdx+1)/PHASES.length)*100)
             return `
-            <div class="p-4 rounded-xl border ${phaseBg(stage)} transition-all">
-              <div class="flex items-start gap-3">
-                <!-- Avatar -->
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
+            <div class="p-3 rounded-xl border ${phaseBg(stage)}">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
                   ${(c.full_name||'?').charAt(0).toUpperCase()}
                 </div>
-
-                <!-- Info -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap mb-1">
-                    <span class="font-semibold text-sm text-white">${c.full_name||'Unknown'}</span>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-sm text-white">${c.full_name||'—'}</span>
                     <span class="text-[9px] px-1.5 py-0.5 rounded border ${phaseBg(stage)} ${phaseColor(stage)} font-semibold">
-                      ${PHASES.find(p=>p.id===stage)?.icon||'?'} ${PHASES.find(p=>p.id===stage)?.label||stage}
+                      ${PHASES.find(p=>p.id===stage)?.icon} ${PHASES.find(p=>p.id===stage)?.label||stage}
                     </span>
-                    ${c.active ? '<span class="text-[9px] text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1.5 py-0.5">ACTIVE</span>' : ''}
-                    ${c.crm_access_active ? '<span class="text-[9px] text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded px-1.5 py-0.5">CRM ✓</span>' : ''}
-                    ${c.w9_signed ? '<span class="text-[9px] text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5">W9 ✓</span>' : ''}
+                    ${c.active?'<span class="text-[9px] text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1">ACTIVE</span>':''}
+                    ${c.w9_signed?'<span class="text-[9px] text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1">W9 ✓</span>':''}
                   </div>
-
-                  <div class="flex items-center gap-4 text-[10px] text-slate-400 mb-2">
-                    <span>📧 ${c.email||'—'}</span>
-                    <span>📞 ${c.phone_number||'—'}</span>
-                    <span>🏆 ${c.tier||'standard'}</span>
-                    <span>📊 Score: ${c.compliance_score||0}</span>
-                  </div>
-
-                  <!-- Progress Bar -->
-                  <div class="flex items-center gap-2 mb-2">
-                    <div class="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full transition-all" style="width:${progressPct}%"></div>
+                  <div class="text-[10px] text-slate-400">${c.email||'—'} · Score: ${c.compliance_score||0}</div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <div class="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full" style="width:${pct}%"></div>
                     </div>
-                    <span class="text-[9px] text-slate-500">${progressPct}%</span>
+                    <span class="text-[9px] text-slate-500">${pct}%</span>
                   </div>
-
-                  <!-- Phase Steps -->
-                  <div class="flex gap-0.5 mb-3">
-                    ${PHASES.map((p,i) => `
-                      <div class="flex-1 h-1 rounded-full ${i <= pIdx ? 'bg-rose-400' : 'bg-slate-700'}" title="${p.label}"></div>
-                    `).join('')}
-                  </div>
-
-                  <!-- Communication Profile -->
-                  <div class="grid grid-cols-3 gap-2 text-[10px] mb-3">
-                    <div class="bg-black/20 rounded-lg p-2">
-                      <div class="text-slate-500 mb-0.5">📞 Dialpad</div>
-                      <div class="${comms?.dialpad_phone ? 'text-green-400' : 'text-slate-600'}">
-                        ${comms?.dialpad_phone || 'Not provisioned'}
-                      </div>
-                    </div>
-                    <div class="bg-black/20 rounded-lg p-2">
-                      <div class="text-slate-500 mb-0.5">📧 Corporate Email</div>
-                      <div class="${comms?.email_address ? 'text-green-400' : 'text-slate-600'}">
-                        ${comms?.email_address || 'Not created'}
-                      </div>
-                    </div>
-                    <div class="bg-black/20 rounded-lg p-2">
-                      <div class="text-slate-500 mb-0.5">💰 Performance</div>
-                      <div class="text-emerald-400">
-                        ${bge ? `${bge.deals_closed||0} deals · $${(bge.revenue_generated||0).toLocaleString()}` : '—'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons -->
-                  <div class="flex gap-1.5 flex-wrap">
-                    ${stage === 'start' || stage === 'apply' ? `
-                      <button onclick="window._zaraAdvance('${c.id}','pre_qualified')"
-                        class="py-1 px-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-semibold hover:bg-blue-500/30 transition-all">
-                        ✅ Pre-Qualify
-                      </button>` : ''}
-                    ${stage === 'pre_qualified' ? `
-                      <button onclick="window._zaraSendContract('${c.id}','${c.email}')"
-                        class="py-1 px-2.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-semibold hover:bg-purple-500/30 transition-all">
-                        📄 Send Contract
-                      </button>` : ''}
-                    ${stage === 'contract' ? `
-                      <button onclick="window._zaraAdvance('${c.id}','account')"
-                        class="py-1 px-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-semibold hover:bg-indigo-500/30 transition-all">
-                        🔐 Create Account
-                      </button>` : ''}
-                    ${stage === 'account' ? `
-                      <button onclick="window._zaraAdvance('${c.id}','training')"
-                        class="py-1 px-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-semibold hover:bg-amber-500/30 transition-all">
-                        🧠 Start Training
-                      </button>` : ''}
-                    ${stage === 'training' ? `
-                      <button onclick="window._zaraActivate('${c.id}')"
-                        class="py-1 px-2.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 text-[10px] font-semibold hover:bg-green-500/30 transition-all">
-                        ⚡ Activate
-                      </button>` : ''}
-                    ${['active','leads','powerdial','monitored','earning'].includes(stage) ? `
-                      <button onclick="window._zaraProvisionDialpad('${c.id}','${c.auth_user_id}')"
-                        class="py-1 px-2.5 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[10px] font-semibold hover:bg-orange-500/30 transition-all">
-                        📞 ${comms?.dialpad_phone ? 'Re-sync Dialpad' : 'Provision Dialpad'}
-                      </button>
-                      <button onclick="window._zaraAssignLeads('${c.id}','${c.auth_user_id}')"
-                        class="py-1 px-2.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[10px] font-semibold hover:bg-cyan-500/30 transition-all">
-                        🎯 Assign Leads
-                      </button>` : ''}
-                    <button onclick="window._zaraSendMessage('${c.id}','${c.email}')"
-                      class="py-1 px-2.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-[10px] hover:bg-white/10 transition-all">
-                      💬 Message
-                    </button>
-                    <button onclick="window._zaraSuspend('${c.id}')"
-                      class="py-1 px-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] hover:bg-red-500/20 transition-all ml-auto">
-                      ⛔ Suspend
-                    </button>
-                  </div>
+                </div>
+                <div class="flex flex-col gap-1 shrink-0">
+                  ${stage === 'apply' ? `<button onclick="window._zaraAdvance('${c.id}','pre_qualified')" class="py-0.5 px-2 rounded bg-blue-500/20 text-blue-300 text-[9px] hover:bg-blue-500/30">✅ Pre-Qualify</button>` : ''}
+                  ${stage === 'pre_qualified' ? `<button onclick="window._zaraSendContract('${c.id}','${c.email}','${c.full_name}')" class="py-0.5 px-2 rounded bg-purple-500/20 text-purple-300 text-[9px] hover:bg-purple-500/30">📄 Send Contract</button>` : ''}
+                  ${stage === 'contract' ? `<button onclick="window._zaraAdvance('${c.id}','account')" class="py-0.5 px-2 rounded bg-indigo-500/20 text-indigo-300 text-[9px] hover:bg-indigo-500/30">🔐 Create Account</button>` : ''}
+                  ${stage === 'account' ? `<button onclick="window._zaraAdvance('${c.id}','training')" class="py-0.5 px-2 rounded bg-amber-500/20 text-amber-300 text-[9px] hover:bg-amber-500/30">🧠 Start Training</button>` : ''}
+                  ${stage === 'training' ? `<button onclick="window._zaraActivate('${c.id}','${c.email}','${c.full_name}')" class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] hover:bg-green-500/30">⚡ Activate</button>` : ''}
+                  ${['active','leads','powerdial','monitored','earning'].includes(stage) ? `
+                    <button onclick="window._zaraAssignLeads('${c.id}')" class="py-0.5 px-2 rounded bg-cyan-500/20 text-cyan-300 text-[9px] hover:bg-cyan-500/30">🎯 Leads</button>
+                    <button onclick="window._zaraProvisionDialpad('${c.id}')" class="py-0.5 px-2 rounded bg-orange-500/20 text-orange-300 text-[9px] hover:bg-orange-500/30">📞 Dialpad</button>` : ''}
+                  <button onclick="window._zaraMessageContractor('${c.id}','${c.email}','${c.full_name}')" class="py-0.5 px-2 rounded bg-white/5 border border-white/10 text-slate-300 text-[9px] hover:bg-white/10">💬</button>
                 </div>
               </div>
             </div>`
           }).join('')}
-        </div>`
-    }
-
-    const renderApplications = () => `
-      <div class="space-y-4">
-        <div class="flex items-center gap-3 mb-2">
-          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
-            class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
-          <span class="font-semibold text-sm">New Applications — ${applications.length} pending review</span>
         </div>
-        ${applications.length === 0 ? '<div class="text-center text-slate-500 py-8">No applications yet</div>' :
-        `<table class="data-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>AI Score</th><th>Summary</th><th>Action</th></tr></thead>
-          <tbody>${applications.map(a => `<tr>
-            <td class="font-semibold">${a.full_name||'—'}</td>
-            <td class="text-xs">${a.email||'—'}</td>
-            <td class="font-mono text-xs">${a.phone||'—'}</td>
-            <td class="text-xs text-slate-400">${a.city||''}${a.city&&a.state?', ':''}${a.state||''}</td>
-            <td><span class="font-mono font-bold ${(a.ai_readiness_score||0)>=70?'text-green-400':(a.ai_readiness_score||0)>=50?'text-amber-400':'text-red-400'}">${a.ai_readiness_score||0}</span></td>
-            <td class="text-xs text-slate-400 max-w-xs truncate">${a.ai_summary||'—'}</td>
-            <td>
-              <div class="flex gap-1">
-                <button onclick="window._zaraApproveApp('${a.id}','${a.email}','${a.full_name}')"
-                  class="py-0.5 px-2 rounded bg-green-500/20 text-green-300 text-[9px] font-semibold hover:bg-green-500/30">✓ Approve</button>
-                <button onclick="window._zaraRejectApp('${a.id}')"
-                  class="py-0.5 px-2 rounded bg-red-500/20 text-red-300 text-[9px] font-semibold hover:bg-red-500/30">✗ Reject</button>
-              </div>
-            </td>
-          </tr>`).join('')}</tbody>
-        </table>`}
       </div>`
 
-    const renderCompliance = () => {
-      const complianceItems = ['w9_signed','id_verified','contract_signed','training_complete','dialpad_provisioned','leads_assigned']
-      return `
-        <div class="space-y-4">
-          <div class="flex items-center gap-3 mb-2">
-            <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
-              class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
-            <span class="font-semibold text-sm">Compliance Tracking</span>
+    const renderCompliance = () => `
+      <div class="space-y-4">
+        <div class="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <div class="text-sm font-bold text-amber-300 mb-3">⚖️ HR Compliance & State Laws — Ask Zara</div>
+          <div class="text-xs text-slate-400 mb-3">Zara knows federal and state employment laws, contractor regulations, W-9 requirements, commission structures, non-compete rules, benefits compliance, and more.</div>
+          <div class="flex gap-2 mb-3">
+            <input id="zara-compliance-q" type="text" placeholder="e.g. What are Florida contractor laws? What's required for 1099 contractors? Minimum wage by state?" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/50" onkeydown="if(event.key==='Enter')window._zaraAskCompliance()" />
+            <button onclick="window._zaraAskCompliance()" class="py-2 px-4 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-all">Ask Zara</button>
           </div>
+          <div id="zara-compliance-answer" class="text-xs text-slate-300 bg-black/20 rounded-lg p-3 min-h-[60px] hidden"></div>
+        </div>
+
+        <!-- Quick Compliance Topics -->
+        <div class="grid grid-cols-2 gap-2">
+          ${[
+            { label:'Florida Contractor Laws', q:'What are the key Florida laws governing independent sales contractors, 1099 workers, and commission-based staff?' },
+            { label:'W-9 Requirements', q:'What are W-9 requirements for contractors? When is it required and what are the penalties for not collecting it?' },
+            { label:'Commission Structure Rules', q:'What are the legal requirements for commission-based pay structures for sales contractors?' },
+            { label:'Non-Compete Enforceability', q:'Are non-compete agreements enforceable in Florida for sales contractors?' },
+            { label:'Benefits Requirements', q:'Are there required benefits for 1099 contractors vs W-2 employees in Florida?' },
+            { label:'Minimum Wage 2025', q:'What is the minimum wage in Florida for 2025 and how does it affect commission-only contractors?' },
+          ].map(t => `
+            <button onclick="document.getElementById('zara-compliance-q').value='${t.q}';window._zaraAskCompliance()"
+              class="p-2 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-300 text-left hover:bg-white/10 transition-all">
+              ⚖️ ${t.label}
+            </button>`).join('')}
+        </div>
+
+        <!-- Contractor Compliance Checklist -->
+        <div>
+          <div class="text-xs font-semibold text-slate-300 mb-2">✅ Contractor Compliance Checklist</div>
           <table class="data-table">
-            <thead><tr><th>Contractor</th><th>W9</th><th>ID Verified</th><th>Contract</th><th>Training</th><th>Dialpad</th><th>Leads</th><th>Score</th></tr></thead>
+            <thead><tr><th>Contractor</th><th>W9</th><th>Contract</th><th>Training</th><th>Dialpad</th><th>Active</th><th>Score</th></tr></thead>
             <tbody>${contractors.map(c => {
-              const comms = getComms(c.auth_user_id)
-              const check = (val) => val ? '<span class="text-green-400">✓</span>' : '<span class="text-red-400">✗</span>'
+              const stage = c.onboarding_stage || 'apply'
+              const check = (v) => v ? '<span class="text-green-400 text-sm">✓</span>' : '<span class="text-red-400 text-sm">✗</span>'
               return `<tr>
                 <td class="font-semibold text-sm">${c.full_name||'—'}</td>
                 <td class="text-center">${check(c.w9_signed)}</td>
-                <td class="text-center">${check(c.id_verified)}</td>
-                <td class="text-center">${check(['contract','account','training','active','leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
-                <td class="text-center">${check(['training','active','leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
-                <td class="text-center">${check(comms?.dialpad_phone)}</td>
-                <td class="text-center">${check(['leads','powerdial','monitored','earning'].includes(c.onboarding_stage))}</td>
+                <td class="text-center">${check(['contract','account','training','active','leads','powerdial','monitored','earning'].includes(stage))}</td>
+                <td class="text-center">${check(['training','active','leads','powerdial','monitored','earning'].includes(stage))}</td>
+                <td class="text-center">${check(['powerdial','monitored','earning'].includes(stage))}</td>
+                <td class="text-center">${check(c.active)}</td>
                 <td><span class="font-mono font-bold ${(c.compliance_score||0)>=80?'text-green-400':(c.compliance_score||0)>=50?'text-amber-400':'text-red-400'}">${c.compliance_score||0}</span></td>
               </tr>`
             }).join('')}</tbody>
           </table>
-        </div>`
-    }
-
-    const renderPerformance = () => `
-      <div class="space-y-4">
-        <div class="flex items-center gap-3 mb-2">
-          <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
-            class="w-8 h-8 rounded-full border border-rose-500/40 object-cover" onerror="this.style.display='none'" />
-          <span class="font-semibold text-sm">Contractor Performance</span>
         </div>
+      </div>`
+
+    const renderOnboarding = () => `
+      <div class="space-y-4">
+        <div class="text-xs font-semibold text-slate-300 mb-2">🚀 Onboarding Activity Log</div>
+        ${onboarding.length === 0 ? '<div class="text-center text-slate-500 py-6">No onboarding activity yet</div>' :
+        `<table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Sent</th></tr></thead>
+          <tbody>${onboarding.map(o => `<tr>
+            <td class="font-semibold">${o.full_name||'—'}</td>
+            <td class="text-xs">${o.email||'—'}</td>
+            <td class="text-xs text-slate-400">${o.role_key||'—'}</td>
+            <td>${statusBadge(o.status||'pending')}</td>
+            <td class="text-slate-400 text-xs">${ago(o.sent_at)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`}
+
+        <!-- Messages Log -->
+        ${messages.length ? `
+        <div class="text-xs font-semibold text-slate-300 mb-2 mt-4">💬 Recent Messages</div>
         <table class="data-table">
-          <thead><tr><th>#</th><th>Contractor</th><th>Stage</th><th>Deals</th><th>Revenue</th><th>Close Rate</th><th>Score</th><th>Leads Access</th><th>Status</th></tr></thead>
-          <tbody>${contractors.map((c,i) => {
-            const bge = getBGE(c.auth_user_id)
-            return `<tr class="${i===0?'bg-amber-500/5':''}">
-              <td class="font-mono text-slate-500">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-              <td class="font-semibold">${c.full_name||'—'}</td>
-              <td>${statusBadge(c.onboarding_stage||'start')}</td>
-              <td class="font-mono text-green-400 font-bold">${bge?.deals_closed||0}</td>
-              <td class="font-mono text-emerald-400">$${((bge?.revenue_generated||0)).toLocaleString()}</td>
-              <td class="font-mono text-cyan-400">${bge?.close_rate?(Number(bge.close_rate)*100).toFixed(1)+'%':'—'}</td>
-              <td><span class="font-mono font-bold ${(bge?.performance_score||0)>=80?'text-green-400':(bge?.performance_score||0)>=50?'text-amber-400':'text-red-400'}">${(bge?.performance_score||0).toFixed(0)}</span></td>
-              <td class="text-center">${bge?.leads_access?'<span class="text-green-400">✓</span>':'<span class="text-red-400">✗</span>'}</td>
-              <td>${bge?.assignment_paused?'<span class="badge bg-red-500/20 text-red-300 text-[9px]">PAUSED</span>':'<span class="badge bg-green-500/20 text-green-300 text-[9px]">ACTIVE</span>'}</td>
-            </tr>`
-          }).join('')}</tbody>
-        </table>
+          <thead><tr><th>Subject</th><th>Channel</th><th>Status</th><th>Sent</th></tr></thead>
+          <tbody>${messages.map(m => `<tr>
+            <td class="text-xs">${m.subject||'—'}</td>
+            <td class="text-xs text-slate-400">${m.channel||'email'}</td>
+            <td>${statusBadge(m.delivery_status||'pending')}</td>
+            <td class="text-slate-400 text-xs">${ago(m.created_at)}</td>
+          </tr>`).join('')}</tbody>
+        </table>` : ''}
+      </div>`
+
+    const renderAIChat = () => `
+      <div class="flex flex-col h-full gap-3">
+        <div class="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20">
+          <div class="flex items-center gap-2 mb-1">
+            <img src="https://auth.starzcrm.traffikboosters.com/storage/v1/object/public/starz-ai-agents/AI%20AGENTS/Zara.png"
+              class="w-8 h-8 rounded-full object-cover" style="border:1px solid rgba(244,63,94,0.5)"
+              onerror="this.style.display='none'" />
+            <span class="text-sm font-bold text-white">Zara</span>
+            <span class="text-[10px] text-rose-300">HR Director · AI-Powered</span>
+          </div>
+          <div class="text-xs text-slate-400">Ask me anything about HR, employment law, onboarding, benefits, contractor management, state regulations, or team operations.</div>
+        </div>
+
+        <div id="zara-chat-messages" class="flex-1 overflow-y-auto space-y-2 min-h-[200px]">
+          <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-slate-200">
+            👋 Hi! I'm Zara, your HR Director. I can help you with:
+            <ul class="mt-2 space-y-1 text-slate-400">
+              <li>• State and federal employment laws</li>
+              <li>• Contractor vs employee classification</li>
+              <li>• Commission structure compliance</li>
+              <li>• Onboarding workflows and documentation</li>
+              <li>• W-9, 1099 requirements</li>
+              <li>• Benefits and compensation guidance</li>
+              <li>• Team performance and HR policies</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <input id="zara-chat-input" type="text" placeholder="Ask Zara anything about HR, laws, compliance..."
+            class="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-rose-500/50"
+            onkeydown="if(event.key==='Enter')window._zaraChatSend()" />
+          <button onclick="window._zaraChatSend()" class="py-2 px-4 rounded-xl text-xs font-bold text-white transition-all" style="background:linear-gradient(135deg,#f43f5e,#a855f7)">
+            Send
+          </button>
+        </div>
       </div>`
 
     const tabs = [
-      { id:'pipeline',     label:`👥 Pipeline (${total})` },
-      { id:'applications', label:`📋 Applications (${totalApps})` },
-      { id:'compliance',   label:'✅ Compliance' },
-      { id:'performance',  label:'🏆 Performance' },
+      { id:'staff',       label:`👥 Staff (${staff.length})` },
+      { id:'contractors', label:`⚡ Contractors (${contractors.length})` },
+      { id:'compliance',  label:'⚖️ Compliance & Laws' },
+      { id:'onboarding',  label:`🚀 Onboarding (${onboarding.length})` },
+      { id:'chat',        label:'🧠 Ask Zara' },
     ]
 
     const renderZara = () => {
-      const content = activeTab === 'pipeline' ? renderPipeline()
-        : activeTab === 'applications' ? renderApplications()
+      const content = activeTab === 'staff' ? renderStaff()
+        : activeTab === 'contractors' ? renderContractors()
         : activeTab === 'compliance' ? renderCompliance()
-        : renderPerformance()
+        : activeTab === 'onboarding' ? renderOnboarding()
+        : renderAIChat()
 
       el.innerHTML = `
         <div class="flex flex-col h-full">
-          <div class="flex items-center gap-2 mb-4 shrink-0 flex-wrap">
+          ${renderHeader()}
+          <div class="flex items-center gap-1 mb-3 shrink-0 flex-wrap">
             ${tabs.map(t=>`
               <button onclick="window._zaraTab('${t.id}')"
                 class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab===t.id?'bg-rose-500/30 text-white border border-rose-500/40':'text-slate-400 hover:text-white hover:bg-white/5'}">
                 ${t.label}
               </button>`).join('')}
             <div class="ml-auto flex items-center gap-2">
-              <button onclick="window._zaraRunOnboarding()" class="py-1 px-3 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold hover:bg-rose-500/30 transition-all">
-                🤖 Run Zara Engine
-              </button>
               <button onclick="loadZaraContent(document.getElementById('content-${Object.keys(windows).find(k=>windows[k].appId==='zara')||''}'))"
                 class="py-1 px-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold transition-all">↻ Refresh</button>
             </div>
@@ -3628,22 +3651,118 @@ async function loadZaraContent(el) {
       lucide.createIcons()
     }
 
+    // ── TAB SWITCH ────────────────────────────────────────────────────────────
     window._zaraTab = (tab) => { activeTab = tab; renderZara() }
 
-    window._zaraAdvance = async (contractorId, newStage) => {
-      showRealtimeToast('⟳ Advancing to '+newStage+'...', 'amber')
-      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
-        method: 'PATCH',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ onboarding_stage: newStage })
-      })
-      showRealtimeToast('✓ Advanced to '+newStage, 'green')
-      setTimeout(() => loadZaraContent(el), 1000)
+    // ── SEND INVITE ───────────────────────────────────────────────────────────
+    window._zaraSendInvite = async () => {
+      const email = document.getElementById('zara-invite-email')?.value?.trim()
+      const role = document.getElementById('zara-invite-role')?.value
+      if (!email) { showRealtimeToast('⚠ Enter an email address', 'amber'); return }
+      showRealtimeToast(`📨 Sending invite to ${email}...`, 'amber')
+      try {
+        // Save to hr.user_invites
+        await fetch(SB_URL+'/rest/v1/user_invites', {
+          method: 'POST',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'hr', 'Content-Profile': 'hr', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ email, role_key: role, status: 'pending', invited_at: new Date().toISOString() })
+        })
+        // Send via hr-invite-user edge function
+        const res = await fetch(SB_URL+'/functions/v1/hr-invite-user', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role_key: role, invited_by: 'Zara HR Director' })
+        })
+        const data = await res.json()
+        showRealtimeToast('✓ Invite sent to '+email, 'green')
+        if (document.getElementById('zara-invite-email')) document.getElementById('zara-invite-email').value = ''
+        setTimeout(() => loadZaraContent(el), 1500)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
     }
 
-    window._zaraActivate = async (contractorId) => {
-      showRealtimeToast('⚡ Activating contractor...', 'amber')
-      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
+    // ── RESEND INVITE ─────────────────────────────────────────────────────────
+    window._zaraResendInvite = async (email, role) => {
+      showRealtimeToast(`↻ Resending invite to ${email}...`, 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/hr-invite-user', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role_key: role, invited_by: 'Zara HR Director', resend: true })
+        })
+        showRealtimeToast('✓ Invite resent to '+email, 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── MESSAGE STAFF ─────────────────────────────────────────────────────────
+    window._zaraMessageStaff = async (userId, email, name) => {
+      const msg = prompt(`Message to ${name} (${email}):`)
+      if (!msg) return
+      showRealtimeToast(`💬 Sending message to ${name}...`, 'amber')
+      try {
+        await fetch(SB_URL+'/rest/v1/staff_messages', {
+          method: 'POST',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'hr', 'Content-Profile': 'hr', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ recipient_user_id: userId, subject: 'Message from Zara HR', body: msg, channel: 'email', delivery_status: 'pending', sent_at: new Date().toISOString() })
+        })
+        await fetch(SB_URL+'/functions/v1/hr-send-message', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name, message: msg, from: 'Zara HR Director' })
+        })
+        showRealtimeToast('✓ Message sent to '+name, 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── MESSAGE CONTRACTOR ────────────────────────────────────────────────────
+    window._zaraMessageContractor = async (id, email, name) => {
+      const msg = prompt(`Message to ${name} (${email}):`)
+      if (!msg) return
+      showRealtimeToast(`💬 Messaging ${name}...`, 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/hr-send-message', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name, message: msg, from: 'Zara HR Director' })
+        })
+        showRealtimeToast('✓ Message sent', 'green')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── ADVANCE CONTRACTOR ────────────────────────────────────────────────────
+    window._zaraAdvance = async (id, stage) => {
+      showRealtimeToast('⟳ Advancing to '+stage+'...', 'amber')
+      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+id, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ onboarding_stage: stage })
+      })
+      showRealtimeToast('✓ Advanced to '+stage, 'green')
+      setTimeout(() => loadZaraContent(el), 800)
+    }
+
+    // ── SEND CONTRACT ─────────────────────────────────────────────────────────
+    window._zaraSendContract = async (id, email, name) => {
+      showRealtimeToast(`📄 Sending contract to ${name}...`, 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/zara-onboarding', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send_contract', contractor_id: id, email, name })
+        })
+        await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+id, {
+          method: 'PATCH',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ onboarding_stage: 'contract' })
+        })
+        showRealtimeToast('✓ Contract sent to '+email, 'green')
+        setTimeout(() => loadZaraContent(el), 1000)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── ACTIVATE CONTRACTOR ───────────────────────────────────────────────────
+    window._zaraActivate = async (id, email, name) => {
+      showRealtimeToast(`⚡ Activating ${name}...`, 'amber')
+      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+id, {
         method: 'PATCH',
         headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({ onboarding_stage: 'active', active: true, crm_access_active: true, crm_access_started_at: new Date().toISOString() })
@@ -3652,92 +3771,65 @@ async function loadZaraContent(el) {
         await fetch(SB_URL+'/functions/v1/send-welcome-email', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contractor_id: contractorId })
+          body: JSON.stringify({ contractor_id: id, email, name })
         })
-      } catch(e) {}
-      showRealtimeToast('✓ Contractor activated!', 'green')
+      } catch(_) {}
+      showRealtimeToast('✓ '+name+' activated! Welcome email sent.', 'green')
       setTimeout(() => loadZaraContent(el), 1000)
     }
 
-    window._zaraSendContract = async (contractorId, email) => {
-      showRealtimeToast('📄 Sending contract to '+email+'...', 'amber')
-      try {
-        await fetch(SB_URL+'/functions/v1/zara-onboarding', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'send_contract', contractor_id: contractorId, email })
-        })
-        await window._zaraAdvance(contractorId, 'contract')
-        showRealtimeToast('✓ Contract sent!', 'green')
-      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
-    }
-
-    window._zaraProvisionDialpad = async (contractorId, authUserId) => {
-      showRealtimeToast('📞 Provisioning Dialpad line...', 'amber')
-      try {
-        const res = await fetch(SB_URL+'/functions/v1/dialpad-sync', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contractor_id: contractorId, auth_user_id: authUserId, action: 'provision' })
-        })
-        const data = await res.json()
-        showRealtimeToast('✓ Dialpad provisioned: '+(data.phone||data.dialpad_phone||'done'), 'green')
-        setTimeout(() => loadZaraContent(el), 1500)
-      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
-    }
-
-    window._zaraAssignLeads = async (contractorId, authUserId) => {
-      showRealtimeToast('🎯 Assigning leads...', 'amber')
-      try {
-        const data = await callEngine('core-automation-engine', 'lead_distribution', { tenant_id: TENANT_ID, contractor_id: contractorId })
-        await window._zaraAdvance(contractorId, 'leads')
-        showRealtimeToast('✓ '+(data.message||'Leads assigned!'), 'green')
-      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
-    }
-
-    window._zaraSendMessage = async (contractorId, email) => {
-      const msg = prompt('Message to '+email+':')
-      if (!msg) return
-      try {
-        await fetch(SB_URL+'/functions/v1/hr-send-message', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contractor_id: contractorId, email, message: msg })
-        })
-        showRealtimeToast('✓ Message sent', 'green')
-      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
-    }
-
-    window._zaraSuspend = async (contractorId) => {
-      if (!confirm('Suspend this contractor?')) return
-      await fetch(SB_URL+'/rest/v1/contractor_profiles?id=eq.'+contractorId, {
-        method: 'PATCH',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ active: false, crm_access_active: false, onboarding_stage: 'apply' })
-      })
-      showRealtimeToast('⛔ Contractor suspended', 'amber')
-      setTimeout(() => loadZaraContent(el), 1000)
-    }
-
+    // ── APPROVE APPLICATION ───────────────────────────────────────────────────
     window._zaraApproveApp = async (appId, email, name) => {
-      showRealtimeToast('✓ Approving '+name+'...', 'green')
+      showRealtimeToast(`✓ Approving ${name}...`, 'green')
       try {
-        await fetch(SB_URL+'/functions/v1/zara-onboarding', {
+        const res = await fetch(SB_URL+'/functions/v1/zara-onboarding', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'approve_application', application_id: appId, email, name })
         })
-        showRealtimeToast('✓ Application approved — contractor profile created', 'green')
+        showRealtimeToast('✓ Approved — contractor profile created for '+name, 'green')
         setTimeout(() => loadZaraContent(el), 1500)
       } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
     }
 
+    // ── REJECT APPLICATION ────────────────────────────────────────────────────
     window._zaraRejectApp = async (appId) => {
       if (!confirm('Reject this application?')) return
-      showRealtimeToast('✗ Application rejected', 'amber')
+      showRealtimeToast('Application rejected', 'amber')
     }
 
-    window._zaraRunOnboarding = async () => {
+    // ── ASSIGN LEADS ──────────────────────────────────────────────────────────
+    window._zaraAssignLeads = async (id) => {
+      showRealtimeToast('🎯 Assigning leads...', 'amber')
+      try {
+        const data = await callEngine('core-automation-engine', 'lead_distribution', { tenant_id: TENANT_ID, contractor_id: id })
+        showRealtimeToast('✓ '+(data.message||'Leads assigned!'), 'green')
+        await window._zaraAdvance(id, 'leads')
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── PROVISION DIALPAD ─────────────────────────────────────────────────────
+    window._zaraProvisionDialpad = async (id) => {
+      showRealtimeToast('📞 Provisioning Dialpad...', 'amber')
+      try {
+        await fetch(SB_URL+'/functions/v1/dialpad-sync', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contractor_id: id, action: 'provision' })
+        })
+        showRealtimeToast('✓ Dialpad provisioned!', 'green')
+        setTimeout(() => loadZaraContent(el), 1000)
+      } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── VIEW ONBOARDING LOG ───────────────────────────────────────────────────
+    window._zaraViewOnboarding = (userId) => {
+      activeTab = 'onboarding'
+      renderZara()
+    }
+
+    // ── RUN ZARA ENGINE ───────────────────────────────────────────────────────
+    window._zaraRunEngine = async () => {
       showRealtimeToast('🤖 Running Zara engine...', 'amber')
       try {
         const res = await fetch(SB_URL+'/functions/v1/zara-command-center', {
@@ -3746,9 +3838,95 @@ async function loadZaraContent(el) {
           body: JSON.stringify({ action: 'run_all', tenant_id: TENANT_ID })
         })
         const data = await res.json()
-        showRealtimeToast('✓ Zara engine complete: '+(data.message||'done'), 'green')
+        showRealtimeToast('✓ Zara engine: '+(data.message||'done'), 'green')
         setTimeout(() => loadZaraContent(el), 2000)
       } catch(e) { showRealtimeToast('✗ '+e.message, 'red') }
+    }
+
+    // ── ASK COMPLIANCE ────────────────────────────────────────────────────────
+    window._zaraAskCompliance = async () => {
+      const q = document.getElementById('zara-compliance-q')?.value?.trim()
+      if (!q) return
+      const answerEl = document.getElementById('zara-compliance-answer')
+      if (answerEl) { answerEl.classList.remove('hidden'); answerEl.textContent = '⟳ Zara is researching...' }
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            system: 'You are Zara, HR Director at Traffik Boosters, a digital marketing agency based in Florida. You specialize in HR law, employment regulations, contractor management, compensation compliance, and benefits. You know federal and state laws particularly for Florida. Be concise, practical, and always note when legal counsel should be consulted for specific situations.',
+            messages: [{ role: 'user', content: q }]
+          })
+        })
+        const data = await res.json()
+        const answer = data.content?.[0]?.text || 'Unable to get response'
+        if (answerEl) answerEl.textContent = answer
+      } catch(e) {
+        if (answerEl) answerEl.textContent = '✗ Error: '+e.message
+      }
+    }
+
+    // ── ASK ZARA (OPEN CHAT) ──────────────────────────────────────────────────
+    window._zaraAskAI = () => { activeTab = 'chat'; renderZara() }
+
+    // ── CHAT SEND ─────────────────────────────────────────────────────────────
+    window._zaraChatSend = async () => {
+      const input = document.getElementById('zara-chat-input')
+      const msg = input?.value?.trim()
+      if (!msg) return
+      if (input) input.value = ''
+
+      const messagesEl = document.getElementById('zara-chat-messages')
+      if (messagesEl) {
+        messagesEl.innerHTML += `<div class="p-2 rounded-lg bg-white/5 text-xs text-white ml-8">${msg}</div>`
+        messagesEl.innerHTML += `<div id="zara-typing" class="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">⟳ Zara is thinking...</div>`
+        messagesEl.scrollTop = messagesEl.scrollHeight
+      }
+
+      zaraChatHistory.push({ role: 'user', content: msg })
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            system: `You are Zara, HR Director at Traffik Boosters, a digital marketing and business growth agency based in Florida. 
+
+Your responsibilities:
+- Recruiting and screening sales contractors and staff
+- Managing the 10-phase onboarding pipeline
+- Ensuring compliance with federal and state employment laws
+- Managing contractor agreements, W-9s, and 1099 requirements
+- Overseeing commission structures (30% + residuals for contractors)
+- Benefits guidance and HR policy enforcement
+- Staff performance and disciplinary processes
+
+Company context:
+- Sales contractors pay $650/month for STARZ-OS access (leads, Dialpad phone, corporate email, AI support)
+- Contractors earn 30% commission + residuals
+- 24h contact rule, 3-day inactivity = lead reassignment, 10-day close window
+- 70 leads cap per contractor
+- Based in Florida — apply Florida employment law
+
+Be practical, concise, and professional. Note when legal counsel should be consulted.`,
+            messages: zaraChatHistory
+          })
+        })
+        const data = await res.json()
+        const reply = data.content?.[0]?.text || 'Unable to respond'
+        zaraChatHistory.push({ role: 'assistant', content: reply })
+
+        const typingEl = document.getElementById('zara-typing')
+        if (typingEl) typingEl.outerHTML = `<div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-slate-200 whitespace-pre-wrap">${reply}</div>`
+        if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight
+      } catch(e) {
+        const typingEl = document.getElementById('zara-typing')
+        if (typingEl) typingEl.textContent = '✗ Error: '+e.message
+      }
     }
 
     renderZara()
