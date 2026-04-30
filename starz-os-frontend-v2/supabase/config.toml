@@ -1,0 +1,8 @@
+[functions.scraper-worker]
+verify_jwt = false
+
+[functions.unified-scraper-engine]
+verify_jwt = false
+
+[functions.core-automation-engine]
+verify_jwt = false
