@@ -4328,6 +4328,20 @@ const appConfigs = {
   traffik:     { name:'TraffikBoosters.AI — Public Site', icon:'globe', w:1400, h:860 },
 }
 const loaders = {
+  serp: async (el) => {
+    el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+    try {
+      const [serpData, trackedKw, jobs] = await Promise.all([
+        sb('seo','serp_data','select=id,keyword,location,result_count,source,created_at&order=created_at.desc&limit=50').catch(()=>[]),
+        sb('seo','tracked_keywords','select=*&order=priority.desc&limit=100').catch(()=>[]),
+        sb('scraping','jobs','select=id,keyword,status,attempts,priority,created_at,error_msg&order=created_at.desc&limit=50').catch(()=>[]),
+      ])
+      const pending=jobs.filter(j=>j.status==='pending').length
+      const completed=jobs.filter(j=>j.status==='completed').length
+      const failed=jobs.filter(j=>j.status==='failed').length
+      el.innerHTML = '<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="font-space font-bold text-lg">SERP Engine Control</h2><div class="flex gap-2"><span class="badge badge-green">'+trackedKw.filter(k=>k.active).length+' Active</span><span class="badge badge-blue">'+completed+' Scraped</span></div></div><div class="grid grid-cols-4 gap-3"><div class="stat-card text-center"><div class="text-2xl font-bold text-teal-400">'+trackedKw.length+'</div><div class="text-[10px] text-slate-400">Tracked</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-amber-400">'+pending+'</div><div class="text-[10px] text-slate-400">Pending</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-green-400">'+completed+'</div><div class="text-[10px] text-slate-400">Completed</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-red-400">'+failed+'</div><div class="text-[10px] text-slate-400">Failed</div></div></div>'+(trackedKw.length?'<table class="data-table"><thead><tr><th>Keyword</th><th>Location</th><th>Freq</th><th>Priority</th><th>Last Checked</th><th>Active</th></tr></thead><tbody>'+trackedKw.slice(0,20).map(k=>'<tr><td class="font-medium">'+( k.keyword||'—')+'</td><td class="text-slate-400 text-[10px]">'+(k.location||'US')+'</td><td class="text-center text-purple-400">'+(k.check_freq||'daily')+'</td><td class="text-center text-amber-400">'+(k.priority||5)+'</td><td class="text-slate-400">'+ago(k.last_checked)+'</td><td class="text-center">'+(k.active?'<span class="text-green-400">✓</span>':'<span class="text-slate-500">—</span>')+'</td></tr>').join('')+'</tbody></table>':'<div class="text-center text-slate-500 py-8">No keywords tracked yet</div>')+'</div>'
+    } catch(e) { el.innerHTML='<div class="p-8 text-center text-red-400">Error: '+e.message+'</div>' }
+  },
   dashboard:   loadDashboardContent,
   sales:       loadSalesContent,
   steve:       loadSteveContent,
