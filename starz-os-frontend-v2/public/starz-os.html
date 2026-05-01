@@ -4546,11 +4546,12 @@ function maximizeWindow(windowId) {
   const win = windows[windowId]
   if (!win) return
   if (win.maximized) {
-    const c = appConfigs[win.appId]
-    win.element.style.width=c.w+'px'; win.element.style.height=c.h+'px'; win.element.style.left='40px'; win.element.style.top='20px'
+    const cfg = appConfigs[win.appId]
+    win.element.style.width=cfg.w+'px'; win.element.style.height=cfg.h+'px'; win.element.style.left=win._ox||'100px'; win.element.style.top=win._oy||'60px'
     win.maximized=false
   } else {
-    win.element.style.width='100%'; win.element.style.height='100%'; win.element.style.left='0'; win.element.style.top='0'
+    win._ox=win.element.style.left; win._oy=win.element.style.top
+    win.element.style.width='calc(100vw - 10px)'; win.element.style.height='calc(100vh - 80px)'; win.element.style.left='5px'; win.element.style.top='5px'
     win.maximized=true
   }
 }
