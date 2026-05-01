@@ -1,106 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STARZ-OS v8.0 — Orbital Command Center</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        cosmic: { 900: '#0a0a1a', 800: '#12122a', 700: '#1a1a3a', 600: '#252550' },
-        nebula: { purple: '#8b5cf6', pink: '#ec4899', cyan: '#06b6d4', amber: '#f59e0b' }
-      },
-      animation: {
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'glow': 'glow 2s ease-in-out infinite alternate',
-      },
-      keyframes: {
-        glow: {
-          '0%': { boxShadow: '0 0 5px #8b5cf6, 0 0 10px #8b5cf6' },
-          '100%': { boxShadow: '0 0 20px #8b5cf6, 0 0 40px #ec4899' }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STARZ-OS v8.0 — Orbital Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cosmic: { 900: '#0a0a1a', 800: '#12122a', 700: '#1a1a3a', 600: '#252550' },
+            nebula: { purple: '#8b5cf6', pink: '#ec4899', cyan: '#06b6d4', amber: '#f59e0b' }
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            glow: {
+              '0%': { boxShadow: '0 0 5px #8b5cf6, 0 0 10px #8b5cf6' },
+              '100%': { boxShadow: '0 0 20px #8b5cf6, 0 0 40px #ec4899' }
+            }
+          }
         }
       }
     }
-  }
-}
-</script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
-* { font-family: 'Inter', sans-serif; }
-.font-space { font-family: 'Space Grotesk', sans-serif; }
-.cosmic-bg {
-  background: radial-gradient(ellipse at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.15) 0%, transparent 50%),
-              radial-gradient(ellipse at 40% 40%, rgba(6,182,212,0.1) 0%, transparent 40%);
-}
-.glass-cosmic { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-.glass-cosmic-strong { background: rgba(10,10,26,0.85); backdrop-filter: blur(30px); border: 1px solid rgba(139,92,246,0.2); }
-#starfield { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
-.orbital-dock { position:fixed; bottom:40px; left:50%; transform:translateX(-50%); z-index:1000; }
-.grid-pattern {
-  background-image: linear-gradient(rgba(139,92,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.1) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-.dock-item { position:relative; transition:transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s; overflow:visible !important; }
-.dock-item:hover { transform:translateY(-12px) scale(1.12) !important; }
-.dock-item::before { content:''; position:absolute; top:0; left:0; width:100%; height:52%; border-radius:14px 14px 50% 50%; background:linear-gradient(175deg,rgba(255,255,255,0.28) 0%,transparent 100%); z-index:10; pointer-events:none; }
-.dock-item::after { content:''; position:absolute; bottom:-6px; left:10%; width:80%; height:8px; border-radius:50%; background:rgba(0,0,0,0.45); filter:blur(5px); z-index:0; transition:opacity 0.18s,transform 0.18s; }
-.dock-item:hover::after { opacity:0.6; transform:scaleX(0.85); }
-.dock-dashboard { background:linear-gradient(145deg,#a78bfa 0%,#7c3aed 45%,#4c1d95 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(124,58,237,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-dashboard:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(124,58,237,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-sales { background:linear-gradient(145deg,#93c5fd 0%,#3b82f6 45%,#1e3a8a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(59,130,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-sales:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(59,130,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-steve { background:linear-gradient(145deg,#f9a8d4 0%,#ec4899 45%,#9d174d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(236,72,153,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-steve:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(236,72,153,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-crm { background:linear-gradient(145deg,#6ee7b7 0%,#10b981 45%,#064e3b 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(16,185,129,0.6),0 2px 6px rgba(0,0,0,0.55); }
-.dock-crm:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(16,185,129,0.85),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-calls { background:linear-gradient(145deg,#fca5a5 0%,#ef4444 45%,#7f1d1d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(239,68,68,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-calls:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(239,68,68,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-finance { background:linear-gradient(145deg,#fcd34d 0%,#f59e0b 45%,#78350f 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(245,158,11,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-finance:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(245,158,11,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-marketing { background:linear-gradient(145deg,#c4b5fd 0%,#8b5cf6 45%,#3b0764 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(139,92,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-marketing:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(139,92,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-serp { background:linear-gradient(145deg,#99f6e4 0%,#0d9488 45%,#134e4a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(13,148,136,0.65),0 2px 6px rgba(0,0,0,0.55); }
-.dock-serp:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(13,148,136,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
-.dock-files { background:linear-gradient(145deg,#94a3b8 0%,#475569 45%,#0f172a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.22) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(71,85,105,0.55),0 2px 6px rgba(0,0,0,0.55); }
-.dock-search { background:linear-gradient(145deg,#5eead4 0%,#14b8a6 45%,#134e4a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(20,184,166,0.6),0 2px 6px rgba(0,0,0,0.55); }
-.holo-card { background:linear-gradient(135deg,rgba(139,92,246,0.1) 0%,rgba(236,72,153,0.1) 100%); border:1px solid rgba(139,92,246,0.2); position:relative; overflow:hidden; }
-.holo-card::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.05) 50%,transparent 70%); animation:holoShine 3s ease-in-out infinite; }
-@keyframes holoShine { 0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)} 100%{transform:translateX(100%) translateY(100%) rotate(45deg)} }
-.animated-border { position:relative; background:rgba(18,18,42,0.8); border-radius:12px; }
-.animated-border::before { content:''; position:absolute; inset:-2px; border-radius:14px; background:linear-gradient(90deg,#8b5cf6,#ec4899,#06b6d4,#8b5cf6); background-size:300% 300%; animation:borderRotate 3s linear infinite; z-index:-1; }
-@keyframes borderRotate { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-.cosmic-window { background:rgba(18,18,42,0.95); backdrop-filter:blur(40px); border:1px solid rgba(139,92,246,0.2); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.05) inset,0 0 100px rgba(139,92,246,0.1) inset; }
-.theme-toggle { position:relative; width:60px; height:32px; border-radius:16px; background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%); border:2px solid rgba(139,92,246,0.3); cursor:pointer; transition:all 0.3s ease; }
-.theme-toggle.light { background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%); border-color:rgba(251,191,36,0.5); }
-.theme-toggle-slider { position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:white; transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-.theme-toggle.light .theme-toggle-slider { transform:translateX(28px); }
-::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.3); border-radius:3px; }
-.stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(139,92,246,0.15); border-radius:12px; padding:16px; }
-.data-table { width:100%; border-collapse:collapse; font-size:12px; }
-.data-table th { text-align:left; padding:8px 12px; color:rgba(148,163,184,1); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); }
-.data-table td { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); color:rgba(226,232,240,1); }
-.data-table tr:hover td { background:rgba(255,255,255,0.03); }
-.badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
-.badge-green { background:rgba(16,185,129,0.2); color:#34d399; }
-.badge-blue { background:rgba(59,130,246,0.2); color:#60a5fa; }
-.badge-purple { background:rgba(139,92,246,0.2); color:#a78bfa; }
-.badge-red { background:rgba(239,68,68,0.2); color:#f87171; }
-.badge-amber { background:rgba(245,158,11,0.2); color:#fbbf24; }
-.badge-gray { background:rgba(100,116,139,0.2); color:#94a3b8; }
-.badge-teal { background:rgba(13,148,136,0.2); color:#2dd4bf; }
-.loading-pulse { animation:pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.spinner { width:20px; height:20px; border:2px solid rgba(139,92,246,0.3); border-top-color:#8b5cf6; border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block; }
-@keyframes spin { to{transform:rotate(360deg)} }
-</style>
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .cosmic-bg {
+      background: radial-gradient(ellipse at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 40% 40%, rgba(6,182,212,0.1) 0%, transparent 40%);
+    }
+    .glass-cosmic { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    .glass-cosmic-strong { background: rgba(10,10,26,0.85); backdrop-filter: blur(30px); border: 1px solid rgba(139,92,246,0.2); }
+    #starfield { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+    .orbital-dock { position:fixed; bottom:40px; left:50%; transform:translateX(-50%); z-index:1000; }
+    .grid-pattern {
+      background-image: linear-gradient(rgba(139,92,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+    .dock-item { position:relative; transition:transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s; overflow:visible !important; }
+    .dock-item:hover { transform:translateY(-12px) scale(1.12) !important; }
+    .dock-item::before { content:''; position:absolute; top:0; left:0; width:100%; height:52%; border-radius:14px 14px 50% 50%; background:linear-gradient(175deg,rgba(255,255,255,0.28) 0%,transparent 100%); z-index:10; pointer-events:none; }
+    .dock-item::after { content:''; position:absolute; bottom:-6px; left:10%; width:80%; height:8px; border-radius:50%; background:rgba(0,0,0,0.45); filter:blur(5px); z-index:0; transition:opacity 0.18s,transform 0.18s; }
+    .dock-item:hover::after { opacity:0.6; transform:scaleX(0.85); }
+    .dock-dashboard { background:linear-gradient(145deg,#a78bfa 0%,#7c3aed 45%,#4c1d95 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(124,58,237,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-dashboard:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(124,58,237,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-sales { background:linear-gradient(145deg,#93c5fd 0%,#3b82f6 45%,#1e3a8a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(59,130,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-sales:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(59,130,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-steve { background:linear-gradient(145deg,#f9a8d4 0%,#ec4899 45%,#9d174d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(236,72,153,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-steve:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(236,72,153,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-crm { background:linear-gradient(145deg,#6ee7b7 0%,#10b981 45%,#064e3b 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(16,185,129,0.6),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-crm:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(16,185,129,0.85),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-calls { background:linear-gradient(145deg,#fca5a5 0%,#ef4444 45%,#7f1d1d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(239,68,68,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-calls:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(239,68,68,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-finance { background:linear-gradient(145deg,#fcd34d 0%,#f59e0b 45%,#78350f 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(245,158,11,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-finance:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(245,158,11,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-marketing { background:linear-gradient(145deg,#c4b5fd 0%,#8b5cf6 45%,#3b0764 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(139,92,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-marketing:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(139,92,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-files { background:linear-gradient(145deg,#94a3b8 0%,#475569 45%,#0f172a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.22) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(71,85,105,0.55),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-search { background:linear-gradient(145deg,#5eead4 0%,#14b8a6 45%,#134e4a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(20,184,166,0.6),0 2px 6px rgba(0,0,0,0.55); }
+    .holo-card { background:linear-gradient(135deg,rgba(139,92,246,0.1) 0%,rgba(236,72,153,0.1) 100%); border:1px solid rgba(139,92,246,0.2); position:relative; overflow:hidden; }
+    .holo-card::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.05) 50%,transparent 70%); animation:holoShine 3s ease-in-out infinite; }
+    @keyframes holoShine { 0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)} 100%{transform:translateX(100%) translateY(100%) rotate(45deg)} }
+    .animated-border { position:relative; background:rgba(18,18,42,0.8); border-radius:12px; }
+    .animated-border::before { content:''; position:absolute; inset:-2px; border-radius:14px; background:linear-gradient(90deg,#8b5cf6,#ec4899,#06b6d4,#8b5cf6); background-size:300% 300%; animation:borderRotate 3s linear infinite; z-index:-1; }
+    @keyframes borderRotate { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .cosmic-window { background:rgba(18,18,42,0.95); backdrop-filter:blur(40px); border:1px solid rgba(139,92,246,0.2); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.05) inset,0 0 100px rgba(139,92,246,0.1) inset; }
+    .theme-toggle { position:relative; width:60px; height:32px; border-radius:16px; background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%); border:2px solid rgba(139,92,246,0.3); cursor:pointer; transition:all 0.3s ease; }
+    .theme-toggle.light { background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%); border-color:rgba(251,191,36,0.5); }
+    .theme-toggle-slider { position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:white; transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .theme-toggle.light .theme-toggle-slider { transform:translateX(28px); }
+    ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.3); border-radius:3px; }
+    .stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(139,92,246,0.15); border-radius:12px; padding:16px; }
+    .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .data-table th { text-align:left; padding:8px 12px; color:rgba(148,163,184,1); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .data-table td { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); color:rgba(226,232,240,1); }
+    .data-table tr:hover td { background:rgba(255,255,255,0.03); }
+    .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
+    .badge-green { background:rgba(16,185,129,0.2); color:#34d399; }
+    .badge-blue { background:rgba(59,130,246,0.2); color:#60a5fa; }
+    .badge-purple { background:rgba(139,92,246,0.2); color:#a78bfa; }
+    .badge-red { background:rgba(239,68,68,0.2); color:#f87171; }
+    .badge-amber { background:rgba(245,158,11,0.2); color:#fbbf24; }
+    .badge-gray { background:rgba(100,116,139,0.2); color:#94a3b8; }
+    .loading-pulse { animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .spinner { width:20px; height:20px; border:2px solid rgba(139,92,246,0.3); border-top-color:#8b5cf6; border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+  </style>
 </head>
 <body class="dark bg-cosmic-900 text-white min-h-screen overflow-hidden">
+
 <canvas id="starfield"></canvas>
 <div class="fixed inset-0 cosmic-bg pointer-events-none z-[1]"></div>
 <div class="fixed inset-0 grid-pattern opacity-30 pointer-events-none z-[2]"></div>
@@ -136,36 +134,6 @@ tailwind.config = {
   </div>
 </div>
 
-<!-- SCHEMA WARNING BAR -->
-<div id="schema-warning" class="fixed top-14 left-0 right-0 z-[999]"></div>
-
-<!-- SCHEMA HELP MODAL -->
-<div id="schema-modal" class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm hidden items-center justify-center">
-  <div class="glass-cosmic-strong rounded-2xl p-8 max-w-2xl w-full mx-4 border border-amber-500/30">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i></div>
-      <div><h2 class="font-space font-bold text-lg">Fix Supabase Schema Access</h2><p class="text-xs text-slate-400">PGRST106 — schemas not in Exposed Schemas list</p></div>
-      <button onclick="document.getElementById('schema-modal').classList.replace('flex','hidden')" class="ml-auto p-2 hover:bg-white/10 rounded-lg"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
-    </div>
-    <div class="space-y-4 text-sm">
-      <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-        <p class="text-amber-300 font-semibold mb-2">Do this once in Supabase Dashboard:</p>
-        <ol class="text-slate-300 space-y-2 list-decimal list-inside">
-          <li>Go to <strong class="text-white">supabase.com/dashboard</strong> your project</li>
-          <li>Click <strong class="text-white">Settings API</strong></li>
-          <li>Scroll to <strong class="text-white">Exposed schemas</strong></li>
-          <li>Add: <code class="text-nebula-cyan bg-slate-800 px-2 py-0.5 rounded">deals, crm, dialer, analytics, outreach, marketing, hr, seo, intelligence, sentinel</code></li>
-          <li>Click <strong class="text-white">Save</strong></li>
-          <li>In SQL Editor run: <code class="text-green-400 bg-slate-800 px-2 py-0.5 rounded">NOTIFY pgrst, 'reload schema';</code></li>
-        </ol>
-      </div>
-      <button onclick="loadSidebar(); loadAlerts(); document.getElementById('schema-modal').classList.replace('flex','hidden')" class="w-full py-3 bg-nebula-purple hover:bg-nebula-purple/80 rounded-xl font-semibold transition-colors">
-        Retry Connection
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- MAIN DESKTOP -->
 <div id="desktop" class="relative w-full h-screen pt-20 pb-32 px-8 z-[100]">
 
@@ -182,7 +150,6 @@ tailwind.config = {
         <div class="flex justify-between text-xs"><span class="text-slate-400">Work Orders</span><span class="text-nebula-pink font-mono" id="sb-wo-count">—</span></div>
       </div>
     </div>
-
     <div class="glass-cosmic rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-8 h-8 rounded-lg bg-nebula-cyan/20 flex items-center justify-center"><i data-lucide="gauge" class="w-4 h-4 text-nebula-cyan"></i></div>
@@ -203,7 +170,6 @@ tailwind.config = {
         </div>
       </div>
     </div>
-
     <div class="glass-cosmic rounded-2xl p-5 flex-1">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-8 h-8 rounded-lg bg-nebula-pink/20 flex items-center justify-center"><i data-lucide="activity" class="w-4 h-4 text-nebula-pink"></i></div>
@@ -235,7 +201,6 @@ tailwind.config = {
         <div class="p-3 rounded-xl bg-white/5 text-center text-xs text-slate-500">Loading alerts...</div>
       </div>
     </div>
-
     <div class="glass-cosmic rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center"><i data-lucide="zap" class="w-4 h-4 text-green-400"></i></div>
@@ -250,9 +215,9 @@ tailwind.config = {
           <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-cyan"></i>
           <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Sales</span>
         </button>
-        <button onclick="openWindow('serp')" class="p-3 rounded-xl bg-white/5 hover:bg-teal-500/20 border border-white/10 hover:border-teal-500/50 transition-all text-center group">
-          <i data-lucide="bar-chart-2" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-teal-400"></i>
-          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">SERP</span>
+        <button onclick="openWindow('calls')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-pink/20 border border-white/10 hover:border-nebula-pink/50 transition-all text-center group">
+          <i data-lucide="phone" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-pink"></i>
+          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Calls</span>
         </button>
         <button onclick="openWindow('finance')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-amber/20 border border-white/10 hover:border-nebula-amber/50 transition-all text-center group">
           <i data-lucide="dollar-sign" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-amber"></i>
@@ -295,10 +260,6 @@ tailwind.config = {
       <i data-lucide="megaphone" class="w-6 h-6 text-white relative z-10"></i>
       <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Marketing</div>
     </button>
-    <button onclick="openWindow('serp')" class="dock-item dock-serp w-12 h-12 rounded-xl flex items-center justify-center group relative">
-      <i data-lucide="bar-chart-2" class="w-6 h-6 text-white relative z-10"></i>
-      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">SERP Engine</div>
-    </button>
     <div class="w-px h-8 bg-slate-700 mx-1"></div>
     <button onclick="openWindow('files')" class="dock-item dock-files w-12 h-12 rounded-xl flex items-center justify-center group relative">
       <i data-lucide="folder-open" class="w-6 h-6 text-white relative z-10"></i>
@@ -330,10 +291,9 @@ tailwind.config = {
 <script>
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
-const SB_KEY = ''
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
 
 async function sb(schema, table, params = '') {
-  // Try with schema headers first
   const headers = {
     'apikey': SB_KEY,
     'Authorization': 'Bearer ' + SB_KEY,
@@ -343,12 +303,8 @@ async function sb(schema, table, params = '') {
   }
   const res = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers })
   if (!res.ok) {
-    const errText = await res.text()
-    // PGRST106 = schema not exposed — surface a clean error
-    if (res.status === 406 || errText.includes('PGRST106')) {
-      throw new Error(`SCHEMA_NOT_EXPOSED:${schema}`)
-    }
-    throw new Error(`${table}:${res.status} ${errText}`)
+    const err = await res.text()
+    throw new Error(`${table}:${res.status} ${err}`)
   }
   return res.json()
 }
@@ -379,51 +335,37 @@ function interestBadge(s) {
 
 // ── SIDEBAR LIVE DATA ────────────────────────────────────────────────────────
 async function loadSidebar() {
-  const missingSchemas = []
   try {
     const [pipeline, leads, workOrders, kpis] = await Promise.all([
-      sb('deals', 'pipeline', 'select=id,stage,value&limit=500').catch(e => { if(e.message.startsWith('SCHEMA_NOT_EXPOSED')) missingSchemas.push('deals'); return [] }),
-      sb('crm', 'leads', 'select=id,status&limit=1000').catch(e => { if(e.message.startsWith('SCHEMA_NOT_EXPOSED')) missingSchemas.push('crm'); return [] }),
-      sb('deals', 'work_orders', 'select=id,status&limit=500').catch(() => []),
-      sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=1').catch(e => { if(e.message.startsWith('SCHEMA_NOT_EXPOSED')) missingSchemas.push('analytics'); return [] }),
+      sb('deals', 'pipeline', 'select=id,stage,value&limit=500'),
+      sb('crm', 'leads', 'select=id,status&limit=1000'),
+      sb('deals', 'work_orders', 'select=id,status&limit=500'),
+      sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=1'),
     ])
 
-    // Show schema warning banner if needed
-    const warningEl = document.getElementById('schema-warning')
-    if (missingSchemas.length > 0 && warningEl) {
-      const unique = [...new Set(missingSchemas)]
-      warningEl.innerHTML = `<div class="px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-2">
-        <i data-lucide="alert-triangle" style="width:12px;height:12px;flex-shrink:0"></i>
-        <span>Supabase schemas not exposed: <strong>${unique.join(', ')}</strong> — <a href="#" onclick="showSchemaHelp()" class="underline">fix this</a></span>
-      </div>`
-      lucide.createIcons()
-    } else if (warningEl) {
-      warningEl.innerHTML = ''
-    }
-
-    document.getElementById('sb-pipeline-count').textContent = pipeline.length || '—'
-    document.getElementById('sb-leads-count').textContent = leads.length || '—'
-    document.getElementById('sb-wo-count').textContent = workOrders.length || '—'
-    document.getElementById('sb-leads-total').textContent = leads.length || '—'
+    document.getElementById('sb-pipeline-count').textContent = pipeline.length
+    document.getElementById('sb-leads-count').textContent = leads.length
+    document.getElementById('sb-wo-count').textContent = workOrders.length
+    document.getElementById('sb-leads-total').textContent = leads.length
 
     const won = pipeline.filter(p => p.stage?.toLowerCase() === 'won')
     const proposals = pipeline.filter(p => p.stage?.toLowerCase() === 'proposal')
     const closing = pipeline.filter(p => p.stage?.toLowerCase() === 'closing')
     const total = pipeline.length || 1
 
-    document.getElementById('sb-proposals-pct').textContent = pipeline.length ? pct(proposals.length, total) : '—'
-    document.getElementById('sb-proposals-bar').style.width = pipeline.length ? pct(proposals.length, total) : '0%'
-    document.getElementById('sb-closing-pct').textContent = pipeline.length ? pct(closing.length, total) : '—'
-    document.getElementById('sb-closing-bar').style.width = pipeline.length ? pct(closing.length, total) : '0%'
-    document.getElementById('sb-won-pct').textContent = pipeline.length ? pct(won.length, total) : '—'
-    document.getElementById('sb-won-bar').style.width = pipeline.length ? pct(won.length, total) : '0%'
-    document.getElementById('sb-deals-won').textContent = pipeline.length ? won.length : '—'
+    document.getElementById('sb-proposals-pct').textContent = pct(proposals.length, total)
+    document.getElementById('sb-proposals-bar').style.width = pct(proposals.length, total)
+    document.getElementById('sb-closing-pct').textContent = pct(closing.length, total)
+    document.getElementById('sb-closing-bar').style.width = pct(closing.length, total)
+    document.getElementById('sb-won-pct').textContent = pct(won.length, total)
+    document.getElementById('sb-won-bar').style.width = pct(won.length, total)
+    document.getElementById('sb-deals-won').textContent = won.length
 
     const totalRev = won.reduce((s,p) => s + (Number(p.value)||0), 0)
-    document.getElementById('sb-revenue').textContent = pipeline.length ? fmt(totalRev) : '—'
+    document.getElementById('sb-revenue').textContent = fmt(totalRev)
 
     const k = kpis[0] || {}
-    const closeRate = k.close_rate ? (Number(k.close_rate)*100).toFixed(1)+'%' : (pipeline.length ? pct(won.length, total) : '—')
+    const closeRate = k.close_rate ? (Number(k.close_rate)*100).toFixed(1)+'%' : pct(won.length, total)
     document.getElementById('sb-close-rate').textContent = closeRate
 
   } catch(e) { console.warn('Sidebar load error:', e) }
@@ -452,6 +394,7 @@ async function loadAlerts() {
 }
 
 // ── WINDOW CONTENT LOADERS ───────────────────────────────────────────────────
+
 async function loadDashboardContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
@@ -492,10 +435,13 @@ async function loadDashboardContent(el) {
 async function loadSalesContent(el) {
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
+    // Using only verified columns from deals.pipeline
     const pipeline = await sb('deals', 'pipeline',
       'select=id,name,lead_name,company,stage,value,interest_level,ai_score,assigned_to,next_action,service,source,phone,lead_email,updated_at,outreach_status,touch_count,reply_intent&order=updated_at.desc&limit=100')
+
     const stages = ['new','contacted','proposal','closing','won','lost']
     const stageColors = { new:'border-slate-600', contacted:'border-blue-500/40', proposal:'border-purple-500/40', closing:'border-amber-500/40', won:'border-green-500/40', lost:'border-red-500/40' }
+
     el.innerHTML = `
       <div class="space-y-5">
         <div class="flex items-center justify-between">
@@ -505,6 +451,8 @@ async function loadSalesContent(el) {
             <span class="badge badge-purple">Live</span>
           </div>
         </div>
+
+        <!-- Stage Summary Tiles -->
         <div class="grid grid-cols-6 gap-2">
           ${stages.map(stage => {
             const deals = pipeline.filter(p => p.stage?.toLowerCase() === stage)
@@ -516,6 +464,8 @@ async function loadSalesContent(el) {
             </div>`
           }).join('')}
         </div>
+
+        <!-- Pipeline Kanban (3 cols) -->
         <div class="grid grid-cols-3 gap-3">
           ${stages.slice(0,6).map(stage => {
             const deals = pipeline.filter(p => p.stage?.toLowerCase() === stage)
@@ -536,6 +486,8 @@ async function loadSalesContent(el) {
             </div>`
           }).join('')}
         </div>
+
+        <!-- Recent Activity Table -->
         <div>
           <h3 class="font-space font-semibold text-sm mb-3">Recent Activity</h3>
           <table class="data-table">
@@ -558,6 +510,7 @@ async function loadSalesContent(el) {
 
 async function loadSteveContent(el) {
   const messages = [{ role:'assistant', text:'Hello Commander! I\'m Steve BGE. I have live access to your pipeline, leads, and KPIs. Ask me anything about your business performance.' }]
+
   const render = () => {
     el.innerHTML = `
       <div class="flex flex-col" style="height:520px">
@@ -580,6 +533,7 @@ async function loadSteveContent(el) {
     document.getElementById('steve-send')?.addEventListener('click', sendSteve)
     document.getElementById('steve-input')?.addEventListener('keydown', e => { if(e.key==='Enter') sendSteve() })
   }
+
   async function sendSteve() {
     const input = document.getElementById('steve-input')
     const text = input?.value?.trim()
@@ -596,25 +550,32 @@ async function loadSteveContent(el) {
       ])
       const won = pipeline.filter(p=>p.stage?.toLowerCase()==='won')
       const totalVal = pipeline.reduce((s,p)=>s+(Number(p.value)||0),0)
-      const context = `You are Steve BGE, senior sales AI for Traffik Boosters digital marketing agency. Live data: Pipeline: ${pipeline.length} deals, ${won.length} won, $${totalVal.toFixed(0)} pipeline value. Stages: ${['new','contacted','proposal','closing','won','lost'].map(s=>s+':'+pipeline.filter(p=>p.stage?.toLowerCase()===s).length).join(', ')}. Leads: ${leads.length} total, ${leads.filter(l=>l.status==='qualified').length} qualified, ${leads.filter(l=>l.priority_level==='high').length} high priority. KPI snapshot: ${JSON.stringify(kpis[0]||{})}. Answer concisely in 2-3 sentences.`
+      const context = `You are Steve BGE, senior sales AI for Traffik Boosters digital marketing agency. Live data as of now: Pipeline: ${pipeline.length} deals total, ${won.length} won, $${totalVal.toFixed(0)} total pipeline value. Stage breakdown: ${['new','contacted','proposal','closing','won','lost'].map(s=>s+':'+pipeline.filter(p=>p.stage?.toLowerCase()===s).length).join(', ')}. Leads: ${leads.length} total, ${leads.filter(l=>l.status==='qualified').length} qualified, ${leads.filter(l=>l.priority_level==='high').length} high priority. Latest KPI snapshot: ${JSON.stringify(kpis[0]||{})}. Answer concisely in 2-3 sentences. Use dollar signs and percentages where relevant.`
       let reply = ''
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+          headers: { 'Content-Type': 'application/json', 'x-api-key': '', 'anthropic-version': '2023-06-01' },
           body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:300, system: context, messages:[{ role:'user', content: text }] })
         })
-        if (res.ok) { const data = await res.json(); reply = data.content?.[0]?.text || '' }
+        if (res.ok) {
+          const data = await res.json()
+          reply = data.content?.[0]?.text || ''
+        }
       } catch(_) {}
       if (!reply) {
+        // Smart fallback using live data
         const q = text.toLowerCase()
-        if (q.includes('revenue') || q.includes('money')) reply = `Pipeline total value is ${fmt(totalVal)} with ${won.length} won deals generating ${fmt(won.reduce((s,p)=>s+(Number(p.value)||0),0))} in closed revenue.`
-        else if (q.includes('lead')) reply = `You have ${leads.length} leads — ${leads.filter(l=>l.status==='qualified').length} qualified and ${leads.filter(l=>l.priority_level==='high').length} flagged high priority.`
-        else if (q.includes('pipeline') || q.includes('deal')) reply = `Pipeline has ${pipeline.length} active deals. ${pipeline.filter(p=>p.stage?.toLowerCase()==='closing').length} closing, ${pipeline.filter(p=>p.stage?.toLowerCase()==='proposal').length} at proposal.`
-        else reply = `Live: ${pipeline.length} pipeline deals, ${leads.length} leads, ${won.length} won, ${fmt(totalVal)} pipeline value. What would you like to analyze?`
+        if (q.includes('revenue') || q.includes('money') || q.includes('value')) reply = `Pipeline total value is ${fmt(totalVal)} with ${won.length} won deals generating ${fmt(won.reduce((s,p)=>s+(Number(p.value)||0),0))} in closed revenue.`
+        else if (q.includes('lead')) reply = `You have ${leads.length} leads total — ${leads.filter(l=>l.status==='qualified').length} qualified and ${leads.filter(l=>l.priority_level==='high').length} flagged high priority. Focus on the high-priority ones first.`
+        else if (q.includes('pipeline') || q.includes('deal')) reply = `Pipeline has ${pipeline.length} active deals. Currently ${pipeline.filter(p=>p.stage?.toLowerCase()==='closing').length} in closing, ${pipeline.filter(p=>p.stage?.toLowerCase()==='proposal').length} at proposal stage.`
+        else if (q.includes('close') || q.includes('win')) reply = `Win rate is ${pct(won.length, pipeline.length)} with ${won.length} closed deals worth ${fmt(won.reduce((s,p)=>s+(Number(p.value)||0),0))}.`
+        else reply = `Live snapshot: ${pipeline.length} pipeline deals, ${leads.length} leads, ${won.length} won, ${fmt(totalVal)} in pipeline value. What specific metric would you like me to analyze?`
       }
       messages[messages.length-1] = { role:'assistant', text: reply }
-    } catch(e) { messages[messages.length-1] = { role:'assistant', text: 'Error loading live data. Please try again.' } }
+    } catch(e) {
+      messages[messages.length-1] = { role:'assistant', text: 'Error loading live data. Please try again.' }
+    }
     render()
   }
   render()
@@ -673,16 +634,17 @@ async function loadCallsContent(el) {
           </div>
         </div>
         ${active.length > 0 ? `
-          <div>
-            <h3 class="text-sm font-semibold text-amber-400 mb-3">🔴 Active Calls</h3>
-            <div class="grid grid-cols-2 gap-3">
-              ${active.map(c => `<div class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
-                <div class="flex justify-between items-center mb-2"><span class="text-sm font-semibold text-amber-300">${c.phone_number||c.phone||'—'}</span><span class="badge badge-amber">LIVE</span></div>
-                <div class="text-xs text-slate-400">Sentiment: <span class="text-white">${c.sentiment||'—'}</span></div>
-                ${c.ai_tip ? `<div class="text-xs mt-2 p-2 rounded bg-slate-800 text-emerald-300">💡 ${c.ai_tip}</div>` : ''}
-              </div>`).join('')}
-            </div>
-          </div>` : '<div class="p-4 rounded-xl border border-slate-700/40 bg-slate-900/40 text-center text-slate-500 text-sm">No active calls right now</div>'}
+        <div>
+          <h3 class="text-sm font-semibold text-amber-400 mb-3">🔴 Active Calls</h3>
+          <div class="grid grid-cols-2 gap-3">
+            ${active.map(c => `<div class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+              <div class="flex justify-between items-center mb-2"><span class="text-sm font-semibold text-amber-300">${c.phone_number||c.phone||'—'}</span><span class="badge badge-amber">LIVE</span></div>
+              <div class="text-xs text-slate-400">Sentiment: <span class="text-white">${c.sentiment||'—'}</span></div>
+              ${c.ai_tip ? `<div class="text-xs mt-2 p-2 rounded bg-slate-800 text-emerald-300">💡 ${c.ai_tip}</div>` : ''}
+              ${c.objection ? `<div class="text-xs mt-1 p-2 rounded bg-red-900/30 text-red-300">⚠️ ${c.objection}</div>` : ''}
+            </div>`).join('')}
+          </div>
+        </div>` : '<div class="p-4 rounded-xl border border-slate-700/40 bg-slate-900/40 text-center text-slate-500 text-sm">No active calls right now</div>'}
         <div>
           <h3 class="text-sm font-semibold text-slate-200 mb-3">Recent Calls</h3>
           <table class="data-table">
@@ -792,183 +754,17 @@ async function loadMarketingContent(el) {
           <table class="data-table">
             <thead><tr><th>Date</th><th>Created</th><th>Contacted</th><th>Calls</th><th>Deals</th><th>CVR</th></tr></thead>
             <tbody>${metrics.map(m => `<tr>
-              <td>${m.date||'—'}</td><td>${m.leads_created||0}</td><td>${m.leads_contacted||0}</td>
-              <td>${m.calls_completed||0}</td><td>${m.deals_closed||0}</td>
+              <td>${m.date||'—'}</td>
+              <td>${m.leads_created||0}</td>
+              <td>${m.leads_contacted||0}</td>
+              <td>${m.calls_completed||0}</td>
+              <td>${m.deals_closed||0}</td>
               <td class="text-nebula-cyan font-mono">${m.conversion_rate ? Number(m.conversion_rate).toFixed(1)+'%' : '—'}</td>
             </tr>`).join('')}</tbody>
           </table>
         </div>` : ''}
       </div>`
   } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
-}
-
-async function loadSerpContent(el) {
-  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
-  try {
-    // Pull from your actual schema: scraping.jobs, seo.serp_data, seo.tracked_keywords, seo.serp_intelligence
-    const [serpData, trackedKw, jobs, queueSummary, intelligence] = await Promise.all([
-      sb('seo', 'serp_data', 'select=id,keyword,location,result_count,source,created_at&order=created_at.desc&limit=50').catch(() => []),
-      sb('seo', 'tracked_keywords', 'select=id,keyword,location,priority,active,check_freq,last_checked&order=priority.desc&limit=100').catch(() => []),
-      sb('scraping', 'jobs', 'select=id,keyword,location,status,attempts,priority,source,created_at,completed_at,error_msg&order=created_at.desc&limit=100').catch(() => []),
-      sb('scraping', 'queue_summary', 'select=*').catch(() => []),
-      sb('seo', 'serp_intelligence', 'select=keyword,location,competition_score,avg_results,top_domains,ai_summary,created_at&order=created_at.desc&limit=20').catch(() => []),
-    ])
-
-    // Derive SERP position stats from serp_data results JSONB
-    // Each serp_data row has results:[{position, domain, type}]
-    // For tracked keywords: find their latest serp_data result
-    const kwPositions = trackedKw.map(kw => {
-      const latest = serpData.find(s => s.keyword === kw.keyword && s.location === kw.location)
-      return { ...kw, result_count: latest?.result_count || 0, last_scraped: latest?.created_at }
-    })
-
-    // Queue stats
-    const pending = jobs.filter(j => j.status === 'pending').length
-    const processing = jobs.filter(j => j.status === 'processing').length
-    const completed = jobs.filter(j => j.status === 'completed').length
-    const failed = jobs.filter(j => j.status === 'failed').length
-    const activeKw = trackedKw.filter(k => k.active).length
-
-    // Status badge for jobs
-    const jobBadge = (s) => {
-      const map = { pending:'badge-amber', processing:'badge-blue', completed:'badge-green', failed:'badge-red', rate_limited:'badge-red' }
-      return `<span class="badge ${map[s]||'badge-gray'}">${s||'—'}</span>`
-    }
-
-    // Freq badge
-    const freqBadge = (f) => {
-      const map = { hourly:'badge-purple', daily:'badge-blue', weekly:'badge-gray' }
-      return `<span class="badge ${map[f]||'badge-gray'}">${f||'—'}</span>`
-    }
-
-    // Competition score color
-    const compColor = (score) => {
-      const s = Number(score)
-      if (s >= 7) return 'text-red-400'
-      if (s >= 4) return 'text-amber-400'
-      return 'text-green-400'
-    }
-
-    el.innerHTML = `
-      <div class="space-y-5">
-
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-          <h2 class="font-space font-bold text-lg">SERP Engine Control</h2>
-          <div class="flex gap-2">
-            <span class="badge badge-green">${activeKw} Active</span>
-            <span class="badge badge-blue">${completed} Scraped</span>
-            <span class="badge badge-teal">Live</span>
-          </div>
-        </div>
-
-        <!-- KPI Row -->
-        <div class="grid grid-cols-5 gap-3">
-          <div class="stat-card text-center">
-            <div class="text-2xl font-bold text-teal-400 font-mono">${trackedKw.length}</div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Tracked Keywords</div>
-          </div>
-          <div class="stat-card text-center">
-            <div class="text-2xl font-bold text-amber-400 font-mono">${pending}</div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Queue Pending</div>
-          </div>
-          <div class="stat-card text-center">
-            <div class="text-2xl font-bold text-blue-400 font-mono">${processing}</div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Processing</div>
-          </div>
-          <div class="stat-card text-center">
-            <div class="text-2xl font-bold text-green-400 font-mono">${completed}</div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Completed</div>
-          </div>
-          <div class="stat-card text-center">
-            <div class="text-2xl font-bold text-red-400 font-mono">${failed}</div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Failed</div>
-          </div>
-        </div>
-
-        <!-- Tracked Keywords -->
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-space font-semibold text-sm">Tracked Keywords (${trackedKw.length})</h3>
-            <button onclick="openEnqueueModal()" class="px-3 py-1.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 rounded-lg text-xs text-teal-300 transition-colors flex items-center gap-1">
-              <i data-lucide="plus" style="width:12px;height:12px"></i> Enqueue Jobs
-            </button>
-          </div>
-          ${trackedKw.length ? `<table class="data-table">
-            <thead><tr><th>Keyword</th><th>Location</th><th>Frequency</th><th>Priority</th><th>Results</th><th>Last Scraped</th><th>Status</th></tr></thead>
-            <tbody>${kwPositions.slice(0,20).map(k => `<tr>
-              <td class="font-medium">${k.keyword||'—'}</td>
-              <td class="text-slate-400 text-[11px]">${k.location||'United States'}</td>
-              <td>${freqBadge(k.check_freq)}</td>
-              <td><span class="font-mono text-nebula-amber">${k.priority||5}</span></td>
-              <td><span class="font-mono text-nebula-cyan">${k.result_count||'—'}</span></td>
-              <td class="text-slate-400">${ago(k.last_checked||k.last_scraped)}</td>
-              <td>${k.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Paused</span>'}</td>
-            </tr>`).join('')}</tbody>
-          </table>` : `
-            <div class="p-8 rounded-xl border border-teal-500/20 bg-teal-500/5 text-center">
-              <i data-lucide="search" class="w-10 h-10 text-teal-500/30 mx-auto mb-3"></i>
-              <p class="text-slate-400 text-sm font-medium">No keywords tracked yet</p>
-              <p class="text-slate-500 text-xs mt-1">Insert into <code class="text-teal-400">seo.tracked_keywords</code> or use bulk_enqueue_serp via core-automation-engine</p>
-            </div>`}
-        </div>
-
-        <!-- Scraper Job Queue -->
-        <div>
-          <h3 class="font-space font-semibold text-sm mb-3">Scraper Job Queue — Last 100</h3>
-          ${jobs.length ? `<table class="data-table">
-            <thead><tr><th>Keyword</th><th>Location</th><th>Status</th><th>Source</th><th>Priority</th><th>Attempts</th><th>Queued</th><th>Error</th></tr></thead>
-            <tbody>${jobs.slice(0,25).map(j => `<tr>
-              <td class="font-medium">${j.keyword||'—'}</td>
-              <td class="text-slate-400 text-[11px]">${j.location||'—'}</td>
-              <td>${jobBadge(j.status)}</td>
-              <td><span class="badge badge-gray">${j.source||'manual'}</span></td>
-              <td class="font-mono text-center">${j.priority||5}</td>
-              <td class="font-mono text-center text-slate-400">${j.attempts||0}/${j.max_attempts||3}</td>
-              <td class="text-slate-400">${ago(j.created_at)}</td>
-              <td class="text-red-400 text-[10px] max-w-[120px] truncate">${j.error_msg||''}</td>
-            </tr>`).join('')}</tbody>
-          </table>` : `
-            <div class="p-6 rounded-xl border border-slate-700/40 text-center text-slate-500 text-sm">Queue empty — jobs appear here when keywords are enqueued</div>`}
-        </div>
-
-        <!-- SERP Intelligence -->
-        ${intelligence.length ? `<div>
-          <h3 class="font-space font-semibold text-sm mb-3">SERP Intelligence</h3>
-          <table class="data-table">
-            <thead><tr><th>Keyword</th><th>Location</th><th>Competition</th><th>Avg Results</th><th>Top Domains</th><th>AI Summary</th></tr></thead>
-            <tbody>${intelligence.slice(0,10).map(i => {
-              const domains = Array.isArray(i.top_domains) ? i.top_domains.slice(0,3).map(d=>d.domain||d).join(', ') : '—'
-              return `<tr>
-                <td class="font-medium">${i.keyword||'—'}</td>
-                <td class="text-slate-400 text-[11px]">${i.location||'—'}</td>
-                <td><span class="font-mono font-bold ${compColor(i.competition_score)}">${i.competition_score||'—'}/10</span></td>
-                <td class="font-mono text-center">${i.avg_results||'—'}</td>
-                <td class="text-slate-400 text-[11px]">${domains}</td>
-                <td class="text-slate-300 text-[11px] max-w-[180px] truncate">${i.ai_summary||'—'}</td>
-              </tr>`
-            }).join('')}</tbody>
-          </table>
-        </div>` : ''}
-
-        <!-- Recent SERP Data Fetches -->
-        <div>
-          <h3 class="font-space font-semibold text-sm mb-3">Recent Scrape Results (${serpData.length})</h3>
-          ${serpData.length ? `<table class="data-table">
-            <thead><tr><th>Keyword</th><th>Location</th><th>Results</th><th>Source</th><th>Scraped</th></tr></thead>
-            <tbody>${serpData.slice(0,15).map(s => `<tr>
-              <td class="font-medium">${s.keyword||'—'}</td>
-              <td class="text-slate-400 text-[11px]">${s.location||'—'}</td>
-              <td><span class="font-mono text-nebula-cyan">${s.result_count||'—'}</span> results</td>
-              <td><span class="badge badge-gray">${s.source||'scraper'}</span></td>
-              <td class="text-slate-400">${ago(s.created_at)}</td>
-            </tr>`).join('')}</tbody>
-          </table>` : '<div class="p-4 text-center text-slate-500 text-sm">No scrape results yet — run the scraper-worker edge function</div>'}
-        </div>
-
-      </div>`
-    lucide.createIcons()
-  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error loading SERP data: ${e.message}</div>` }
 }
 
 async function loadFilesContent(el) {
@@ -1006,15 +802,14 @@ async function loadFilesContent(el) {
 const windows = {}; let zIndex = 1000; let windowCount = 0
 
 const appConfigs = {
-  dashboard: { name:'Command Dashboard', icon:'layout-dashboard', w:980, h:680 },
-  sales:     { name:'Sales War Room',    icon:'trending-up',      w:1060, h:680 },
-  steve:     { name:'Steve BGE Console', icon:'bot',              w:760,  h:640 },
-  crm:       { name:'Lead Intelligence', icon:'users',            w:1040, h:680 },
-  calls:     { name:'Call Floor',        icon:'phone',            w:900,  h:680 },
-  finance:   { name:'Finance Core',      icon:'dollar-sign',      w:980,  h:700 },
-  marketing: { name:'Marketing Hub',     icon:'megaphone',        w:980,  h:680 },
-  serp:      { name:'SERP Engine',       icon:'bar-chart-2',      w:960,  h:720 },
-  files:     { name:'Work Orders',       icon:'folder-open',      w:980,  h:660 },
+  dashboard: { name:'Command Dashboard',  icon:'layout-dashboard', w:980,  h:680 },
+  sales:     { name:'Sales War Room',     icon:'trending-up',      w:1060, h:680 },
+  steve:     { name:'Steve BGE Console',  icon:'bot',              w:760,  h:640 },
+  crm:       { name:'Lead Intelligence',  icon:'users',            w:1040, h:680 },
+  calls:     { name:'Call Floor',         icon:'phone',            w:900,  h:680 },
+  finance:   { name:'Finance Core',       icon:'dollar-sign',      w:980,  h:700 },
+  marketing: { name:'Marketing Hub',      icon:'megaphone',        w:980,  h:680 },
+  files:     { name:'Work Orders',        icon:'folder-open',      w:980,  h:660 },
 }
 
 const loaders = {
@@ -1025,7 +820,6 @@ const loaders = {
   calls:     loadCallsContent,
   finance:   loadFinanceContent,
   marketing: loadMarketingContent,
-  serp:      loadSerpContent,
   files:     loadFilesContent
 }
 
@@ -1199,20 +993,11 @@ function animateStars() {
 resizeCanvas(); createStars(); animateStars()
 window.addEventListener('resize',()=>{resizeCanvas();createStars()})
 
-// ── SCHEMA HELP ──────────────────────────────────────────────────────────────
-function showSchemaHelp() {
-  const m = document.getElementById('schema-modal')
-  m.classList.remove('hidden')
-  m.classList.add('flex')
-  lucide.createIcons()
-}
-
 // ── INIT ─────────────────────────────────────────────────────────────────────
 lucide.createIcons()
 loadSidebar()
 loadAlerts()
-setInterval(loadSidebar, 60000)
-setInterval(loadAlerts, 30000)
+setInterval(() => { loadSidebar(); loadAlerts() }, 60000)
 </script>
 </body>
 </html>
