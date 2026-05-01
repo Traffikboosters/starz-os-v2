@@ -4395,7 +4395,7 @@ const loaders = {
       if (!kw || !loc) { render('Enter keyword and location'); return; }
       render('Running single extraction: ' + kw + ' in ' + loc + '...');
       try {
-        const res = await fetch(SB_URL+'/functions/v1/data-pipeline', { method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'}, body:JSON.stringify({action:'run_single',keyword:kw,location:loc,limit:Number(lim)}) });
+        const res = await fetch(SB_URL+'/functions/v1/production-scraper', { method:'POST', headers:{'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'}, body:JSON.stringify({action:'scrape',keyword:kw,location:loc,limit:Number(lim),engines:['google_maps','serpapi_maps','serpapi_organic']}) });
         const d = await res.json();
         const r = d.results && d.results[0];
         render(r ? 'Found ' + (r.found||0) + ' businesses. ' + (r.inserted||0) + ' new leads in CRM. ' + (r.skipped||0) + ' duplicates. Source: ' + (r.source||'—') : JSON.stringify(d));
