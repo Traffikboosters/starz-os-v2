@@ -8,14 +8,10 @@
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.383.0/dist/umd/lucide.min.js"></script>
   <script>
   // Forward declarations - ensures dock buttons work regardless of script load order
-  function _openWindow(appId) {
-    if (typeof _openWindow === 'function') {
-      _openWindow(appId);
-    } else {
-      document.addEventListener('DOMContentLoaded', function() {
-        if (typeof _openWindow === 'function') _openWindow(appId);
-      });
-    }
+  function openWindow(appId) {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof _openWindow === 'function') _openWindow(appId);
+    });
   }
 </script>
 <script>
