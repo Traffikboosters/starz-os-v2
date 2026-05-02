@@ -5247,7 +5247,7 @@ window._registerLoader('fulfillment', async function(el) {
         + '<div class="stat-card text-center"><div class="text-2xl font-bold text-green-400">' + queue.length + '</div><div class="text-[10px] text-slate-400 mt-1">Queued</div></div>'
         + '<div class="stat-card text-center"><div class="text-2xl font-bold text-purple-400">0</div><div class="text-[10px] text-slate-400 mt-1">Overdue</div></div></div>'
         + '<h3 class="text-xs font-semibold text-slate-300 mb-2">SLA Rules</h3>'
-        + '<table class="data-table mb-4"><thead><tr><th>Rule</th><th>Priority</th><th>SLA Hours</th><th>Escalation</th></tr></thead><tbody>'
+        + '<table class="data-table mb-4"><thead><tr><th>Rule</th><th>Assign By</th><th>SLA Hours</th><th>Escalation</th></tr></thead><tbody>'
         + sla.map(function(r){ return '<tr><td class="font-medium">' + (r.service_type||'—') + '</td><td class="text-center font-mono text-amber-400">' + (r.assign_within_hours!=null?r.assign_within_hours+'h':'—') + '</td><td class="text-center font-mono">' + (r.complete_within_days!=null?r.complete_within_days*24+'h':'—') + 'h</td><td class="text-slate-400">' + (r.escalate_at_pct!=null?r.escalate_at_pct+'% escalation':'—') + '</td></tr>'; }).join('')
         + '</tbody></table>'
         + '<h3 class="text-xs font-semibold text-slate-300 mb-2">Responsibility Log</h3>'
