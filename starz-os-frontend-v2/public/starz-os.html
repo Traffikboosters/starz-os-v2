@@ -1,1942 +1,1003 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STARZ-OS v8.0 — Orbital Command Center</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cosmic: { 900: '#0a0a1a', 800: '#12122a', 700: '#1a1a3a', 600: '#252550' },
+            nebula: { purple: '#8b5cf6', pink: '#ec4899', cyan: '#06b6d4', amber: '#f59e0b' }
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            glow: {
+              '0%': { boxShadow: '0 0 5px #8b5cf6, 0 0 10px #8b5cf6' },
+              '100%': { boxShadow: '0 0 20px #8b5cf6, 0 0 40px #ec4899' }
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      --bg: #07070E;
-      --surface: #111120;
-      --surface2: #1A1A2E;
-      --border: rgba(255,255,255,0.09);
-      --border2: rgba(255,255,255,0.16);
-      --cyan: #00F0FF;
-      --cyan-dim: rgba(0,240,255,0.15);
-      --cyan-glow: 0 0 24px rgba(0,240,255,0.25);
-      --violet: #7C3AED;
-      --violet-dim: rgba(124,58,237,0.15);
-      --amber: #F59E0B;
-      --green: #10B981;
-      --red: #EF4444;
-      --text: #F1F5F9;
-      --muted: #64748B;
-      --muted2: #94A3B8;
-      --radius: 12px;
-      --sidebar-w: 260px;
-      --sidebar-w-collapsed: 68px;
-      --header-h: 60px;
-      --font: 'DM Sans', system-ui, sans-serif;
-      --mono: 'JetBrains Mono', monospace;
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .cosmic-bg {
+      background: radial-gradient(ellipse at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 40% 40%, rgba(6,182,212,0.1) 0%, transparent 40%);
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
+    .glass-cosmic { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    .glass-cosmic-strong { background: rgba(10,10,26,0.85); backdrop-filter: blur(30px); border: 1px solid rgba(139,92,246,0.2); }
+    #starfield { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+    .orbital-dock { position:fixed; bottom:40px; left:50%; transform:translateX(-50%); z-index:1000; }
+    .grid-pattern {
+      background-image: linear-gradient(rgba(139,92,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
     }
-
-    /* ── SCROLLBAR ── */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-    /* ── LAYOUT ── */
-    #app { display: flex; height: 100vh; overflow: hidden; }
-
-    /* ── SIDEBAR ── */
-    #sidebar {
-      width: var(--sidebar-w);
-      min-width: var(--sidebar-w);
-      background: #0D0D1A;
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1);
-      overflow: hidden;
-      z-index: 100;
-    }
-    #sidebar.collapsed { width: var(--sidebar-w-collapsed); min-width: var(--sidebar-w-collapsed); }
-
-    .sidebar-logo {
-      height: var(--header-h);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      border-bottom: 1px solid var(--border);
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    .sidebar-logo .logo-icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--cyan), var(--violet));
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px; color: #000; letter-spacing: 0.05em;
-    }
-    .sidebar-logo .logo-text {
-      font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
-      white-space: nowrap; overflow: hidden;
-      transition: opacity 0.2s;
-    }
-    .sidebar-logo .logo-text span { color: var(--cyan); }
-    #sidebar.collapsed .sidebar-logo .logo-text { opacity: 0; pointer-events: none; }
-
-    .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
-
-    .nav-section-label {
-      font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--muted);
-      padding: 8px 10px 4px;
-      white-space: nowrap; overflow: hidden;
-      transition: opacity 0.2s;
-    }
-    #sidebar.collapsed .nav-section-label { opacity: 0; }
-
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 10px; border-radius: 8px;
-      cursor: pointer; transition: all 0.15s;
-      color: var(--muted2); font-size: 13.5px; font-weight: 500;
-      white-space: nowrap; overflow: hidden;
-      position: relative;
-      border: 1px solid transparent;
-      margin-bottom: 2px;
-    }
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active {
-      background: var(--cyan-dim);
-      color: var(--cyan);
-      border-color: rgba(0,240,255,0.2);
-    }
-    .nav-item .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
-    .nav-item .nav-label { transition: opacity 0.2s; }
-    #sidebar.collapsed .nav-item .nav-label { opacity: 0; }
-    .nav-item .nav-badge {
-      margin-left: auto; background: var(--cyan);
-      color: #000; font-size: 10px; font-weight: 700;
-      padding: 1px 6px; border-radius: 10px; flex-shrink: 0;
-      transition: opacity 0.2s;
-    }
-    #sidebar.collapsed .nav-item .nav-badge { opacity: 0; }
-
-    .sidebar-footer {
-      padding: 12px 10px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .user-card {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 8px;
-      cursor: pointer; transition: all 0.15s;
-      overflow: hidden;
-    }
-    .user-card:hover { background: var(--surface2); }
-    .user-avatar {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: linear-gradient(135deg, var(--cyan), var(--violet));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #000;
-      flex-shrink: 0;
-    }
-    .user-info { overflow: hidden; transition: opacity 0.2s; }
-    .user-info .user-name { font-size: 13px; font-weight: 600; white-space: nowrap; }
-    .user-info .user-role { font-size: 11px; color: var(--muted); white-space: nowrap; }
-    #sidebar.collapsed .user-info { opacity: 0; }
-
-    .collapse-btn {
-      width: 100%; display: flex; align-items: center; justify-content: center;
-      gap: 8px; padding: 8px; border-radius: 8px;
-      background: none; border: none; cursor: pointer;
-      color: var(--muted); font-size: 12px; font-family: var(--font);
-      transition: all 0.15s; margin-top: 4px;
-    }
-    .collapse-btn:hover { background: var(--surface2); color: var(--text); }
-
-    /* ── MAIN ── */
-    #main {
-      flex: 1; display: flex; flex-direction: column; overflow: hidden;
-      transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
-    }
-
-    /* ── TOPBAR ── */
-    #topbar {
-      height: var(--header-h);
-      background: rgba(7,7,14,0.8);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 24px;
-      gap: 16px; flex-shrink: 0; z-index: 50;
-    }
-    .topbar-title { font-size: 15px; font-weight: 600; }
-    .topbar-title span { color: var(--muted); font-weight: 400; }
-    .topbar-spacer { flex: 1; }
-    .status-pill {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border-radius: 20px;
-      background: rgba(16,185,129,0.1);
-      border: 1px solid rgba(16,185,129,0.2);
-      font-size: 11px; font-weight: 600; color: var(--green);
-    }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-    .topbar-btn {
-      width: 34px; height: 34px; border-radius: 8px;
-      background: var(--surface2); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--muted); transition: all 0.15s;
-    }
-    .topbar-btn:hover { color: var(--text); border-color: var(--border2); }
-    .topbar-btn.active { color: var(--cyan); border-color: rgba(0,240,255,0.3); background: var(--cyan-dim); }
-
-    /* ── CONTENT AREA ── */
-    #content-area {
-      flex: 1; overflow-y: auto; overflow-x: hidden;
-    }
-
-    /* ── VIEWS ── */
-    .view { display: none; padding: 24px; animation: fadeSlideIn 0.3s ease; }
-    .view.active { display: block; }
-    @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-    /* ── CARDS ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 24px rgba(0,0,0,0.3);
-    }
-    .card-sm { padding: 16px; }
-    .card-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .card-title { font-size: 14px; font-weight: 600; }
-    .card-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    /* ── METRIC CARDS ── */
-    .metric-card {
-      background: var(--surface);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius);
-      padding: 20px;
-      transition: border-color 0.2s, transform 0.2s;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 24px rgba(0,0,0,0.3);
-    }
-    .metric-card:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-1px); }
-    .metric-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .metric-value { font-size: 28px; font-weight: 700; font-family: var(--mono); letter-spacing: -1px; line-height: 1; }
-    .metric-change { font-size: 11px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
-    .metric-change.up { color: var(--green); }
-    .metric-change.down { color: var(--red); }
-
-    /* ── GRID LAYOUTS ── */
-    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
-    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
-    .grid-3-1 { display: grid; grid-template-columns: 3fr 1fr; gap: 16px; }
-    @media(max-width:1200px) { .grid-4{grid-template-columns:repeat(2,1fr)} .grid-3{grid-template-columns:repeat(2,1fr)} }
-    @media(max-width:900px) { .grid-4,.grid-3,.grid-2,.grid-2-1,.grid-1-2,.grid-3-1{grid-template-columns:1fr} }
-
-    /* ── TABLES ── */
-    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .data-table th {
-      text-align: left; padding: 10px 14px;
-      font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap;
-    }
-    .data-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-    /* ── BADGES ── */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
-      letter-spacing: 0.05em; text-transform: uppercase;
-    }
-    .badge-green { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
-    .badge-red { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
-    .badge-amber { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
-    .badge-cyan { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,240,255,0.2); }
-    .badge-violet { background: var(--violet-dim); color: #A78BFA; border: 1px solid rgba(124,58,237,0.2); }
-    .badge-gray { background: rgba(100,116,139,0.1); color: var(--muted2); border: 1px solid rgba(100,116,139,0.2); }
-
-    /* ── BUTTONS ── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; border-radius: 8px; border: none;
-      font-family: var(--font); font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s; white-space: nowrap;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--cyan), #00B8C4);
-      color: #000;
-    }
-    .btn-primary:hover { opacity: 0.9; box-shadow: var(--cyan-glow); }
-    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { border-color: var(--border2); }
-    .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-    .btn-danger:hover { background: rgba(239,68,68,0.25); }
-    .btn-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
-    .btn-green:hover { background: rgba(16,185,129,0.25); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
-    .btn-icon { width: 32px; height: 32px; padding: 0; justify-content: center; }
-
-    /* ── INPUTS ── */
-    .input {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 12px;
-      font-family: var(--font); font-size: 13px; color: var(--text);
-      outline: none; transition: border-color 0.15s; width: 100%;
-    }
-    .input:focus { border-color: rgba(0,240,255,0.4); }
-    .input::placeholder { color: var(--muted); }
-
-    /* ── TABS ── */
-    .tabs { display: flex; gap: 2px; padding: 4px; background: var(--surface2); border-radius: 10px; }
-    .tab {
-      padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s; color: var(--muted); border: none;
-      background: none; font-family: var(--font); white-space: nowrap;
-    }
-    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-    .tab:hover:not(.active) { color: var(--muted2); }
-
-    /* ── SECTION HEADER ── */
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-    .section-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    /* ── POWERDIAL ── */
-    #powerdial-view {
-      display: none; padding: 0;
-      height: 100%; overflow: hidden;
-    }
-    #powerdial-view.active { display: flex; }
-
-    .pd-layout { display: grid; grid-template-columns: 320px 1fr 300px; height: 100%; overflow: hidden; }
-    .pd-panel { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
-    .pd-panel:last-child { border-right: none; }
-    .pd-panel-header {
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-    }
-    .pd-panel-title { font-size: 13px; font-weight: 600; }
-    .pd-panel-body { flex: 1; overflow-y: auto; padding: 12px; }
-
-    /* Softphone */
-    .softphone {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px; margin-bottom: 12px;
-    }
-    .softphone-status {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 600; margin-bottom: 16px;
-    }
-    .phone-display {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 12px 16px;
-      font-family: var(--mono); font-size: 18px; font-weight: 600;
-      letter-spacing: 2px; color: var(--text); min-height: 48px;
-      display: flex; align-items: center; margin-bottom: 12px;
-    }
-    .numpad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
-    .numpad-btn {
-      aspect-ratio: 1; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.15s; color: var(--text);
-      font-size: 16px; font-weight: 600; font-family: var(--mono);
-    }
-    .numpad-btn span { font-size: 8px; color: var(--muted); letter-spacing: 0.1em; }
-    .numpad-btn:hover { background: var(--surface2); border-color: var(--border2); }
-    .numpad-btn:active { transform: scale(0.95); }
-    .dial-btn {
-      width: 100%; padding: 12px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--green), #059669);
-      color: #fff; border: none; font-family: var(--font);
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .dial-btn:hover { opacity: 0.9; box-shadow: 0 0 20px rgba(16,185,129,0.3); }
-    .dial-btn.end-call { background: linear-gradient(135deg, var(--red), #DC2626); }
-    .dial-btn.end-call:hover { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
-    .dial-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* Live HUD */
-    .live-hud {
-      background: rgba(16,185,129,0.05);
-      border: 1px solid rgba(16,185,129,0.2);
-      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
-    }
-    .live-hud-header {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-    }
-    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; }
-    .live-timer { font-family: var(--mono); font-size: 22px; font-weight: 700; margin-left: auto; }
-    .disposition-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-bottom: 10px; }
-    .disp-btn {
-      padding: 8px 6px; border-radius: 7px; font-size: 11px; font-weight: 600;
-      cursor: pointer; border: none; font-family: var(--font); transition: all 0.15s; text-align: center;
-    }
-
-    /* Queue list */
-    .queue-item {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px; margin-bottom: 8px;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .queue-item:hover { border-color: var(--border2); }
-    .queue-item.calling { border-color: rgba(0,240,255,0.3); background: var(--cyan-dim); }
-    .queue-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-    .queue-biz { font-size: 13px; font-weight: 600; }
-    .queue-phone { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-    .queue-dial { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,240,255,0.2); transition: all 0.15s; }
-    .queue-dial:hover { background: rgba(0,240,255,0.25); }
-
-    /* Steve whisper */
-    .steve-panel { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
-    .steve-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .steve-avatar { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #7C3AED, #A855F7); display: flex; align-items: center; justify-content: center; font-size: 12px; }
-    .steve-name { font-size: 12px; font-weight: 700; color: #A78BFA; letter-spacing: 0.05em; text-transform: uppercase; }
-    .steve-tip { font-size: 12px; color: var(--muted2); line-height: 1.5; padding: 10px; background: var(--surface); border-radius: 8px; border-left: 3px solid var(--violet); transition: all 0.3s; }
-    .steve-tip.has-tip { color: var(--text); border-left-color: var(--cyan); background: rgba(0,240,255,0.05); }
-    .objection-alert { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 10px; font-size: 11px; color: #FCD34D; line-height: 1.5; margin-top: 8px; }
-    .buying-alert { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px; font-size: 11px; color: #6EE7B7; line-height: 1.5; margin-top: 8px; }
-    .heat-bar { height: 4px; border-radius: 2px; background: var(--surface); overflow: hidden; margin-top: 8px; }
-    .heat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
-
-    /* ── MINI CHART (pure CSS sparkline) ── */
-    .sparkline { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
-    .spark-bar { flex: 1; border-radius: 2px; background: var(--cyan-dim); transition: height 0.3s; min-height: 4px; }
-
-    /* ── TOASTS ── */
-    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
-    .toast {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 16px;
-      font-size: 13px; font-weight: 500; max-width: 320px;
-      animation: toastIn 0.3s cubic-bezier(0.16,1,0.3,1);
-      display: flex; align-items: center; gap: 10px;
-    }
-    .toast.green { border-color: rgba(16,185,129,0.3); }
-    .toast.red { border-color: rgba(239,68,68,0.3); }
-    .toast.amber { border-color: rgba(245,158,11,0.3); }
-    @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
-
-    /* ── LOADING ── */
-    .skeleton { background: var(--surface2); border-radius: 6px; animation: shimmer 1.5s infinite; }
-    @keyframes shimmer { 0%{opacity:0.5} 50%{opacity:1} 100%{opacity:0.5} }
-
-    /* ── MISC ── */
-    .divider { height: 1px; background: var(--border); margin: 16px 0; }
-    .text-cyan { color: var(--cyan); }
-    .text-violet { color: #A78BFA; }
-    .text-green { color: var(--green); }
-    .text-red { color: var(--red); }
-    .text-amber { color: var(--amber); }
-    .text-muted { color: var(--muted); }
-    .text-muted2 { color: var(--muted2); }
-    .font-mono { font-family: var(--mono); }
-    .font-bold { font-weight: 700; }
-    .flex { display: flex; }
-    .flex-center { display: flex; align-items: center; justify-content: center; }
-    .flex-between { display: flex; align-items: center; justify-content: space-between; }
-    .gap-2 { gap: 8px; }
-    .gap-3 { gap: 12px; }
-    .gap-4 { gap: 16px; }
-    .mt-1 { margin-top: 4px; }
-    .mt-2 { margin-top: 8px; }
-    .mt-3 { margin-top: 12px; }
-    .mt-4 { margin-top: 16px; }
-    .mb-2 { margin-bottom: 8px; }
-    .mb-3 { margin-bottom: 12px; }
-    .mb-4 { margin-bottom: 16px; }
-    .w-full { width: 100%; }
-    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* Notification dot */
-    .notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); position: absolute; top: 6px; right: 6px; }
-
-    /* STARZ icon glow */
-    .icon-glow-cyan { filter: drop-shadow(0 0 6px rgba(0,240,255,0.5)); }
+    .dock-item { position:relative; transition:transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s; overflow:visible !important; }
+    .dock-item:hover { transform:translateY(-12px) scale(1.12) !important; }
+    .dock-item::before { content:''; position:absolute; top:0; left:0; width:100%; height:52%; border-radius:14px 14px 50% 50%; background:linear-gradient(175deg,rgba(255,255,255,0.28) 0%,transparent 100%); z-index:10; pointer-events:none; }
+    .dock-item::after { content:''; position:absolute; bottom:-6px; left:10%; width:80%; height:8px; border-radius:50%; background:rgba(0,0,0,0.45); filter:blur(5px); z-index:0; transition:opacity 0.18s,transform 0.18s; }
+    .dock-item:hover::after { opacity:0.6; transform:scaleX(0.85); }
+    .dock-dashboard { background:linear-gradient(145deg,#a78bfa 0%,#7c3aed 45%,#4c1d95 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(124,58,237,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-dashboard:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(124,58,237,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-sales { background:linear-gradient(145deg,#93c5fd 0%,#3b82f6 45%,#1e3a8a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(59,130,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-sales:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(59,130,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-steve { background:linear-gradient(145deg,#f9a8d4 0%,#ec4899 45%,#9d174d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(236,72,153,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-steve:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(236,72,153,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-crm { background:linear-gradient(145deg,#6ee7b7 0%,#10b981 45%,#064e3b 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(16,185,129,0.6),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-crm:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(16,185,129,0.85),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-calls { background:linear-gradient(145deg,#fca5a5 0%,#ef4444 45%,#7f1d1d 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(239,68,68,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-calls:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(239,68,68,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-finance { background:linear-gradient(145deg,#fcd34d 0%,#f59e0b 45%,#78350f 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(245,158,11,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-finance:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(245,158,11,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-marketing { background:linear-gradient(145deg,#c4b5fd 0%,#8b5cf6 45%,#3b0764 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(139,92,246,0.65),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-marketing:hover { box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 20px 50px rgba(139,92,246,0.9),0 4px 10px rgba(0,0,0,0.65) !important; }
+    .dock-files { background:linear-gradient(145deg,#94a3b8 0%,#475569 45%,#0f172a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.22) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(71,85,105,0.55),0 2px 6px rgba(0,0,0,0.55); }
+    .dock-search { background:linear-gradient(145deg,#5eead4 0%,#14b8a6 45%,#134e4a 100%) !important; box-shadow:0 1px 0 rgba(255,255,255,0.32) inset,0 -3px 0 rgba(0,0,0,0.45) inset,0 8px 28px rgba(20,184,166,0.6),0 2px 6px rgba(0,0,0,0.55); }
+    .holo-card { background:linear-gradient(135deg,rgba(139,92,246,0.1) 0%,rgba(236,72,153,0.1) 100%); border:1px solid rgba(139,92,246,0.2); position:relative; overflow:hidden; }
+    .holo-card::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.05) 50%,transparent 70%); animation:holoShine 3s ease-in-out infinite; }
+    @keyframes holoShine { 0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)} 100%{transform:translateX(100%) translateY(100%) rotate(45deg)} }
+    .animated-border { position:relative; background:rgba(18,18,42,0.8); border-radius:12px; }
+    .animated-border::before { content:''; position:absolute; inset:-2px; border-radius:14px; background:linear-gradient(90deg,#8b5cf6,#ec4899,#06b6d4,#8b5cf6); background-size:300% 300%; animation:borderRotate 3s linear infinite; z-index:-1; }
+    @keyframes borderRotate { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .cosmic-window { background:rgba(18,18,42,0.95); backdrop-filter:blur(40px); border:1px solid rgba(139,92,246,0.2); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.05) inset,0 0 100px rgba(139,92,246,0.1) inset; }
+    .theme-toggle { position:relative; width:60px; height:32px; border-radius:16px; background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%); border:2px solid rgba(139,92,246,0.3); cursor:pointer; transition:all 0.3s ease; }
+    .theme-toggle.light { background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%); border-color:rgba(251,191,36,0.5); }
+    .theme-toggle-slider { position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:white; transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .theme-toggle.light .theme-toggle-slider { transform:translateX(28px); }
+    ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.3); border-radius:3px; }
+    .stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(139,92,246,0.15); border-radius:12px; padding:16px; }
+    .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .data-table th { text-align:left; padding:8px 12px; color:rgba(148,163,184,1); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .data-table td { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); color:rgba(226,232,240,1); }
+    .data-table tr:hover td { background:rgba(255,255,255,0.03); }
+    .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
+    .badge-green { background:rgba(16,185,129,0.2); color:#34d399; }
+    .badge-blue { background:rgba(59,130,246,0.2); color:#60a5fa; }
+    .badge-purple { background:rgba(139,92,246,0.2); color:#a78bfa; }
+    .badge-red { background:rgba(239,68,68,0.2); color:#f87171; }
+    .badge-amber { background:rgba(245,158,11,0.2); color:#fbbf24; }
+    .badge-gray { background:rgba(100,116,139,0.2); color:#94a3b8; }
+    .loading-pulse { animation:pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .spinner { width:20px; height:20px; border:2px solid rgba(139,92,246,0.3); border-top-color:#8b5cf6; border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block; }
+    @keyframes spin { to{transform:rotate(360deg)} }
   </style>
 </head>
-<body>
+<body class="dark bg-cosmic-900 text-white min-h-screen overflow-hidden">
 
-<div id="app">
-  <!-- ── SIDEBAR ── -->
-  <aside id="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">SZ</div>
-      <div class="logo-text">STARZ<span>-OS</span> <span style="font-size:10px;opacity:0.5;font-family:var(--mono)">v8.0</span></div>
+<canvas id="starfield"></canvas>
+<div class="fixed inset-0 cosmic-bg pointer-events-none z-[1]"></div>
+<div class="fixed inset-0 grid-pattern opacity-30 pointer-events-none z-[2]"></div>
+
+<!-- TOP BAR -->
+<div class="fixed top-0 left-0 right-0 h-14 glass-cosmic-strong flex items-center justify-between px-6 z-[1000]">
+  <div class="flex items-center gap-4">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-nebula-purple to-nebula-pink flex items-center justify-center animate-glow">
+      <i data-lucide="star" class="w-6 h-6 text-white"></i>
     </div>
-
-    <nav class="sidebar-nav">
-      <div class="nav-section-label">Command</div>
-      <div class="nav-item active" onclick="showView('dashboard')">
-        <i data-lucide="layout-dashboard" class="nav-icon"></i>
-        <span class="nav-label">Dashboard</span>
-      </div>
-      <div class="nav-item" onclick="showView('powerdial')">
-        <i data-lucide="phone-call" class="nav-icon"></i>
-        <span class="nav-label">PowerDial</span>
-        <span class="nav-badge" id="queue-badge">—</span>
-      </div>
-      <div class="nav-item" onclick="showView('leads')">
-        <i data-lucide="users" class="nav-icon"></i>
-        <span class="nav-label">Leads</span>
-      </div>
-      <div class="nav-item" onclick="showView('pipeline')">
-        <i data-lucide="trending-up" class="nav-icon"></i>
-        <span class="nav-label">Pipeline</span>
-      </div>
-      <div class="nav-item" onclick="showView('workorders')">
-        <i data-lucide="briefcase" class="nav-icon"></i>
-        <span class="nav-label">Work Orders</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="nav-section-label">Engines</div>
-      <div class="nav-item" onclick="showView('steve')">
-        <i data-lucide="bot" class="nav-icon"></i>
-        <span class="nav-label">Steve BGE</span>
-      </div>
-      <div class="nav-item" onclick="showView('rico')">
-        <i data-lucide="package" class="nav-icon"></i>
-        <span class="nav-label">Rico BGE</span>
-      </div>
-      <div class="nav-item" onclick="showView('outreach')">
-        <i data-lucide="mail" class="nav-icon"></i>
-        <span class="nav-label">Outreach</span>
-      </div>
-      <div class="nav-item" onclick="showView('seo')">
-        <i data-lucide="search" class="nav-icon"></i>
-        <span class="nav-label">SEO</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="nav-section-label">System</div>
-      <div class="nav-item" onclick="showView('analytics')">
-        <i data-lucide="bar-chart-3" class="nav-icon"></i>
-        <span class="nav-label">Analytics</span>
-      </div>
-      <div class="nav-item" onclick="showView('settings')">
-        <i data-lucide="settings" class="nav-icon"></i>
-        <span class="nav-label">Settings</span>
-      </div>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-card">
-        <div class="user-avatar">DJ</div>
-        <div class="user-info">
-          <div class="user-name">Commander DJ</div>
-          <div class="user-role">Admin Access</div>
-        </div>
-      </div>
-      <button class="collapse-btn" onclick="toggleSidebar()">
-        <i data-lucide="chevrons-left" id="collapse-icon" style="width:14px;height:14px"></i>
-        <span id="collapse-label">Collapse</span>
-      </button>
+    <div>
+      <h1 class="font-space font-bold text-lg tracking-wide">STARZ-OS <span class="text-nebula-purple">v8.0</span></h1>
+      <p class="text-xs text-slate-400">Orbital Command Center</p>
     </div>
-  </aside>
-
-  <!-- ── MAIN ── -->
-  <div id="main">
-    <!-- Topbar -->
-    <header id="topbar">
-      <div class="topbar-title" id="topbar-title">Dashboard</div>
-      <div class="topbar-spacer"></div>
-      <div style="position:relative;width:220px;transition:width 0.2s" id="topbar-search-wrap">
-        <i data-lucide="search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none"></i>
-        <input type="text" placeholder="Search..." id="topbar-search"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 36px 7px 32px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color 0.15s"
-          onfocus="this.style.borderColor='rgba(0,240,255,0.4)'" onblur="this.style.borderColor=''"/>
-        <kbd style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);background:var(--surface);padding:1px 5px;border-radius:4px;border:1px solid var(--border);font-family:var(--mono)">&#8984;K</kbd>
+  </div>
+  <div class="flex items-center gap-6">
+    <div class="hidden md:flex items-center gap-4 text-xs">
+      <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span class="text-slate-400">Live Data</span></div>
+      <div class="flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-nebula-cyan"></i><span class="text-slate-400">Supabase Connected</span></div>
+    </div>
+    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
+      <div class="theme-toggle-slider">
+        <i data-lucide="moon" class="w-3 h-3 text-slate-700 dark-icon"></i>
+        <i data-lucide="sun" class="w-3 h-3 text-amber-500 light-icon hidden"></i>
       </div>
-      <div style="width:1px;height:20px;background:var(--border)"></div>
-      <div class="topbar-btn" style="position:relative" title="Alerts">
-        <i data-lucide="bell" style="width:16px;height:16px"></i>
-        <span class="notif-dot" id="notif-dot" style="display:none"></span>
+    </button>
+    <div class="flex items-center gap-3 pl-4 border-l border-slate-700">
+      <div class="text-right hidden sm:block"><div class="text-sm font-medium">Commander DJ</div><div class="text-xs text-slate-400">Admin Access</div></div>
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-cyan to-nebula-purple p-[2px]">
+        <div class="w-full h-full rounded-full bg-slate-800 flex items-center justify-center"><i data-lucide="user" class="w-5 h-5 text-slate-400"></i></div>
       </div>
-      <div class="topbar-btn" title="Toggle Theme" onclick="toggleTheme()" id="theme-btn">
-        <i data-lucide="sun" style="width:16px;height:16px" id="theme-icon"></i>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN DESKTOP -->
+<div id="desktop" class="relative w-full h-screen pt-20 pb-32 px-8 z-[100]">
+
+  <!-- Left Sidebar -->
+  <div class="absolute left-8 top-24 bottom-40 w-64 flex flex-col gap-4">
+    <div class="glass-cosmic rounded-2xl p-5 holo-card">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-nebula-purple/20 flex items-center justify-center"><i data-lucide="radar" class="w-4 h-4 text-nebula-purple"></i></div>
+        <span class="font-space font-semibold text-sm">Mission Control</span>
       </div>
-      <div style="width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid var(--border);background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000">DJ</div>
-    </header>
-
-    <!-- Content -->
-    <div id="content-area">
-
-      <!-- ── DASHBOARD VIEW ── -->
-      <div class="view active" id="view-dashboard">
-        <!-- Welcome banner -->
-        <div style="background:linear-gradient(135deg,rgba(0,240,255,0.08),rgba(124,58,237,0.08));border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px" id="greeting-text">Good morning, Commander</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:3px" id="date-text"></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="status-pill">
-              <span class="status-dot"></span>
-              <span>Supabase Connected</span>
-            </div>
-            <div class="status-pill" style="background:rgba(0,240,255,0.08);border-color:rgba(0,240,255,0.2);color:var(--cyan)">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2s infinite;display:inline-block"></span>
-              <span>Realtime</span>
-            </div>
-          </div>
+      <div class="space-y-3">
+        <div class="flex justify-between text-xs"><span class="text-slate-400">Pipeline Deals</span><span class="text-nebula-cyan font-mono" id="sb-pipeline-count">—</span></div>
+        <div class="flex justify-between text-xs"><span class="text-slate-400">Active Leads</span><span class="text-green-400 font-mono" id="sb-leads-count">—</span></div>
+        <div class="flex justify-between text-xs"><span class="text-slate-400">Work Orders</span><span class="text-nebula-pink font-mono" id="sb-wo-count">—</span></div>
+      </div>
+    </div>
+    <div class="glass-cosmic rounded-2xl p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-nebula-cyan/20 flex items-center justify-center"><i data-lucide="gauge" class="w-4 h-4 text-nebula-cyan"></i></div>
+        <span class="font-space font-semibold text-sm">Pipeline Health</span>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">Proposals</span><span class="text-slate-300" id="sb-proposals-pct">—</span></div>
+          <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-nebula-purple to-nebula-pink rounded-full transition-all duration-1000" id="sb-proposals-bar" style="width:0%"></div></div>
         </div>
-
-        <!-- KPI Grid -->
-        <div class="grid-4 mb-4">
-          <div class="metric-card">
-            <div class="metric-label">Pipeline Deals</div>
-            <div class="metric-value text-cyan" id="m-deals">—</div>
-            <div class="metric-change up" id="m-deals-sub" style="color:var(--muted)">Loading...</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Active Leads</div>
-            <div class="metric-value" style="color:#A78BFA" id="m-leads">—</div>
-            <div class="metric-change" style="color:var(--muted)" id="m-leads-sub">Loading...</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Work Orders</div>
-            <div class="metric-value text-green" id="m-orders">—</div>
-            <div class="metric-change" style="color:var(--muted)" id="m-orders-sub">Loading...</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Call Queue</div>
-            <div class="metric-value text-amber" id="m-queue">—</div>
-            <div class="metric-change" style="color:var(--muted)">Ready to dial</div>
-          </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">Closing</span><span class="text-slate-300" id="sb-closing-pct">—</span></div>
+          <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-nebula-cyan to-blue-500 rounded-full transition-all duration-1000" id="sb-closing-bar" style="width:0%"></div></div>
         </div>
-
-        <!-- Main content grid -->
-
-        <!-- Charts Row - matching Kimi design -->
-        <div class="grid-2 mb-4">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Revenue Overview</div>
-              <span class="badge badge-cyan">This Month</span>
-            </div>
-            <div style="height:240px;position:relative">
-              <canvas id="chart-revenue"></canvas>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">User Activity</div>
-              <span class="badge badge-violet">Weekly</span>
-            </div>
-            <div style="height:240px;position:relative">
-              <canvas id="chart-activity"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid-3-1 mb-4">
-          <!-- Recent Work Orders -->
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Work Orders</div>
-                <div class="card-subtitle">Recent fulfillment pipeline</div>
-              </div>
-              <button class="btn btn-secondary btn-sm" onclick="showView('workorders')">View All</button>
-            </div>
-            <table class="data-table" id="dash-wo-table">
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Package</th>
-                  <th>Status</th>
-                  <th>Fulfillment</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody id="dash-wo-body">
-                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Quick Actions -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Quick Actions</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-secondary w-full" onclick="showView('powerdial')" style="justify-content:flex-start">
-                <i data-lucide="phone-call" style="width:15px;height:15px;color:var(--cyan)"></i>
-                Open PowerDial
-              </button>
-              <button class="btn btn-secondary w-full" onclick="showView('leads')" style="justify-content:flex-start">
-                <i data-lucide="users" style="width:15px;height:15px;color:#A78BFA"></i>
-                View Leads
-              </button>
-              <button class="btn btn-secondary w-full" onclick="showView('steve')" style="justify-content:flex-start">
-                <i data-lucide="bot" style="width:15px;height:15px;color:var(--green)"></i>
-                Steve BGE
-              </button>
-              <button class="btn btn-secondary w-full" onclick="showView('rico')" style="justify-content:flex-start">
-                <i data-lucide="package" style="width:15px;height:15px;color:var(--amber)"></i>
-                Rico Fulfillment
-              </button>
-              <div class="divider" style="margin:8px 0"></div>
-              <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Pipeline Health</div>
-              <div style="font-size:12px;display:flex;justify-content:space-between;align-items:center">
-                <span class="text-muted2">Proposals</span>
-                <span id="ph-proposals" class="font-mono">—</span>
-              </div>
-              <div style="font-size:12px;display:flex;justify-content:space-between;align-items:center">
-                <span class="text-muted2">Closing</span>
-                <span id="ph-closing" class="font-mono">—</span>
-              </div>
-              <div style="font-size:12px;display:flex;justify-content:space-between;align-items:center">
-                <span class="text-muted2">Won</span>
-                <span id="ph-won" class="font-mono text-green">—</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Agents status -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">AI Agents — Live Status</div>
-            <div class="badge badge-green">All Systems Online</div>
-          </div>
-          <div class="grid-4">
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px">
-              <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff">S</div>
-              <div>
-                <div style="font-size:13px;font-weight:700">Steve BGE</div>
-                <div style="font-size:11px;color:var(--green);margin-top:2px">● Sales / Closing</div>
-              </div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px">
-              <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#F59E0B,#D97706);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff">R</div>
-              <div>
-                <div style="font-size:13px;font-weight:700">Rico BGE</div>
-                <div style="font-size:11px;color:var(--green);margin-top:2px">● Operations</div>
-              </div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px">
-              <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#10B981,#059669);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff">Z</div>
-              <div>
-                <div style="font-size:13px;font-weight:700">Zara BGE</div>
-                <div style="font-size:11px;color:var(--green);margin-top:2px">● HR / Onboarding</div>
-              </div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px">
-              <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#00F0FF,#00B8C4);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000">V</div>
-              <div>
-                <div style="font-size:13px;font-weight:700">Vox AI</div>
-                <div style="font-size:11px;color:var(--green);margin-top:2px">● Lead Capture</div>
-              </div>
-            </div>
-          </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">Won</span><span class="text-slate-300" id="sb-won-pct">—</span></div>
+          <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-1000" id="sb-won-bar" style="width:0%"></div></div>
         </div>
       </div>
-
-      <!-- ── LEADS VIEW ── -->
-      <div class="view" id="view-leads">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Leads</div>
-            <div class="section-subtitle">CRM lead pipeline</div>
-          </div>
-          <button class="btn btn-primary btn-sm">
-            <i data-lucide="plus" style="width:14px;height:14px"></i>
-            Add Lead
-          </button>
-        </div>
-        <div class="card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Business</th>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Score</th>
-                <th>Source</th>
-                <th>Created</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="leads-body">
-              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:32px">Loading leads...</td></tr>
-            </tbody>
-          </table>
-        </div>
+    </div>
+    <div class="glass-cosmic rounded-2xl p-5 flex-1">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-nebula-pink/20 flex items-center justify-center"><i data-lucide="activity" class="w-4 h-4 text-nebula-pink"></i></div>
+        <span class="font-space font-semibold text-sm">Live KPIs</span>
       </div>
-
-      <!-- ── PIPELINE VIEW ── -->
-      <div class="view" id="view-pipeline">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Pipeline</div>
-            <div class="section-subtitle">Active deals and proposals</div>
-          </div>
-        </div>
-        <div class="grid-4 mb-4" id="pipeline-stats">
-          <div class="metric-card"><div class="metric-label">Total Deals</div><div class="metric-value text-cyan" id="ps-total">—</div></div>
-          <div class="metric-card"><div class="metric-label">Proposals</div><div class="metric-value" style="color:#A78BFA" id="ps-proposals">—</div></div>
-          <div class="metric-card"><div class="metric-label">Closing</div><div class="metric-value text-amber" id="ps-closing">—</div></div>
-          <div class="metric-card"><div class="metric-label">Won</div><div class="metric-value text-green" id="ps-won">—</div></div>
-        </div>
-        <div class="card">
-          <table class="data-table">
-            <thead>
-              <tr><th>Client</th><th>Service</th><th>Stage</th><th>Value</th><th>Rep</th><th>Created</th></tr>
-            </thead>
-            <tbody id="pipeline-body">
-              <tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">Loading pipeline...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="animated-border p-3 rounded-xl text-center"><div class="text-xl font-bold text-nebula-purple font-mono" id="sb-revenue">—</div><div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Revenue</div></div>
+        <div class="animated-border p-3 rounded-xl text-center"><div class="text-xl font-bold text-nebula-cyan font-mono" id="sb-leads-total">—</div><div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Leads</div></div>
+        <div class="animated-border p-3 rounded-xl text-center"><div class="text-xl font-bold text-nebula-pink font-mono" id="sb-close-rate">—</div><div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Close Rate</div></div>
+        <div class="animated-border p-3 rounded-xl text-center"><div class="text-xl font-bold text-green-400 font-mono" id="sb-deals-won">—</div><div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Won</div></div>
       </div>
+    </div>
+  </div>
 
-      <!-- ── WORK ORDERS VIEW ── -->
-      <div class="view" id="view-workorders">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Work Orders</div>
-            <div class="section-subtitle">Rico fulfillment center</div>
-          </div>
+  <!-- Window Container -->
+  <div id="window-container" class="absolute left-80 right-80 top-24 bottom-40 pointer-events-none"></div>
+
+  <!-- Right Sidebar -->
+  <div class="absolute right-8 top-24 bottom-40 w-64 flex flex-col gap-4">
+    <div class="glass-cosmic rounded-2xl p-5 flex-1 flex flex-col">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-nebula-amber/20 flex items-center justify-center"><i data-lucide="bell" class="w-4 h-4 text-nebula-amber"></i></div>
+          <span class="font-space font-semibold text-sm">Live Alerts</span>
         </div>
-        <div class="grid-4 mb-4">
-          <div class="metric-card"><div class="metric-label">Total</div><div class="metric-value text-cyan" id="wo-total">—</div></div>
-          <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value text-green" id="wo-active">—</div></div>
-          <div class="metric-card"><div class="metric-label">Pending</div><div class="metric-value text-amber" id="wo-pending">—</div></div>
-          <div class="metric-card"><div class="metric-label">Delivered</div><div class="metric-value" style="color:#A78BFA" id="wo-delivered">—</div></div>
-        </div>
-        <div class="card">
-          <table class="data-table">
-            <thead>
-              <tr><th>Client</th><th>Package</th><th>Status</th><th>Fulfillment</th><th>Payment</th><th>Created</th></tr>
-            </thead>
-            <tbody id="wo-body">
-              <tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">Loading work orders...</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <span class="w-5 h-5 bg-nebula-pink rounded-full text-[10px] flex items-center justify-center font-bold" id="alert-count">0</span>
       </div>
-
-      <!-- ── STEVE VIEW ── -->
-      <div class="view" id="view-steve">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Steve BGE</div>
-            <div class="section-subtitle">AI Sales Closer & Intelligence Engine</div>
-          </div>
-          <div class="badge badge-violet">Sales AI Active</div>
-        </div>
-        <div class="grid-4 mb-4">
-          <div class="metric-card"><div class="metric-label">Hot Leads</div><div class="metric-value text-red" id="steve-hot">—</div></div>
-          <div class="metric-card"><div class="metric-label">In Queue</div><div class="metric-value text-amber" id="steve-queue">—</div></div>
-          <div class="metric-card"><div class="metric-label">Proposals Ready</div><div class="metric-value text-cyan" id="steve-proposals">—</div></div>
-          <div class="metric-card"><div class="metric-label">Closed Today</div><div class="metric-value text-green" id="steve-closed">—</div></div>
-        </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Call Queue — Ready to Dial</div></div>
-            <div id="steve-queue-list" style="max-height:400px;overflow-y:auto">
-              <div class="text-muted" style="text-align:center;padding:32px">Loading...</div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Hot Leads — High Score</div></div>
-            <div id="steve-hot-list" style="max-height:400px;overflow-y:auto">
-              <div class="text-muted" style="text-align:center;padding:32px">Loading...</div>
-            </div>
-          </div>
-        </div>
+      <div class="space-y-3 overflow-y-auto flex-1" id="alerts-container">
+        <div class="p-3 rounded-xl bg-white/5 text-center text-xs text-slate-500">Loading alerts...</div>
       </div>
-
-      <!-- ── RICO VIEW ── -->
-      <div class="view" id="view-rico">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Rico BGE</div>
-            <div class="section-subtitle">Operations & Fulfillment Engine</div>
-          </div>
-          <div class="badge badge-amber">Fulfillment Active</div>
-        </div>
-        <div class="grid-4 mb-4">
-          <div class="metric-card"><div class="metric-label">Work Orders</div><div class="metric-value text-cyan" id="rico-wo">—</div></div>
-          <div class="metric-card"><div class="metric-label">SLA Rules</div><div class="metric-value text-amber" id="rico-sla">—</div></div>
-          <div class="metric-card"><div class="metric-label">Queued</div><div class="metric-value" style="color:#A78BFA" id="rico-queued">—</div></div>
-          <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value text-red" id="rico-overdue">—</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">SLA Rules</div></div>
-          <table class="data-table">
-            <thead><tr><th>Service</th><th>Assign By</th><th>SLA Hours</th><th>Escalation</th></tr></thead>
-            <tbody id="rico-sla-body">
-              <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
+    </div>
+    <div class="glass-cosmic rounded-2xl p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center"><i data-lucide="zap" class="w-4 h-4 text-green-400"></i></div>
+        <span class="font-space font-semibold text-sm">Quick Actions</span>
       </div>
-
-      <!-- ── SEO VIEW ── -->
-      <div class="view" id="view-seo">
-        <div class="section-header">
-          <div>
-            <div class="section-title">SEO Engine</div>
-            <div class="section-subtitle">Keyword rankings and authority</div>
-          </div>
-        </div>
-        <div class="grid-4 mb-4">
-          <div class="metric-card"><div class="metric-label">Keywords</div><div class="metric-value text-cyan" id="seo-kw">—</div></div>
-          <div class="metric-card"><div class="metric-label">Tracked</div><div class="metric-value text-green" id="seo-tracked">—</div></div>
-          <div class="metric-card"><div class="metric-label">Top 10</div><div class="metric-value text-amber" id="seo-top10">—</div></div>
-          <div class="metric-card"><div class="metric-label">Top 3</div><div class="metric-value" style="color:#A78BFA" id="seo-top3">—</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">Keyword Rankings</div></div>
-          <table class="data-table">
-            <thead><tr><th>Keyword</th><th>Position</th><th>Volume</th><th>Difficulty</th><th>Last Checked</th></tr></thead>
-            <tbody id="seo-body">
-              <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="openWindow('dashboard')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-purple/20 border border-white/10 hover:border-nebula-purple/50 transition-all text-center group">
+          <i data-lucide="layout-dashboard" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-purple"></i>
+          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Dashboard</span>
+        </button>
+        <button onclick="openWindow('sales')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-cyan/20 border border-white/10 hover:border-nebula-cyan/50 transition-all text-center group">
+          <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-cyan"></i>
+          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Sales</span>
+        </button>
+        <button onclick="openWindow('calls')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-pink/20 border border-white/10 hover:border-nebula-pink/50 transition-all text-center group">
+          <i data-lucide="phone" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-pink"></i>
+          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Calls</span>
+        </button>
+        <button onclick="openWindow('finance')" class="p-3 rounded-xl bg-white/5 hover:bg-nebula-amber/20 border border-white/10 hover:border-nebula-amber/50 transition-all text-center group">
+          <i data-lucide="dollar-sign" class="w-5 h-5 mx-auto mb-1 text-slate-400 group-hover:text-nebula-amber"></i>
+          <span class="text-[10px] text-slate-400 group-hover:text-slate-200">Finance</span>
+        </button>
       </div>
+    </div>
+  </div>
+</div>
 
-      <!-- ── OUTREACH VIEW ── -->
-      <div class="view" id="view-outreach">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Outreach Engine</div>
-            <div class="section-subtitle">Email sequences and reply inbox</div>
-          </div>
-        </div>
-        <div class="grid-4 mb-4">
-          <div class="metric-card"><div class="metric-label">Queued</div><div class="metric-value text-cyan" id="out-queued">—</div></div>
-          <div class="metric-card"><div class="metric-label">Sent</div><div class="metric-value text-green" id="out-sent">—</div></div>
-          <div class="metric-card"><div class="metric-label">Replies</div><div class="metric-value text-amber" id="out-replies">—</div></div>
-          <div class="metric-card"><div class="metric-label">Interested</div><div class="metric-value" style="color:#A78BFA" id="out-interested">—</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">Reply Inbox</div></div>
-          <table class="data-table">
-            <thead><tr><th>Company</th><th>Intent</th><th>Reply</th><th>Received</th></tr></thead>
-            <tbody id="outreach-body">
-              <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
+<!-- ORBITAL DOCK -->
+<div class="orbital-dock">
+  <div class="glass-cosmic-strong rounded-2xl px-4 py-3 flex items-center gap-2">
+    <button onclick="openWindow('dashboard')" class="dock-item dock-dashboard w-14 h-14 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="layout-dashboard" class="w-7 h-7 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Dashboard</div>
+    </button>
+    <div class="w-px h-8 bg-slate-700 mx-1"></div>
+    <button onclick="openWindow('sales')" class="dock-item dock-sales w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="trending-up" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Sales</div>
+    </button>
+    <button onclick="openWindow('steve')" class="dock-item dock-steve w-12 h-12 rounded-xl flex items-center justify-center group relative animate-pulse-slow">
+      <i data-lucide="bot" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Steve AI</div>
+    </button>
+    <button onclick="openWindow('crm')" class="dock-item dock-crm w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="users" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">CRM</div>
+    </button>
+    <button onclick="openWindow('calls')" class="dock-item dock-calls w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="phone" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Calls</div>
+    </button>
+    <button onclick="openWindow('finance')" class="dock-item dock-finance w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="dollar-sign" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Finance</div>
+    </button>
+    <button onclick="openWindow('marketing')" class="dock-item dock-marketing w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="megaphone" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Marketing</div>
+    </button>
+    <div class="w-px h-8 bg-slate-700 mx-1"></div>
+    <button onclick="openWindow('files')" class="dock-item dock-files w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="folder-open" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Work Orders</div>
+    </button>
+    <button onclick="toggleSpotlight()" class="dock-item dock-search w-12 h-12 rounded-xl flex items-center justify-center group relative">
+      <i data-lucide="search" class="w-6 h-6 text-white relative z-10"></i>
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-700">Search</div>
+    </button>
+  </div>
+</div>
+
+<!-- SPOTLIGHT -->
+<div id="spotlight" class="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm hidden items-start justify-center pt-32 opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-2xl transform scale-95 transition-transform duration-300" id="spotlight-content">
+    <div class="glass-cosmic-strong rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+      <div class="flex items-center gap-4 p-4 border-b border-slate-700">
+        <i data-lucide="search" class="w-6 h-6 text-slate-400"></i>
+        <input type="text" id="spotlight-input" placeholder="Search leads, deals, work orders..." class="flex-1 bg-transparent text-lg outline-none text-white placeholder-slate-500 font-space">
+        <kbd class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">ESC</kbd>
       </div>
-
-      <!-- ── ANALYTICS VIEW ── -->
-      <div class="view" id="view-analytics">
-        <div class="section-header">
-          <div><div class="section-title">Analytics</div><div class="section-subtitle">Performance intelligence</div></div>
-        </div>
-        <div class="card flex-center" style="height:300px;color:var(--muted)">
-          <div style="text-align:center">
-            <i data-lucide="bar-chart-3" style="width:40px;height:40px;margin-bottom:12px;opacity:0.3"></i>
-            <div>Analytics dashboard coming soon</div>
-          </div>
-        </div>
+      <div id="spotlight-results" class="max-h-96 overflow-y-auto p-2">
+        <div class="p-4 text-center text-slate-500 text-sm">Type to search across all systems...</div>
       </div>
-
-      <!-- ── SETTINGS VIEW ── -->
-      <div class="view" id="view-settings">
-        <div class="section-header">
-          <div><div class="section-title">Settings</div><div class="section-subtitle">System configuration</div></div>
-        </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Twilio Configuration</div></div>
-            <div style="font-size:12px;color:var(--muted2);display:flex;flex-direction:column;gap:10px">
-              <div class="flex-between"><span>Account SID</span><span class="font-mono">AC33a25c1...</span></div>
-              <div class="flex-between"><span>Phone Number</span><span class="font-mono text-cyan">+1 (888) 330-7261</span></div>
-              <div class="flex-between"><span>Rep Number</span><span class="font-mono text-green">+1 (954) 793-9065</span></div>
-              <div class="flex-between"><span>TwiML App</span><span class="badge badge-green">Configured</span></div>
-              <div class="flex-between"><span>API Key</span><span class="badge badge-green">Active</span></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Supabase</div></div>
-            <div style="font-size:12px;color:var(--muted2);display:flex;flex-direction:column;gap:10px">
-              <div class="flex-between"><span>Project</span><span class="font-mono">szguizvp...</span></div>
-              <div class="flex-between"><span>Status</span><span class="badge badge-green">Connected</span></div>
-              <div class="flex-between"><span>Realtime</span><span class="badge badge-cyan">Active</span></div>
-              <div class="flex-between"><span>Schemas</span><span class="font-mono text-muted2">13 active</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- end content-area -->
-
-    <!-- ── POWERDIAL VIEW (full height) ── -->
-    <div id="powerdial-view">
-      <div class="pd-layout">
-
-        <!-- Left: Softphone + Queue -->
-        <div class="pd-panel">
-          <div class="pd-panel-header">
-            <i data-lucide="phone" style="width:16px;height:16px;color:var(--cyan)"></i>
-            <div class="pd-panel-title">Softphone</div>
-            <span id="pd-status-pill" class="badge badge-gray" style="margin-left:auto">Not Connected</span>
-          </div>
-          <div class="pd-panel-body">
-            <!-- Softphone -->
-            <div class="softphone">
-              <div class="phone-display" id="pd-display">Enter number...</div>
-              <div class="numpad" id="pd-numpad"></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-                <button class="btn btn-secondary btn-sm" onclick="pdBackspace()">⌫ Delete</button>
-                <button class="btn btn-secondary btn-sm" onclick="pdClear()">✕ Clear</button>
-              </div>
-              <button class="dial-btn" id="pd-dial-btn" onclick="pdDial()" disabled>
-                <i data-lucide="phone" style="width:16px;height:16px"></i>
-                Connect Mic First
-              </button>
-              <div style="margin-top:8px;display:flex;gap:6px">
-                <button class="btn btn-green w-full btn-sm" onclick="pdInitTwilio()" id="pd-connect-btn">
-                  <i data-lucide="mic" style="width:13px;height:13px"></i>
-                  Connect Mic
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="pdMute()" id="pd-mute-btn" style="width:36px;padding:0;justify-content:center">
-                  <i data-lucide="mic" style="width:13px;height:13px" id="pd-mute-icon"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Live HUD -->
-            <div class="live-hud" id="pd-live-hud" style="display:none">
-              <div class="live-hud-header">
-                <div class="live-badge">
-                  <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 1s infinite"></span>
-                  LIVE CALL
-                </div>
-                <div style="font-size:12px;color:var(--muted2);margin-left:8px" id="pd-hud-number">—</div>
-                <div class="live-timer text-cyan" id="pd-hud-timer">0:00</div>
-              </div>
-              <div class="disposition-grid">
-                <button class="disp-btn" style="background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)" onclick="pdEndCall('interested')">🔥 Interested</button>
-                <button class="disp-btn" style="background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.3)" onclick="pdEndCall('callback')">📅 Callback</button>
-                <button class="disp-btn" style="background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3)" onclick="pdEndCall('not_interested')">✗ Not Int.</button>
-                <button class="disp-btn" style="background:rgba(100,116,139,0.15);color:var(--muted2);border:1px solid rgba(100,116,139,0.3)" onclick="pdEndCall('voicemail')">📬 Voicemail</button>
-              </div>
-              <button class="dial-btn end-call" onclick="pdEndCall('ended')">
-                <i data-lucide="phone-off" style="width:15px;height:15px"></i>
-                End Call
-              </button>
-              <textarea id="pd-notes" placeholder="Call notes..." style="width:100%;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px;font-family:var(--font);font-size:12px;color:var(--text);resize:none;height:60px;outline:none"></textarea>
-            </div>
-
-            <!-- Queue section header -->
-            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:4px">
-              Call Queue <span id="pd-queue-count" class="text-cyan font-mono">(0)</span>
-            </div>
-            <div id="pd-queue-list">
-              <div class="text-muted" style="text-align:center;padding:24px;font-size:13px">Loading queue...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Center: Live Floor -->
-        <div class="pd-panel">
-          <div class="pd-panel-header">
-            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;display:inline-block"></span>
-            <div class="pd-panel-title">Live Call Floor</div>
-            <span class="text-muted" style="font-size:11px;margin-left:auto" id="pd-floor-count">0 active</span>
-          </div>
-          <div class="pd-panel-body">
-            <div class="grid-3" style="gap:8px;margin-bottom:12px">
-              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-                <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green)" id="pf-live">0</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:2px">Live Calls</div>
-              </div>
-              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-                <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--amber)" id="pf-queue">0</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:2px">In Queue</div>
-              </div>
-              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
-                <div style="font-size:20px;font-weight:700;font-family:var(--mono)" style="color:#A78BFA" id="pf-hot">0</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:2px">Hot Leads</div>
-              </div>
-            </div>
-
-            <table class="data-table" style="font-size:12px">
-              <thead>
-                <tr>
-                  <th>Rep</th>
-                  <th>Lead</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>Duration</th>
-                  <th>Heat</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="pd-floor-body">
-                <tr><td colspan="7" class="text-muted" style="text-align:center;padding:32px">No active calls</td></tr>
-              </tbody>
-            </table>
-
-            <!-- Call History -->
-            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Recent Calls</div>
-            <table class="data-table" style="font-size:12px">
-              <thead>
-                <tr><th>Number</th><th>Status</th><th>Duration</th><th>Time</th></tr>
-              </thead>
-              <tbody id="pd-history-body">
-                <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Right: Steve Whisper -->
-        <div class="pd-panel">
-          <div class="pd-panel-header">
-            <div style="width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">S</div>
-            <div class="pd-panel-title">Steve BGE — Live Coach</div>
-          </div>
-          <div class="pd-panel-body">
-            <div class="steve-panel">
-              <div class="steve-header">
-                <div class="steve-avatar">🧠</div>
-                <div>
-                  <div class="steve-name">Steve's Tip</div>
-                  <div style="font-size:10px;color:var(--muted)">Real-time coaching</div>
-                </div>
-                <div style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--violet);animation:pulse 2s infinite" id="steve-active-dot"></div>
-              </div>
-              <div class="steve-tip" id="steve-tip-main">Waiting for active call to start coaching...</div>
-              <div id="steve-objection" style="display:none" class="objection-alert"></div>
-              <div id="steve-buying" style="display:none" class="buying-alert"></div>
-              <div style="margin-top:10px">
-                <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:600">DEAL HEAT</div>
-                <div class="heat-bar">
-                  <div class="heat-bar-fill" id="steve-heat-bar" style="width:0%;background:var(--muted)"></div>
-                </div>
-                <div style="font-size:11px;color:var(--muted);margin-top:4px;text-align:right;font-family:var(--mono)" id="steve-heat-score">0%</div>
-              </div>
-            </div>
-
-            <div class="steve-panel" style="margin-top:8px">
-              <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Live Transcript</div>
-              <div id="steve-transcript" style="font-size:11px;color:var(--muted2);line-height:1.6;max-height:200px;overflow-y:auto;font-family:var(--mono)">
-                Transcript will appear during call...
-              </div>
-            </div>
-
-            <div class="steve-panel" style="margin-top:8px">
-              <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Call Stats</div>
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-                <div class="flex-between"><span class="text-muted2">Calls Today</span><span class="font-mono text-cyan" id="cs-today">—</span></div>
-                <div class="flex-between"><span class="text-muted2">Avg Duration</span><span class="font-mono" id="cs-duration">—</span></div>
-                <div class="flex-between"><span class="text-muted2">Interested</span><span class="font-mono text-green" id="cs-interested">—</span></div>
-                <div class="flex-between"><span class="text-muted2">Proposals Sent</span><span class="font-mono text-cyan" id="cs-proposals">—</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- end pd-layout -->
-    </div><!-- end powerdial-view -->
-
-  </div><!-- end main -->
-</div><!-- end app -->
-
-<!-- Toast container -->
-<div id="toast-container"></div>
+    </div>
+  </div>
+</div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SB_URL = 'https://szguizvpiiuiyugrjeks.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MzkyMzIsImV4cCI6MjA2MDAxNTIzMn0.lKQMFsPP0_JoqD5snGiKgxp1qqnvW_mBpnGJlYfEmAU'
-const REP_EMAIL = 'traffikboosters@gmail.com'
-const TENANT_ID = '00000000-0000-0000-0000-000000000301'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjU4OTIsImV4cCI6MjA3NjkwMTg5Mn0.VyOzV1XfmO0faC5EoqU35s0YquEpJ-cCcsPJhm5nI5Y'
 
-// ── SUPABASE HELPER ──────────────────────────────────────────────────────────
-async function sb(schema, table, query = '') {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    headers: {
-      'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
-      'Accept-Profile': schema, 'Content-Type': 'application/json'
-    }
-  })
-  if (!res.ok) throw new Error(`${table}: ${res.status}`)
+async function sb(schema, table, params = '') {
+  const headers = {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json',
+    'Accept-Profile': schema,
+    'Content-Profile': schema
+  }
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`${table}:${res.status} ${err}`)
+  }
   return res.json()
 }
 
-async function sbPost(schema, table, data) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
-      'Accept-Profile': schema, 'Content-Profile': schema,
-      'Content-Type': 'application/json', 'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(data)
-  })
-  return res.ok
-}
-
-async function sbPatch(schema, table, id, data) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
-      'Accept-Profile': schema, 'Content-Profile': schema,
-      'Content-Type': 'application/json', 'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(data)
-  })
-  return res.ok
-}
-
 // ── HELPERS ──────────────────────────────────────────────────────────────────
+function fmt(n) { n = Number(n)||0; return n >= 1000000 ? '$'+(n/1000000).toFixed(1)+'M' : n >= 1000 ? '$'+(n/1000).toFixed(1)+'K' : '$'+n.toFixed(0) }
+function pct(a,b) { return b > 0 ? Math.round(a/b*100)+'%' : '0%' }
 function ago(ts) {
   if (!ts) return '—'
-  const d = Math.floor((Date.now() - new Date(ts)) / 1000)
-  if (d < 60) return `${d}s ago`
-  if (d < 3600) return `${Math.floor(d/60)}m ago`
-  if (d < 86400) return `${Math.floor(d/3600)}h ago`
-  return `${Math.floor(d/86400)}d ago`
+  const d = Math.floor((Date.now() - new Date(ts)) / 60000)
+  if (d < 1) return 'just now'
+  if (d < 60) return d+'m ago'
+  if (d < 1440) return Math.floor(d/60)+'h ago'
+  return Math.floor(d/1440)+'d ago'
 }
-
+function stageBadge(s) {
+  const map = { won:'badge-green', closing:'badge-amber', proposal:'badge-purple', contacted:'badge-blue', new:'badge-gray', lost:'badge-red' }
+  return `<span class="badge ${map[s?.toLowerCase()] || 'badge-gray'}">${s||'—'}</span>`
+}
 function statusBadge(s) {
-  const map = {
-    'active':'green','Active':'green','ACTIVE':'green','paid':'green','PAID':'green','won':'green',
-    'pending':'amber','PENDING':'amber','in_progress':'amber','IN_PROGRESS':'amber','pending_assignment':'amber',
-    'signed':'cyan','SIGNED':'cyan','proposal_sent':'cyan',
-    'failed':'red','FAILED':'red','lost':'red','cancelled':'red',
-    'in_fulfillment':'violet','IN_FULFILLMENT':'violet','fulfillment':'violet',
-    'completed':'gray','COMPLETED':'gray','ended':'gray',
-    'draft':'gray','DRAFT':'gray','new':'gray'
-  }
-  const c = map[s] || 'gray'
-  return `<span class="badge badge-${c}">${s||'—'}</span>`
+  const map = { active:'badge-green', completed:'badge-blue', pending:'badge-amber', cancelled:'badge-red', probation:'badge-amber', connected:'badge-green', qualified:'badge-green', disqualified:'badge-red' }
+  return `<span class="badge ${map[s?.toLowerCase()] || 'badge-gray'}">${s||'—'}</span>`
+}
+function interestBadge(s) {
+  const map = { high:'badge-green', medium:'badge-amber', low:'badge-red' }
+  return `<span class="badge ${map[s?.toLowerCase()] || 'badge-gray'}">${s||'—'}</span>`
 }
 
-function heatColor(score) {
-  if (!score) return 'var(--muted)'
-  if (score >= 70) return 'var(--red)'
-  if (score >= 40) return 'var(--amber)'
-  return 'var(--cyan)'
-}
-
-// ── TOAST ────────────────────────────────────────────────────────────────────
-function toast(msg, type = 'green') {
-  const el = document.createElement('div')
-  el.className = `toast ${type}`
-  const icons = { green: '✓', red: '✗', amber: '⚠' }
-  el.innerHTML = `<span style="color:var(--${type === 'amber' ? 'amber' : type === 'red' ? 'red' : 'green'})">${icons[type]||'•'}</span> ${msg}`
-  document.getElementById('toast-container').appendChild(el)
-  setTimeout(() => el.remove(), 3500)
-}
-
-// ── SIDEBAR ───────────────────────────────────────────────────────────────────
-let sidebarCollapsed = false
-function toggleSidebar() {
-  sidebarCollapsed = !sidebarCollapsed
-  document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed)
-  const icon = document.getElementById('collapse-icon')
-  icon.setAttribute('data-lucide', sidebarCollapsed ? 'chevrons-right' : 'chevrons-left')
-  document.getElementById('collapse-label').style.display = sidebarCollapsed ? 'none' : ''
-  lucide.createIcons()
-}
-
-// ── VIEWS ────────────────────────────────────────────────────────────────────
-const viewTitles = {
-  dashboard: 'Dashboard', powerdial: 'PowerDial — Call Floor',
-  leads: 'Leads', pipeline: 'Pipeline', workorders: 'Work Orders',
-  steve: 'Steve BGE', rico: 'Rico BGE', outreach: 'Outreach Engine',
-  seo: 'SEO Engine', analytics: 'Analytics', settings: 'Settings'
-}
-
-function showView(name) {
-  // Hide all views
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
-  document.getElementById('powerdial-view').style.display = 'none'
-  document.getElementById('content-area').style.display = 'block'
-
-  // Update nav
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
-  event?.currentTarget?.classList.add('active')
-
-  // Update topbar
-  document.getElementById('topbar-title').textContent = viewTitles[name] || name
-
-  if (name === 'powerdial') {
-    document.getElementById('content-area').style.display = 'none'
-    document.getElementById('powerdial-view').style.display = 'flex'
-    loadPowerDial()
-  } else {
-    const v = document.getElementById(`view-${name}`)
-    if (v) {
-      v.classList.add('active')
-      loadView(name)
-    }
-  }
-  lucide.createIcons()
-}
-
-// ── GREETING ──────────────────────────────────────────────────────────────────
-function setGreeting() {
-  const h = new Date().getHours()
-  const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
-  document.getElementById('greeting-text').textContent = `${greet}, Commander`
-  document.getElementById('date-text').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })
-}
-
-// ── LOAD VIEWS ────────────────────────────────────────────────────────────────
-async function loadView(name) {
+// ── SIDEBAR LIVE DATA ────────────────────────────────────────────────────────
+async function loadSidebar() {
   try {
-    switch(name) {
-      case 'dashboard': await loadDashboard(); break
-      case 'leads': await loadLeads(); break
-      case 'pipeline': await loadPipeline(); break
-      case 'workorders': await loadWorkOrders(); break
-      case 'steve': await loadSteve(); break
-      case 'rico': await loadRico(); break
-      case 'seo': await loadSEO(); break
-      case 'outreach': await loadOutreach(); break
-    }
-  } catch(e) { toast('Error loading ' + name + ': ' + e.message, 'red') }
-}
-
-async function loadDashboard() {
-  const [wo, leads, queue, pipeline] = await Promise.all([
-    sb('deals','work_orders','select=id,client_name,package,status,fulfillment_status,payment_status,created_at&order=created_at.desc&limit=6').catch(()=>[]),
-    sb('crm','leads','select=id,status&limit=200').catch(()=>[]),
-    sb('dialer','call_queue','select=id,status&limit=200').catch(()=>[]),
-    sb('deals','pipeline','select=id,stage&limit=200').catch(()=>[])
-  ])
-
-  // KPIs
-  document.getElementById('m-deals').textContent = pipeline.length || '0'
-  document.getElementById('m-deals-sub').textContent = pipeline.filter(p=>p.stage==='won').length + ' won'
-  document.getElementById('m-leads').textContent = leads.length || '0'
-  document.getElementById('m-leads-sub').textContent = leads.filter(l=>l.status==='new').length + ' new'
-  document.getElementById('m-orders').textContent = wo.length || '0'
-  document.getElementById('m-orders-sub').textContent = wo.filter(w=>w.fulfillment_status==='in_fulfillment').length + ' in fulfillment'
-  document.getElementById('m-queue').textContent = queue.filter(q=>q.status==='ready').length || '0'
-
-  // Pipeline health
-  document.getElementById('ph-proposals').textContent = pipeline.filter(p=>p.stage==='proposal').length
-  document.getElementById('ph-closing').textContent = pipeline.filter(p=>p.stage==='closing').length
-  document.getElementById('ph-won').textContent = pipeline.filter(p=>p.stage==='won').length
-
-  // Queue badge
-  const qReady = queue.filter(q=>q.status==='ready').length
-  document.getElementById('queue-badge').textContent = qReady || '—'
-
-  // Work orders table
-  const tbody = document.getElementById('dash-wo-body')
-  if (!wo.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">No work orders yet</td></tr>'; return }
-  tbody.innerHTML = wo.map(w => `
-    <tr>
-      <td style="font-weight:600">${w.client_name||'—'}</td>
-      <td class="text-muted2">${w.package||'—'}</td>
-      <td>${statusBadge(w.status)}</td>
-      <td>${statusBadge(w.fulfillment_status)}</td>
-      <td class="text-muted">${ago(w.created_at)}</td>
-    </tr>
-  `).join('')
-}
-
-async function loadLeads() {
-  const leads = await sb('crm','leads','select=id,business_name,name,phone,email,status,ai_score,source,created_at&order=created_at.desc&limit=50')
-  const tbody = document.getElementById('leads-body')
-  if (!leads.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:32px">No leads found</td></tr>'; return }
-  tbody.innerHTML = leads.map(l => `
-    <tr>
-      <td style="font-weight:600">${l.business_name||'—'}</td>
-      <td class="text-muted2">${l.name||'—'}</td>
-      <td class="font-mono" style="font-size:12px">${l.phone||'—'}</td>
-      <td>${statusBadge(l.status)}</td>
-      <td>
-        <span style="font-family:var(--mono);font-size:12px;color:${heatColor(l.ai_score)}">${l.ai_score||'—'}</span>
-      </td>
-      <td class="text-muted2">${l.source||'—'}</td>
-      <td class="text-muted">${ago(l.created_at)}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="pdDialNumber('${l.phone||''}')">
-          <i data-lucide="phone" style="width:12px;height:12px"></i>
-        </button>
-      </td>
-    </tr>
-  `).join('')
-  lucide.createIcons()
-}
-
-async function loadPipeline() {
-  const deals = await sb('deals','pipeline','select=id,business_name,service_type,stage,monthly_value,rep_name,created_at&order=created_at.desc&limit=50').catch(()=>[])
-  document.getElementById('ps-total').textContent = deals.length
-  document.getElementById('ps-proposals').textContent = deals.filter(d=>d.stage==='proposal').length
-  document.getElementById('ps-closing').textContent = deals.filter(d=>d.stage==='closing').length
-  document.getElementById('ps-won').textContent = deals.filter(d=>d.stage==='won').length
-  const tbody = document.getElementById('pipeline-body')
-  if (!deals.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">No deals in pipeline</td></tr>'; return }
-  tbody.innerHTML = deals.map(d => `
-    <tr>
-      <td style="font-weight:600">${d.business_name||'—'}</td>
-      <td class="text-muted2">${d.service_type||'—'}</td>
-      <td>${statusBadge(d.stage)}</td>
-      <td class="font-mono text-green">$${Number(d.monthly_value||0).toLocaleString()}</td>
-      <td class="text-muted2">${d.rep_name||'—'}</td>
-      <td class="text-muted">${ago(d.created_at)}</td>
-    </tr>
-  `).join('')
-}
-
-async function loadWorkOrders() {
-  const wo = await sb('deals','work_orders','select=id,client_name,business_name,package,status,fulfillment_status,payment_status,created_at&order=created_at.desc&limit=50').catch(()=>[])
-  document.getElementById('wo-total').textContent = wo.length
-  document.getElementById('wo-active').textContent = wo.filter(w=>w.status==='active').length
-  document.getElementById('wo-pending').textContent = wo.filter(w=>w.status==='pending').length
-  document.getElementById('wo-delivered').textContent = wo.filter(w=>w.fulfillment_status==='delivered').length
-  const tbody = document.getElementById('wo-body')
-  if (!wo.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">No work orders</td></tr>'; return }
-  tbody.innerHTML = wo.map(w => `
-    <tr>
-      <td style="font-weight:600">${w.client_name||w.business_name||'—'}</td>
-      <td class="text-muted2">${w.package||'—'}</td>
-      <td>${statusBadge(w.status)}</td>
-      <td>${statusBadge(w.fulfillment_status)}</td>
-      <td>${statusBadge(w.payment_status)}</td>
-      <td class="text-muted">${ago(w.created_at)}</td>
-    </tr>
-  `).join('')
-}
-
-async function loadSteve() {
-  const [queue, hot] = await Promise.all([
-    sb('dialer','call_queue','select=id,name,phone,business_name,status,priority,attempts&order=priority.desc&limit=20').catch(()=>[]),
-    sb('crm','leads','select=id,business_name,name,phone,ai_score,status&order=ai_score.desc&limit=20').catch(()=>[])
-  ])
-  document.getElementById('steve-hot').textContent = hot.filter(l=>(l.ai_score||0)>=70).length
-  document.getElementById('steve-queue').textContent = queue.filter(q=>q.status==='ready').length
-  document.getElementById('steve-proposals').textContent = '—'
-  document.getElementById('steve-closed').textContent = '—'
-
-  const qList = document.getElementById('steve-queue-list')
-  qList.innerHTML = queue.slice(0,10).map(q => `
-    <div class="queue-item">
-      <div class="queue-item-header">
-        <div class="queue-biz">${q.business_name||q.name||'Unknown'}</div>
-        <button class="queue-dial" onclick="pdDialNumber('${q.phone||''}')">
-          <i data-lucide="phone" style="width:11px;height:11px"></i> Dial
-        </button>
-      </div>
-      <div class="queue-phone">${q.phone||'No phone'}</div>
-    </div>
-  `).join('') || '<div class="text-muted" style="text-align:center;padding:24px">Queue empty</div>'
-
-  const hList = document.getElementById('steve-hot-list')
-  hList.innerHTML = hot.filter(l=>(l.ai_score||0)>=50).slice(0,10).map(l => `
-    <div class="queue-item">
-      <div class="queue-item-header">
-        <div class="queue-biz">${l.business_name||l.name||'Unknown'}</div>
-        <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:${heatColor(l.ai_score)}">${l.ai_score||0}</span>
-      </div>
-      <div class="queue-phone">${l.phone||'No phone'} · ${statusBadge(l.status)}</div>
-    </div>
-  `).join('') || '<div class="text-muted" style="text-align:center;padding:24px">No hot leads</div>'
-  lucide.createIcons()
-}
-
-async function loadRico() {
-  const [wo, sla] = await Promise.all([
-    sb('deals','work_orders','select=id,fulfillment_status&limit=200').catch(()=>[]),
-    sb('rico','sla_rules','select=*&order=created_at.desc&limit=20').catch(()=>[])
-  ])
-  document.getElementById('rico-wo').textContent = wo.length
-  document.getElementById('rico-sla').textContent = sla.length
-  document.getElementById('rico-queued').textContent = wo.filter(w=>w.fulfillment_status==='pending_assignment').length
-  document.getElementById('rico-overdue').textContent = '0'
-  const tbody = document.getElementById('rico-sla-body')
-  if (!sla.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px">No SLA rules</td></tr>'; return }
-  tbody.innerHTML = sla.map(r => `
-    <tr>
-      <td style="font-weight:600">${r.service_type||'—'}</td>
-      <td class="font-mono">${r.assign_within_hours!=null?r.assign_within_hours+'h':'—'}</td>
-      <td class="font-mono">${r.complete_within_days!=null?r.complete_within_days*24+'h':'—'}</td>
-      <td>${r.escalate_at_pct!=null?r.escalate_at_pct+'%':'—'}</td>
-    </tr>
-  `).join('')
-}
-
-async function loadSEO() {
-  const kws = await sb('seo','keywords','select=*&order=created_at.desc&limit=30').catch(()=>[])
-  document.getElementById('seo-kw').textContent = kws.length
-  document.getElementById('seo-tracked').textContent = kws.filter(k=>k.active!==false).length
-  document.getElementById('seo-top10').textContent = kws.filter(k=>(k.position||99)<=10).length
-  document.getElementById('seo-top3').textContent = kws.filter(k=>(k.position||99)<=3).length
-  const tbody = document.getElementById('seo-body')
-  if (!kws.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">No keywords</td></tr>'; return }
-  tbody.innerHTML = kws.slice(0,15).map(k => `
-    <tr>
-      <td style="font-weight:500">${k.keyword||'—'}</td>
-      <td class="font-mono text-center" style="color:${(k.position||99)<=3?'var(--green)':(k.position||99)<=10?'var(--amber)':'var(--red)'}">${k.position||'—'}</td>
-      <td class="font-mono text-center">${k.search_volume?Number(k.search_volume).toLocaleString():'—'}</td>
-      <td class="text-center">${k.difficulty?k.difficulty+'%':'—'}</td>
-      <td class="text-muted">${ago(k.last_checked)}</td>
-    </tr>
-  `).join('')
-}
-
-async function loadOutreach() {
-  const [queue, replies] = await Promise.all([
-    sb('outreach','outreach_queue','select=id,status&limit=200').catch(()=>[]),
-    sb('outreach','reply_inbox','select=id,company,reply_text,intent_signal,received_at&order=received_at.desc&limit=20').catch(()=>[])
-  ])
-  document.getElementById('out-queued').textContent = queue.filter(q=>q.status==='pending').length
-  document.getElementById('out-sent').textContent = queue.filter(q=>q.status==='sent').length
-  document.getElementById('out-replies').textContent = replies.length
-  document.getElementById('out-interested').textContent = replies.filter(r=>r.intent_signal==='interested').length
-  const tbody = document.getElementById('outreach-body')
-  if (!replies.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px">No replies yet</td></tr>'; return }
-  tbody.innerHTML = replies.map(r => `
-    <tr>
-      <td style="font-weight:600">${r.company||'—'}</td>
-      <td>${statusBadge(r.intent_signal)}</td>
-      <td class="text-muted2" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reply_text||'—'}</td>
-      <td class="text-muted">${ago(r.received_at)}</td>
-    </tr>
-  `).join('')
-}
-
-// ── POWERDIAL ─────────────────────────────────────────────────────────────────
-let pdDevice = null
-let pdCall = null
-let pdReady = false
-let pdMuted = false
-let pdTimerInterval = null
-let pdTimerStart = null
-let pdActiveQueueId = null
-let pdCallSid = null
-let pdWhisperInterval = null
-
-const numpadKeys = [
-  ['1',''], ['2','ABC'], ['3','DEF'],
-  ['4','GHI'], ['5','JKL'], ['6','MNO'],
-  ['7','PQRS'], ['8','TUV'], ['9','WXYZ'],
-  ['*',''], ['0','+'], ['#','']
-]
-
-function renderNumpad() {
-  const pad = document.getElementById('pd-numpad')
-  pad.innerHTML = numpadKeys.map(([n,s]) => `
-    <button class="numpad-btn" onclick="pdKeyPress('${n}')">
-      ${n} ${s ? `<span>${s}</span>` : ''}
-    </button>
-  `).join('')
-}
-
-let pdInput = ''
-function pdKeyPress(key) {
-  pdInput += key
-  document.getElementById('pd-display').textContent = pdInput || 'Enter number...'
-  document.getElementById('pd-display').style.color = pdInput ? 'var(--text)' : 'var(--muted)'
-  // Send DTMF if on call
-  if (pdCall && pdReady) {
-    try { pdCall.sendDigits(key) } catch(e) {}
-  }
-}
-function pdBackspace() {
-  pdInput = pdInput.slice(0, -1)
-  document.getElementById('pd-display').textContent = pdInput || 'Enter number...'
-}
-function pdClear() {
-  pdInput = ''
-  document.getElementById('pd-display').textContent = 'Enter number...'
-}
-
-async function pdInitTwilio() {
-  const btn = document.getElementById('pd-connect-btn')
-  const pill = document.getElementById('pd-status-pill')
-  btn.disabled = true
-  btn.textContent = 'Connecting...'
-  pill.className = 'badge badge-amber'
-  pill.textContent = 'Connecting...'
-
-  try {
-    const res = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get_token', rep_email: REP_EMAIL, identity: 'commander_dj' })
-    })
-    const data = await res.json()
-    if (!data.token) throw new Error('No token returned')
-
-    pdDevice = new Twilio.Device(data.token, {
-      codecPreferences: ['opus', 'pcmu'], enableRingingState: true, debug: false
-    })
-
-    pdDevice.on('ready', () => {
-      pdReady = true
-      pill.className = 'badge badge-green'
-      pill.textContent = '● Ready'
-      btn.textContent = '✓ Connected'
-      btn.disabled = true
-      document.getElementById('pd-dial-btn').disabled = false
-      document.getElementById('pd-dial-btn').innerHTML = '<i data-lucide="phone" style="width:16px;height:16px"></i> Dial'
-      lucide.createIcons()
-      toast('Twilio softphone ready!', 'green')
-    })
-
-    pdDevice.on('error', err => {
-      pill.className = 'badge badge-red'
-      pill.textContent = 'Error'
-      btn.disabled = false
-      btn.textContent = 'Retry Connect'
-      toast('Twilio error: ' + err.message, 'red')
-    })
-
-    pdDevice.on('connect', conn => {
-      pdCall = conn
-      pdCallSid = conn.parameters?.CallSid || null
-      pill.className = 'badge badge-cyan'
-      pill.textContent = '● Live'
-      showLiveHUD()
-      startTimer()
-      startWhisperPoller()
-
-      conn.on('disconnect', () => pdOnDisconnect())
-    })
-
-    pdDevice.on('disconnect', () => pdOnDisconnect())
-    pdDevice.register()
-
-  } catch(e) {
-    pill.className = 'badge badge-red'
-    pill.textContent = 'Failed'
-    btn.disabled = false
-    btn.innerHTML = '<i data-lucide="mic" style="width:13px;height:13px"></i> Retry'
-    lucide.createIcons()
-    toast('Failed: ' + e.message, 'red')
-  }
-}
-
-function pdOnDisconnect() {
-  pdCall = null
-  pdCallSid = null
-  stopTimer()
-  stopWhisperPoller()
-  hideLiveHUD()
-  const pill = document.getElementById('pd-status-pill')
-  pill.className = 'badge badge-green'
-  pill.textContent = '● Ready'
-  toast('Call ended', 'amber')
-  loadPowerDial()
-}
-
-async function pdDial() {
-  const number = pdInput.trim()
-  if (!number) { toast('Enter a phone number', 'amber'); return }
-  const digits = number.replace(/\D/g,'')
-  const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
-
-  if (!pdReady || !pdDevice) {
-    toast('Connect mic first', 'amber')
-    return
-  }
-
-  toast(`Dialing ${e164}...`, 'green')
-  document.getElementById('pd-status-pill').className = 'badge badge-cyan'
-  document.getElementById('pd-status-pill').textContent = 'Dialing...'
-  document.getElementById('pd-hud-number').textContent = e164
-
-  try {
-    await pdDevice.connect({ params: { To: e164 } })
-    // Log call
-    await sbPost('dialer', 'calls', {
-      phone: e164, phone_number: e164, direction: 'outbound',
-      call_status: 'ringing', started_at: new Date().toISOString()
-    })
-    if (pdActiveQueueId) {
-      await sbPatch('dialer', 'call_queue', pdActiveQueueId, { status: 'calling', last_call_at: new Date().toISOString() })
-    }
-  } catch(e) {
-    toast('Browser call failed — trying phone...', 'amber')
-    // Fallback to REST
-    const res = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'initiate_call', phone_number: e164, rep_email: REP_EMAIL })
-    })
-    const data = await res.json()
-    if (data.ok) {
-      pdCallSid = data.sid
-      showLiveHUD()
-      startTimer()
-      toast('Your phone will ring...', 'green')
-    } else {
-      toast('Call failed: ' + (data.error||'Unknown'), 'red')
-    }
-  }
-}
-
-function pdDialNumber(phone) {
-  if (!phone) return
-  showView('powerdial')
-  setTimeout(() => {
-    pdInput = phone.replace(/\D/g,'')
-    document.getElementById('pd-display').textContent = pdInput
-    if (pdReady) pdDial()
-  }, 300)
-}
-
-async function pdEndCall(disposition) {
-  // Hang up Twilio Client
-  if (pdCall) { try { pdCall.disconnect() } catch(e){} pdCall = null }
-  // Kill Twilio REST call
-  if (pdCallSid) {
-    await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'end_call', call_id: pdCallSid })
-    }).catch(()=>{})
-    pdCallSid = null
-  }
-  // Update queue
-  if (pdActiveQueueId) {
-    const statusMap = { interested:'interested', callback:'callback', not_interested:'dnc', voicemail:'voicemail', ended:'called' }
-    await sbPatch('dialer', 'call_queue', pdActiveQueueId, { status: statusMap[disposition]||'called' })
-    pdActiveQueueId = null
-  }
-  stopTimer()
-  stopWhisperPoller()
-  hideLiveHUD()
-  toast(`Call ended — ${disposition}`, disposition === 'interested' ? 'green' : 'amber')
-  pdClear()
-  loadPowerDial()
-}
-
-function pdMute() {
-  if (!pdCall) return
-  pdMuted = !pdMuted
-  pdCall.mute(pdMuted)
-  const icon = document.getElementById('pd-mute-icon')
-  icon.setAttribute('data-lucide', pdMuted ? 'mic-off' : 'mic')
-  lucide.createIcons()
-  toast(pdMuted ? 'Muted' : 'Unmuted', 'amber')
-}
-
-function showLiveHUD() {
-  document.getElementById('pd-live-hud').style.display = 'block'
-}
-function hideLiveHUD() {
-  document.getElementById('pd-live-hud').style.display = 'none'
-  document.getElementById('pd-hud-timer').textContent = '0:00'
-}
-
-function startTimer() {
-  pdTimerStart = Date.now()
-  pdTimerInterval = setInterval(() => {
-    const s = Math.floor((Date.now() - pdTimerStart) / 1000)
-    const m = Math.floor(s / 60)
-    document.getElementById('pd-hud-timer').textContent = `${m}:${String(s%60).padStart(2,'0')}`
-  }, 1000)
-}
-function stopTimer() {
-  clearInterval(pdTimerInterval)
-  pdTimerInterval = null
-}
-
-function startWhisperPoller() {
-  if (pdWhisperInterval) return
-  pdWhisperInterval = setInterval(async () => {
-    try {
-      const calls = await sb('dialer','calls','select=id,ai_tip,objection,deal_heat_score,detected_buying_signal,transcript_live&order=created_at.desc&limit=3')
-      const active = calls.find(c => c.ai_tip || c.objection || c.deal_heat_score)
-      if (!active) return
-      // Update Steve panel
-      if (active.ai_tip) {
-        const el = document.getElementById('steve-tip-main')
-        if (el.textContent !== active.ai_tip) {
-          el.textContent = active.ai_tip
-          el.className = 'steve-tip has-tip'
-        }
-      }
-      if (active.objection) {
-        const el = document.getElementById('steve-objection')
-        el.style.display = 'block'
-        el.innerHTML = `⚠️ <strong>Objection detected:</strong> ${active.objection.slice(0,120)}`
-      }
-      if (active.detected_buying_signal) {
-        const el = document.getElementById('steve-buying')
-        el.style.display = 'block'
-        el.innerHTML = `🔥 <strong>Buying signal:</strong> ${active.detected_buying_signal}`
-      }
-      if (active.deal_heat_score != null) {
-        const score = active.deal_heat_score
-        document.getElementById('steve-heat-bar').style.width = score + '%'
-        document.getElementById('steve-heat-bar').style.background = heatColor(score)
-        document.getElementById('steve-heat-score').textContent = score + '%'
-      }
-      if (active.transcript_live) {
-        document.getElementById('steve-transcript').textContent = active.transcript_live.slice(-500)
-      }
-    } catch(e) {}
-  }, 5000)
-}
-function stopWhisperPoller() {
-  clearInterval(pdWhisperInterval)
-  pdWhisperInterval = null
-}
-
-async function loadPowerDial() {
-  try {
-    const [queue, calls, floor] = await Promise.all([
-      sb('dialer','call_queue','select=id,name,phone,business_name,status,priority,attempts,last_call_at&order=priority.desc&status=in.(ready,calling)&limit=100').catch(()=>[]),
-      sb('dialer','calls','select=id,phone,phone_number,call_status,duration,deal_heat_score,started_at,ended_at&order=created_at.desc&limit=10').catch(()=>[]),
-      sb('dialer','v_call_floor','select=*&limit=20').catch(()=>[])
+    const [pipeline, leads, workOrders, kpis] = await Promise.all([
+      sb('deals', 'pipeline', 'select=id,stage,value&limit=500'),
+      sb('crm', 'leads', 'select=id,status&limit=1000'),
+      sb('deals', 'work_orders', 'select=id,status&limit=500'),
+      sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=1'),
     ])
 
-    // Stats
-    const live = floor.filter(f=>['live','connected','in-progress','ringing'].includes((f.call_status||f.status||'').toLowerCase()))
-    document.getElementById('pf-live').textContent = live.length
-    document.getElementById('pf-queue').textContent = queue.filter(q=>q.status==='ready').length
-    document.getElementById('pf-hot').textContent = '0'
-    document.getElementById('pd-floor-count').textContent = live.length + ' active'
-    document.getElementById('pd-queue-count').textContent = `(${queue.length})`
-    document.getElementById('queue-badge').textContent = queue.filter(q=>q.status==='ready').length || '—'
+    document.getElementById('sb-pipeline-count').textContent = pipeline.length
+    document.getElementById('sb-leads-count').textContent = leads.length
+    document.getElementById('sb-wo-count').textContent = workOrders.length
+    document.getElementById('sb-leads-total').textContent = leads.length
 
-    // Queue list
-    const qList = document.getElementById('pd-queue-list')
-    qList.innerHTML = queue.slice(0,20).map(q => `
-      <div class="queue-item ${q.status==='calling'?'calling':''}">
-        <div class="queue-item-header">
-          <div class="queue-biz">${q.business_name||q.name||'Unknown'}</div>
-          <button class="queue-dial" onclick="pdSelectAndDial('${q.id}','${q.phone||''}')">
-            <i data-lucide="phone" style="width:11px;height:11px"></i> Dial
+    const won = pipeline.filter(p => p.stage?.toLowerCase() === 'won')
+    const proposals = pipeline.filter(p => p.stage?.toLowerCase() === 'proposal')
+    const closing = pipeline.filter(p => p.stage?.toLowerCase() === 'closing')
+    const total = pipeline.length || 1
+
+    document.getElementById('sb-proposals-pct').textContent = pct(proposals.length, total)
+    document.getElementById('sb-proposals-bar').style.width = pct(proposals.length, total)
+    document.getElementById('sb-closing-pct').textContent = pct(closing.length, total)
+    document.getElementById('sb-closing-bar').style.width = pct(closing.length, total)
+    document.getElementById('sb-won-pct').textContent = pct(won.length, total)
+    document.getElementById('sb-won-bar').style.width = pct(won.length, total)
+    document.getElementById('sb-deals-won').textContent = won.length
+
+    const totalRev = won.reduce((s,p) => s + (Number(p.value)||0), 0)
+    document.getElementById('sb-revenue').textContent = fmt(totalRev)
+
+    const k = kpis[0] || {}
+    const closeRate = k.close_rate ? (Number(k.close_rate)*100).toFixed(1)+'%' : pct(won.length, total)
+    document.getElementById('sb-close-rate').textContent = closeRate
+
+  } catch(e) { console.warn('Sidebar load error:', e) }
+}
+
+async function loadAlerts() {
+  try {
+    const alerts = await sb('analytics', 'ops_alerts', 'select=*&order=created_at.desc&limit=5')
+    const container = document.getElementById('alerts-container')
+    document.getElementById('alert-count').textContent = alerts.length
+    if (!alerts.length) {
+      container.innerHTML = '<div class="p-3 rounded-xl bg-white/5 text-center text-xs text-slate-500">No active alerts</div>'
+      return
+    }
+    const colorMap = { critical:'nebula-pink', warning:'nebula-amber', info:'nebula-cyan' }
+    container.innerHTML = alerts.map(a => `
+      <div class="p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:border-nebula-purple/30">
+        <div class="flex items-start gap-2">
+          <span class="w-2 h-2 bg-${colorMap[a.severity]||'slate-400'} rounded-full mt-1.5 shrink-0"></span>
+          <div><p class="text-xs font-medium">${a.message||'Alert'}</p><p class="text-[10px] text-slate-400 mt-1">${ago(a.created_at)}</p></div>
+        </div>
+      </div>`).join('')
+  } catch(e) {
+    document.getElementById('alerts-container').innerHTML = '<div class="p-3 text-xs text-slate-500 text-center">No alerts data</div>'
+  }
+}
+
+// ── WINDOW CONTENT LOADERS ───────────────────────────────────────────────────
+
+async function loadDashboardContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [kpis, pipeline, workOrders] = await Promise.all([
+      sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=7'),
+      sb('deals', 'pipeline', 'select=stage,value&limit=500'),
+      sb('deals', 'work_orders', 'select=status,total_amount&limit=500'),
+    ])
+    const k = kpis[0] || {}
+    const won = pipeline.filter(p => p.stage?.toLowerCase() === 'won')
+    const totalRev = won.reduce((s,p) => s+(Number(p.value)||0), 0)
+    const totalWO = workOrders.reduce((s,w) => s+(Number(w.total_amount)||0), 0)
+    el.innerHTML = `
+      <div class="space-y-6">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="stat-card"><div class="text-slate-400 text-xs mb-2 uppercase tracking-wider">Pipeline Revenue</div><div class="text-2xl font-bold text-nebula-purple font-space">${fmt(totalRev)}</div><div class="text-xs text-green-400 mt-2">${won.length} deals won</div></div>
+          <div class="stat-card"><div class="text-slate-400 text-xs mb-2 uppercase tracking-wider">Work Orders</div><div class="text-2xl font-bold text-nebula-cyan font-space">${workOrders.length}</div><div class="text-xs text-slate-400 mt-2">${fmt(totalWO)} total value</div></div>
+          <div class="stat-card"><div class="text-slate-400 text-xs mb-2 uppercase tracking-wider">Close Rate</div><div class="text-2xl font-bold text-nebula-pink font-space">${k.close_rate ? (Number(k.close_rate)*100).toFixed(1)+'%' : pct(won.length, pipeline.length)}</div><div class="text-xs text-slate-400 mt-2">${k.deals_closed||won.length} closed</div></div>
+        </div>
+        <div class="stat-card">
+          <h3 class="font-space font-semibold mb-4 text-sm">KPI Trend — Last 7 Days</h3>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Contacted</th><th>Qualified</th><th>Proposals</th><th>Deals Closed</th><th>Revenue</th></tr></thead>
+            <tbody>${kpis.map(k => `<tr><td>${k.kpi_date||'—'}</td><td>${k.leads_contacted||0}</td><td>${k.leads_qualified||0}</td><td>${k.proposals_sent||0}</td><td>${k.deals_closed||0}</td><td class="text-green-400 font-mono">${fmt(k.revenue_generated||0)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div class="grid grid-cols-6 gap-2">
+          ${['new','contacted','proposal','closing','won','lost'].map(stage => {
+            const count = pipeline.filter(p => p.stage?.toLowerCase() === stage).length
+            const colors = { new:'text-slate-300', contacted:'text-blue-400', proposal:'text-nebula-purple', closing:'text-nebula-amber', won:'text-green-400', lost:'text-red-400' }
+            return `<div class="stat-card text-center"><div class="text-lg font-bold font-mono ${colors[stage]||'text-white'}">${count}</div><div class="text-[10px] text-slate-400 mt-1 capitalize">${stage}</div></div>`
+          }).join('')}
+        </div>
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadSalesContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    // Using only verified columns from deals.pipeline
+    const pipeline = await sb('deals', 'pipeline',
+      'select=id,name,lead_name,company,stage,value,interest_level,ai_score,assigned_to,next_action,service,source,phone,lead_email,updated_at,outreach_status,touch_count,reply_intent&order=updated_at.desc&limit=100')
+
+    const stages = ['new','contacted','proposal','closing','won','lost']
+    const stageColors = { new:'border-slate-600', contacted:'border-blue-500/40', proposal:'border-purple-500/40', closing:'border-amber-500/40', won:'border-green-500/40', lost:'border-red-500/40' }
+
+    el.innerHTML = `
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-space font-bold text-lg">Live Pipeline — ${pipeline.length} deals</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-green">${pipeline.filter(p=>p.stage?.toLowerCase()==='won').length} Won</span>
+            <span class="badge badge-purple">Live</span>
+          </div>
+        </div>
+
+        <!-- Stage Summary Tiles -->
+        <div class="grid grid-cols-6 gap-2">
+          ${stages.map(stage => {
+            const deals = pipeline.filter(p => p.stage?.toLowerCase() === stage)
+            const val = deals.reduce((s,d) => s+(Number(d.value)||0), 0)
+            return `<div class="stat-card text-center border ${stageColors[stage]||'border-slate-600/30'}">
+              <div class="text-lg font-bold font-mono text-white">${deals.length}</div>
+              <div class="text-[9px] text-slate-400 mt-0.5 capitalize font-semibold">${stage}</div>
+              <div class="text-[9px] text-nebula-cyan mt-0.5">${fmt(val)}</div>
+            </div>`
+          }).join('')}
+        </div>
+
+        <!-- Pipeline Kanban (3 cols) -->
+        <div class="grid grid-cols-3 gap-3">
+          ${stages.slice(0,6).map(stage => {
+            const deals = pipeline.filter(p => p.stage?.toLowerCase() === stage)
+            return `<div class="stat-card border ${stageColors[stage]||'border-slate-600/20'} flex flex-col gap-2" style="min-height:160px;max-height:220px;overflow-y:auto">
+              <div class="flex items-center justify-between mb-1 sticky top-0 bg-transparent">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300 capitalize">${stage}</span>
+                <span class="badge badge-gray text-[9px]">${deals.length}</span>
+              </div>
+              ${deals.length ? deals.slice(0,6).map(d => `
+                <div class="p-2 rounded-lg bg-white/5 border border-white/5 hover:border-nebula-purple/40 transition-colors">
+                  <div class="text-xs font-medium truncate">${d.name||d.lead_name||d.company||'—'}</div>
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="text-[10px] text-nebula-cyan">${fmt(d.value||0)}</span>
+                    ${d.interest_level ? interestBadge(d.interest_level) : ''}
+                  </div>
+                  ${d.service ? `<div class="text-[9px] text-slate-500 mt-0.5 truncate">${d.service}</div>` : ''}
+                </div>`).join('') : '<div class="text-[10px] text-slate-600 text-center py-4">Empty</div>'}
+            </div>`
+          }).join('')}
+        </div>
+
+        <!-- Recent Activity Table -->
+        <div>
+          <h3 class="font-space font-semibold text-sm mb-3">Recent Activity</h3>
+          <table class="data-table">
+            <thead><tr><th>Deal / Lead</th><th>Company</th><th>Stage</th><th>Value</th><th>Interest</th><th>Score</th><th>Assigned</th><th>Updated</th></tr></thead>
+            <tbody>${pipeline.slice(0,15).map(d => `<tr>
+              <td class="font-medium">${d.name||d.lead_name||'—'}</td>
+              <td class="text-slate-400">${d.company||'—'}</td>
+              <td>${stageBadge(d.stage)}</td>
+              <td class="font-mono text-nebula-cyan">${fmt(d.value||0)}</td>
+              <td>${d.interest_level ? interestBadge(d.interest_level) : '<span class="text-slate-600">—</span>'}</td>
+              <td><span class="font-mono text-nebula-amber">${d.ai_score||'—'}</span></td>
+              <td class="text-slate-400">${d.assigned_to||'—'}</td>
+              <td class="text-slate-400">${ago(d.updated_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadSteveContent(el) {
+  const messages = [{ role:'assistant', text:'Hello Commander! I\'m Steve BGE. I have live access to your pipeline, leads, and KPIs. Ask me anything about your business performance.' }]
+
+  const render = () => {
+    el.innerHTML = `
+      <div class="flex flex-col" style="height:520px">
+        <div class="flex-1 space-y-4 overflow-y-auto mb-4 pr-2" id="steve-messages">
+          ${messages.map(m => m.role === 'assistant'
+            ? `<div class="flex gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-purple to-nebula-pink flex items-center justify-center shrink-0"><i data-lucide="bot" style="width:20px;height:20px;color:white"></i></div><div class="glass-cosmic rounded-2xl rounded-tl-none p-4 max-w-[85%]"><p class="text-sm leading-relaxed">${m.text}</p></div></div>`
+            : `<div class="flex gap-3 justify-end"><div class="glass-cosmic rounded-2xl rounded-tr-none p-4 max-w-[85%] border border-nebula-purple/20"><p class="text-sm">${m.text}</p></div><div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0"><i data-lucide="user" style="width:20px;height:20px;color:#94a3b8"></i></div></div>`
+          ).join('')}
+        </div>
+        <div class="glass-cosmic rounded-xl p-3 flex items-center gap-3 shrink-0">
+          <input type="text" id="steve-input" placeholder="Ask about pipeline, leads, revenue..." class="flex-1 bg-transparent outline-none text-sm placeholder-slate-500">
+          <button id="steve-send" class="p-2 bg-nebula-purple rounded-lg hover:bg-nebula-purple/80 transition-colors shrink-0">
+            <i data-lucide="send" style="width:16px;height:16px;color:white"></i>
           </button>
         </div>
-        <div class="flex" style="gap:6px;align-items:center;margin-top:4px">
-          <span class="queue-phone">${q.phone||'No phone'}</span>
-          ${q.attempts ? `<span class="badge badge-gray">${q.attempts}x</span>` : ''}
-          ${q.last_call_at ? `<span style="font-size:10px;color:var(--muted)">${ago(q.last_call_at)}</span>` : ''}
-        </div>
-      </div>
-    `).join('') || '<div class="text-muted" style="text-align:center;padding:24px;font-size:13px">Queue empty</div>'
-
-    // Floor table
-    const floorBody = document.getElementById('pd-floor-body')
-    if (!floor.length) {
-      floorBody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:32px">No active calls</td></tr>'
-    } else {
-      floorBody.innerHTML = floor.map(f => `
-        <tr>
-          <td>${f.agent||'unassigned'}</td>
-          <td style="font-weight:500">${f.lead||'—'}</td>
-          <td class="font-mono" style="font-size:11px">${f.phone||'—'}</td>
-          <td>${statusBadge(f.call_status||f.status)}</td>
-          <td class="font-mono">${f.duration||'—'}</td>
-          <td style="color:${heatColor(f.score)}">${f.score||'—'}</td>
-          <td>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="floorEndCall('${f.id}','${f.call_id||f.id}')" title="End Call">
-              <i data-lucide="phone-off" style="width:12px;height:12px"></i>
-            </button>
-          </td>
-        </tr>
-      `).join('')
-    }
-
-    // History
-    const histBody = document.getElementById('pd-history-body')
-    if (!calls.length) {
-      histBody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:16px">No recent calls</td></tr>'
-    } else {
-      histBody.innerHTML = calls.map(c => `
-        <tr>
-          <td class="font-mono" style="font-size:11px">${c.phone||c.phone_number||'—'}</td>
-          <td>${statusBadge(c.call_status)}</td>
-          <td class="font-mono">${c.duration ? Math.floor(c.duration/60)+'m '+c.duration%60+'s' : '—'}</td>
-          <td class="text-muted">${ago(c.started_at)}</td>
-        </tr>
-      `).join('')
-    }
-
-    // Call stats
-    const todayCalls = calls.filter(c => {
-      if (!c.started_at) return false
-      return new Date(c.started_at).toDateString() === new Date().toDateString()
-    })
-    document.getElementById('cs-today').textContent = todayCalls.length
-    document.getElementById('cs-interested').textContent = '—'
-    document.getElementById('cs-proposals').textContent = '—'
-    const durations = calls.filter(c=>c.duration).map(c=>c.duration)
-    const avgDur = durations.length ? Math.floor(durations.reduce((a,b)=>a+b,0)/durations.length) : 0
-    document.getElementById('cs-duration').textContent = avgDur ? Math.floor(avgDur/60)+'m '+avgDur%60+'s' : '—'
-
+      </div>`
     lucide.createIcons()
-  } catch(e) { console.error('PowerDial load error:', e) }
-}
-
-function pdSelectAndDial(queueId, phone) {
-  pdActiveQueueId = queueId
-  pdInput = phone.replace(/\D/g,'')
-  document.getElementById('pd-display').textContent = pdInput
-  document.getElementById('pd-display').style.color = 'var(--text)'
-  if (pdReady) pdDial()
-  else { toast('Connect mic first to use browser calling', 'amber') }
-}
-
-async function floorEndCall(queueId, callId) {
-  if (!confirm('End this call?')) return
-  if (callId && callId !== 'undefined') {
-    await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'end_call', call_id: callId })
-    }).catch(()=>{})
-    await sbPatch('dialer','calls',callId,{ call_status:'ended', ended_at: new Date().toISOString() }).catch(()=>{})
+    const msgEl = document.getElementById('steve-messages')
+    if (msgEl) msgEl.scrollTop = msgEl.scrollHeight
+    document.getElementById('steve-send')?.addEventListener('click', sendSteve)
+    document.getElementById('steve-input')?.addEventListener('keydown', e => { if(e.key==='Enter') sendSteve() })
   }
-  toast('Call ended', 'amber')
-  loadPowerDial()
+
+  async function sendSteve() {
+    const input = document.getElementById('steve-input')
+    const text = input?.value?.trim()
+    if (!text) return
+    messages.push({ role:'user', text })
+    input.value = ''
+    messages.push({ role:'assistant', text:'<span class="spinner" style="width:16px;height:16px"></span>' })
+    render()
+    try {
+      const [pipeline, leads, kpis] = await Promise.all([
+        sb('deals', 'pipeline', 'select=stage,value,name,interest_level,ai_score&limit=200'),
+        sb('crm', 'leads', 'select=status,lead_score,priority_level&limit=500'),
+        sb('analytics', 'steve_kpis_daily', 'select=*&order=kpi_date.desc&limit=3'),
+      ])
+      const won = pipeline.filter(p=>p.stage?.toLowerCase()==='won')
+      const totalVal = pipeline.reduce((s,p)=>s+(Number(p.value)||0),0)
+      const context = `You are Steve BGE, senior sales AI for Traffik Boosters digital marketing agency. Live data as of now: Pipeline: ${pipeline.length} deals total, ${won.length} won, $${totalVal.toFixed(0)} total pipeline value. Stage breakdown: ${['new','contacted','proposal','closing','won','lost'].map(s=>s+':'+pipeline.filter(p=>p.stage?.toLowerCase()===s).length).join(', ')}. Leads: ${leads.length} total, ${leads.filter(l=>l.status==='qualified').length} qualified, ${leads.filter(l=>l.priority_level==='high').length} high priority. Latest KPI snapshot: ${JSON.stringify(kpis[0]||{})}. Answer concisely in 2-3 sentences. Use dollar signs and percentages where relevant.`
+      let reply = ''
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': '', 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:300, system: context, messages:[{ role:'user', content: text }] })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          reply = data.content?.[0]?.text || ''
+        }
+      } catch(_) {}
+      if (!reply) {
+        // Smart fallback using live data
+        const q = text.toLowerCase()
+        if (q.includes('revenue') || q.includes('money') || q.includes('value')) reply = `Pipeline total value is ${fmt(totalVal)} with ${won.length} won deals generating ${fmt(won.reduce((s,p)=>s+(Number(p.value)||0),0))} in closed revenue.`
+        else if (q.includes('lead')) reply = `You have ${leads.length} leads total — ${leads.filter(l=>l.status==='qualified').length} qualified and ${leads.filter(l=>l.priority_level==='high').length} flagged high priority. Focus on the high-priority ones first.`
+        else if (q.includes('pipeline') || q.includes('deal')) reply = `Pipeline has ${pipeline.length} active deals. Currently ${pipeline.filter(p=>p.stage?.toLowerCase()==='closing').length} in closing, ${pipeline.filter(p=>p.stage?.toLowerCase()==='proposal').length} at proposal stage.`
+        else if (q.includes('close') || q.includes('win')) reply = `Win rate is ${pct(won.length, pipeline.length)} with ${won.length} closed deals worth ${fmt(won.reduce((s,p)=>s+(Number(p.value)||0),0))}.`
+        else reply = `Live snapshot: ${pipeline.length} pipeline deals, ${leads.length} leads, ${won.length} won, ${fmt(totalVal)} in pipeline value. What specific metric would you like me to analyze?`
+      }
+      messages[messages.length-1] = { role:'assistant', text: reply }
+    } catch(e) {
+      messages[messages.length-1] = { role:'assistant', text: 'Error loading live data. Please try again.' }
+    }
+    render()
+  }
+  render()
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+async function loadCRMContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const leads = await sb('crm', 'leads',
+      'select=id,name,business_name,industry,status,lead_score,priority_level,intent,assigned_to,last_activity_at,revenue_tier,close_probability&order=lead_score.desc&limit=100')
+    el.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-space font-bold text-lg">Lead Intelligence — ${leads.length} leads</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-green">${leads.filter(l=>l.status==='qualified').length} Qualified</span>
+            <span class="badge badge-red">${leads.filter(l=>l.priority_level==='high').length} High Priority</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-3">
+          ${['new','contacted','qualified','disqualified'].map(s => `<div class="stat-card text-center"><div class="text-xl font-bold font-mono text-white">${leads.filter(l=>l.status===s).length}</div><div class="text-[10px] text-slate-400 mt-1 capitalize">${s}</div></div>`).join('')}
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Business</th><th>Industry</th><th>Status</th><th>Score</th><th>Priority</th><th>Close %</th><th>Last Activity</th></tr></thead>
+          <tbody>${leads.map(l => `<tr>
+            <td class="font-medium">${l.name||'—'}</td>
+            <td>${l.business_name||'—'}</td>
+            <td class="text-slate-400">${l.industry||'—'}</td>
+            <td>${statusBadge(l.status)}</td>
+            <td><span class="font-mono text-nebula-cyan">${l.lead_score||'—'}</span></td>
+            <td>${l.priority_level==='high'?'<span class="badge badge-red">High</span>':l.priority_level==='medium'?'<span class="badge badge-amber">Med</span>':'<span class="badge badge-gray">Low</span>'}</td>
+            <td>${l.close_probability ? Math.round(Number(l.close_probability)*100)+'%' : '—'}</td>
+            <td class="text-slate-400">${ago(l.last_activity_at)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadCallsContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [calls, queue] = await Promise.all([
+      sb('dialer', 'calls', 'select=*&order=created_at.desc&limit=50'),
+      sb('dialer', 'call_queue', 'select=*&order=priority.desc&limit=20'),
+    ])
+    const active = calls.filter(c => c.call_status === 'active' || c.call_status === 'connected')
+    el.innerHTML = `
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-space font-bold text-lg">Call Floor</h2>
+          <div class="flex gap-2">
+            <span class="badge ${active.length > 0 ? 'badge-green' : 'badge-gray'}">${active.length} Live</span>
+            <span class="badge badge-blue">${queue.length} Queued</span>
+            <span class="badge badge-purple">${calls.length} Total</span>
+          </div>
+        </div>
+        ${active.length > 0 ? `
+        <div>
+          <h3 class="text-sm font-semibold text-amber-400 mb-3">🔴 Active Calls</h3>
+          <div class="grid grid-cols-2 gap-3">
+            ${active.map(c => `<div class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+              <div class="flex justify-between items-center mb-2"><span class="text-sm font-semibold text-amber-300">${c.phone_number||c.phone||'—'}</span><span class="badge badge-amber">LIVE</span></div>
+              <div class="text-xs text-slate-400">Sentiment: <span class="text-white">${c.sentiment||'—'}</span></div>
+              ${c.ai_tip ? `<div class="text-xs mt-2 p-2 rounded bg-slate-800 text-emerald-300">💡 ${c.ai_tip}</div>` : ''}
+              ${c.objection ? `<div class="text-xs mt-1 p-2 rounded bg-red-900/30 text-red-300">⚠️ ${c.objection}</div>` : ''}
+            </div>`).join('')}
+          </div>
+        </div>` : '<div class="p-4 rounded-xl border border-slate-700/40 bg-slate-900/40 text-center text-slate-500 text-sm">No active calls right now</div>'}
+        <div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Recent Calls</h3>
+          <table class="data-table">
+            <thead><tr><th>Number</th><th>Status</th><th>Duration</th><th>Sentiment</th><th>Heat Score</th><th>Time</th></tr></thead>
+            <tbody>${calls.slice(0,15).map(c => `<tr>
+              <td class="font-mono">${c.phone_number||c.phone||'—'}</td>
+              <td>${statusBadge(c.call_status||c.status)}</td>
+              <td>${c.duration ? c.duration+'s' : '—'}</td>
+              <td>${c.sentiment||'—'}</td>
+              <td>${c.deal_heat_score ? `<span class="font-mono text-nebula-amber">${c.deal_heat_score}</span>` : '—'}</td>
+              <td class="text-slate-400">${ago(c.created_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        ${queue.length > 0 ? `<div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Call Queue (${queue.length})</h3>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Priority</th><th>Attempts</th><th>Status</th></tr></thead>
+            <tbody>${queue.map(q => `<tr><td>${q.name||'—'}</td><td class="font-mono">${q.phone||'—'}</td><td>${q.priority||'—'}</td><td>${q.attempts||0}</td><td>${statusBadge(q.status)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadFinanceContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [workOrders, proposals, revenue] = await Promise.all([
+      sb('deals', 'work_orders', 'select=*&order=created_at.desc&limit=100'),
+      sb('deals', 'proposals', 'select=id,service_type,total_monthly,deposit_amount,status,business_name,created_at,paid_at&order=created_at.desc&limit=50'),
+      sb('analytics', 'daily_revenue', 'select=*&order=date.desc&limit=14'),
+    ])
+    const totalWO = workOrders.reduce((s,w) => s+(Number(w.total_amount)||0), 0)
+    const paidWO = workOrders.filter(w => w.payment_status === 'paid')
+    const totalPaid = paidWO.reduce((s,w) => s+(Number(w.total_amount)||0), 0)
+    const activeWO = workOrders.filter(w => !['completed','cancelled'].includes(w.status?.toLowerCase()))
+    const totalProposalVal = proposals.reduce((s,p) => s+(Number(p.total_monthly)||0), 0)
+    el.innerHTML = `
+      <div class="space-y-5">
+        <h2 class="font-space font-bold text-lg">Finance Core</h2>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Total WO Value</div><div class="text-xl font-bold text-nebula-purple font-mono">${fmt(totalWO)}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Collected</div><div class="text-xl font-bold text-green-400 font-mono">${fmt(totalPaid)}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Active Orders</div><div class="text-xl font-bold text-nebula-cyan font-mono">${activeWO.length}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Proposals (${proposals.length})</div><div class="text-xl font-bold text-nebula-amber font-mono">${fmt(totalProposalVal)}/mo</div></div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Work Orders</h3>
+          <table class="data-table">
+            <thead><tr><th>Client</th><th>Service</th><th>Amount</th><th>Status</th><th>Payment</th><th>Created</th></tr></thead>
+            <tbody>${workOrders.slice(0,15).map(w => `<tr>
+              <td class="font-medium">${w.client_name||w.business_name||'—'}</td>
+              <td>${w.service_type||w.department||'—'}</td>
+              <td class="font-mono text-nebula-cyan">${fmt(w.total_amount||0)}</td>
+              <td>${statusBadge(w.status)}</td>
+              <td>${w.payment_status==='paid'?'<span class="badge badge-green">Paid</span>':w.payment_status==='pending'?'<span class="badge badge-amber">Pending</span>':'<span class="badge badge-gray">—</span>'}</td>
+              <td class="text-slate-400">${ago(w.created_at)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        ${revenue.length ? `<div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Daily Revenue — Last 14 Days</h3>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Revenue</th></tr></thead>
+            <tbody>${revenue.map(r => `<tr><td>${r.date||'—'}</td><td class="font-mono text-green-400">${fmt(r.revenue||0)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadMarketingContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const [campaigns, metrics, leads] = await Promise.all([
+      sb('outreach', 'campaigns', 'select=*&order=created_at.desc&limit=20'),
+      sb('analytics', 'lead_metrics_daily', 'select=*&order=date.desc&limit=14'),
+      sb('crm', 'leads', 'select=status,tier,assigned_to,targeting_status&limit=500'),
+    ])
+    const assigned = leads.filter(l => l.assigned_to).length
+    const unassigned = leads.length - assigned
+    el.innerHTML = `
+      <div class="space-y-5">
+        <h2 class="font-space font-bold text-lg">Marketing Hub</h2>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Total Leads</div><div class="text-xl font-bold text-nebula-purple font-mono">${leads.length}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Assigned</div><div class="text-xl font-bold text-green-400 font-mono">${assigned}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Unassigned</div><div class="text-xl font-bold ${unassigned > 50 ? 'text-red-400' : 'text-amber-400'} font-mono">${unassigned}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Campaigns</div><div class="text-xl font-bold text-nebula-cyan font-mono">${campaigns.length}</div></div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Active Campaigns</h3>
+          ${campaigns.length ? `<table class="data-table">
+            <thead><tr><th>Name</th><th>Offer</th><th>Status</th><th>Daily Limit</th><th>Channels</th></tr></thead>
+            <tbody>${campaigns.map(c => `<tr>
+              <td class="font-medium">${c.name||'—'}</td>
+              <td>${c.offer_name||'—'}</td>
+              <td>${statusBadge(c.status)}</td>
+              <td>${c.daily_limit||'—'}</td>
+              <td class="text-slate-400">${Array.isArray(c.channel_mix) ? c.channel_mix.join(', ') : c.channel_mix||'—'}</td>
+            </tr>`).join('')}</tbody>
+          </table>` : '<div class="text-sm text-slate-500 text-center py-4">No campaigns found</div>'}
+        </div>
+        ${metrics.length ? `<div>
+          <h3 class="text-sm font-semibold text-slate-200 mb-3">Lead Funnel — Last 14 Days</h3>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Created</th><th>Contacted</th><th>Calls</th><th>Deals</th><th>CVR</th></tr></thead>
+            <tbody>${metrics.map(m => `<tr>
+              <td>${m.date||'—'}</td>
+              <td>${m.leads_created||0}</td>
+              <td>${m.leads_contacted||0}</td>
+              <td>${m.calls_completed||0}</td>
+              <td>${m.deals_closed||0}</td>
+              <td class="text-nebula-cyan font-mono">${m.conversion_rate ? Number(m.conversion_rate).toFixed(1)+'%' : '—'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+async function loadFilesContent(el) {
+  el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
+  try {
+    const workOrders = await sb('deals', 'work_orders', 'select=*&order=created_at.desc&limit=100')
+    const pending = workOrders.filter(w => w.fulfillment_status === 'pending' || w.status === 'pending')
+    const active = workOrders.filter(w => w.status === 'active' || w.execution_status === 'active')
+    const totalVal = workOrders.reduce((s,w)=>s+(Number(w.total_amount)||0),0)
+    el.innerHTML = `
+      <div class="space-y-5">
+        <h2 class="font-space font-bold text-lg">Work Orders — ${workOrders.length} total</h2>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Pending</div><div class="text-xl font-bold text-amber-400 font-mono">${pending.length}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Active</div><div class="text-xl font-bold text-blue-400 font-mono">${active.length}</div></div>
+          <div class="stat-card"><div class="text-xs text-slate-400 mb-1">Total Value</div><div class="text-xl font-bold text-green-400 font-mono">${fmt(totalVal)}</div></div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Client</th><th>Service</th><th>Status</th><th>Fulfillment</th><th>Amount</th><th>Payment</th><th>Created</th></tr></thead>
+          <tbody>${workOrders.map(w => `<tr>
+            <td class="font-medium">${w.client_name||w.business_name||'—'}</td>
+            <td class="text-slate-400">${w.service_type||w.department||'—'}</td>
+            <td>${statusBadge(w.status)}</td>
+            <td>${statusBadge(w.fulfillment_status)}</td>
+            <td class="font-mono text-nebula-cyan">${fmt(w.total_amount||0)}</td>
+            <td>${w.payment_status==='paid'?'<span class="badge badge-green">Paid</span>':'<span class="badge badge-amber">Pending</span>'}</td>
+            <td class="text-slate-400">${ago(w.created_at)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`
+  } catch(e) { el.innerHTML = `<div class="p-8 text-center text-red-400">Error: ${e.message}</div>` }
+}
+
+// ── WINDOW MANAGER ───────────────────────────────────────────────────────────
+const windows = {}; let zIndex = 1000; let windowCount = 0
+
+const appConfigs = {
+  dashboard: { name:'Command Dashboard',  icon:'layout-dashboard', w:980,  h:680 },
+  sales:     { name:'Sales War Room',     icon:'trending-up',      w:1060, h:680 },
+  steve:     { name:'Steve BGE Console',  icon:'bot',              w:760,  h:640 },
+  crm:       { name:'Lead Intelligence',  icon:'users',            w:1040, h:680 },
+  calls:     { name:'Call Floor',         icon:'phone',            w:900,  h:680 },
+  finance:   { name:'Finance Core',       icon:'dollar-sign',      w:980,  h:700 },
+  marketing: { name:'Marketing Hub',      icon:'megaphone',        w:980,  h:680 },
+  files:     { name:'Work Orders',        icon:'folder-open',      w:980,  h:660 },
+}
+
+const loaders = {
+  dashboard: loadDashboardContent,
+  sales:     loadSalesContent,
+  steve:     loadSteveContent,
+  crm:       loadCRMContent,
+  calls:     loadCallsContent,
+  finance:   loadFinanceContent,
+  marketing: loadMarketingContent,
+  files:     loadFilesContent
+}
+
+function openWindow(appId) {
+  const existing = Object.entries(windows).find(([,w]) => w.appId === appId)
+  if (existing) { focusWindow(existing[0]); return }
+  const config = appConfigs[appId]
+  if (!config) return
+  const windowId = 'win-' + appId + '-' + Date.now()
+  const container = document.getElementById('window-container')
+  const offset = (windowCount % 5) * 28
+  const win = document.createElement('div')
+  win.id = windowId
+  win.className = 'absolute cosmic-window rounded-2xl overflow-hidden flex flex-col pointer-events-auto'
+  win.style.cssText = `width:${config.w}px;height:${config.h}px;left:${40+offset}px;top:${20+offset}px;z-index:${++zIndex}`
+  win.innerHTML = `
+    <div class="window-header h-12 glass-cosmic border-b border-slate-700/60 flex items-center px-4 cursor-move select-none shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center"><i data-lucide="${config.icon}" style="width:16px;height:16px;color:white"></i></div>
+        <span class="font-space font-semibold text-sm">${config.name}</span>
+        <span class="badge badge-purple text-[9px]">LIVE</span>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-1">
+        <button onclick="refreshWindow('${windowId}')" class="p-2 hover:bg-white/10 rounded-lg" title="Refresh"><i data-lucide="refresh-cw" style="width:14px;height:14px;color:#94a3b8"></i></button>
+        <button onclick="minimizeWindow('${windowId}')" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="minus" style="width:16px;height:16px;color:#94a3b8"></i></button>
+        <button onclick="maximizeWindow('${windowId}')" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="maximize-2" style="width:16px;height:16px;color:#94a3b8"></i></button>
+        <button onclick="closeWindow('${windowId}')" class="p-2 hover:bg-red-500/20 rounded-lg"><i data-lucide="x" style="width:16px;height:16px;color:#94a3b8"></i></button>
+      </div>
+    </div>
+    <div class="window-content flex-1 overflow-auto p-5" id="content-${windowId}"></div>`
+  container.appendChild(win)
+  windows[windowId] = { element:win, appId, minimized:false, maximized:false }
+  windowCount++
+  makeDraggable(win)
   lucide.createIcons()
-  renderNumpad()
-  setGreeting()
-  loadDashboard()
-  renderCharts()
-  lucide.createIcons()
+  const contentEl = document.getElementById('content-' + windowId)
+  if (loaders[appId]) loaders[appId](contentEl)
+  win.style.opacity='0'; win.style.transform='scale(0.92) translateY(10px)'
+  setTimeout(() => { win.style.transition='all 0.25s cubic-bezier(0.4,0,0.2,1)'; win.style.opacity='1'; win.style.transform='scale(1) translateY(0)' }, 10)
+}
+
+function refreshWindow(windowId) {
+  const win = windows[windowId]
+  if (!win) return
+  const contentEl = document.getElementById('content-' + windowId)
+  if (contentEl && loaders[win.appId]) loaders[win.appId](contentEl)
+}
+
+function closeWindow(windowId) {
+  const win = windows[windowId]
+  if (!win) return
+  win.element.style.opacity='0'; win.element.style.transform='scale(0.9)'
+  setTimeout(() => { win.element.remove(); delete windows[windowId]; windowCount-- }, 250)
+}
+
+function minimizeWindow(windowId) {
+  const win = windows[windowId]
+  if (!win) return
+  win.element.style.transform='scale(0) translateY(50px)'; win.element.style.opacity='0'; win.minimized=true
+  setTimeout(() => { win.element.style.display='none' }, 250)
+}
+
+function maximizeWindow(windowId) {
+  const win = windows[windowId]
+  if (!win) return
+  if (win.maximized) {
+    const c = appConfigs[win.appId]
+    win.element.style.width=c.w+'px'; win.element.style.height=c.h+'px'; win.element.style.left='40px'; win.element.style.top='20px'
+    win.maximized=false
+  } else {
+    win.element.style.width='100%'; win.element.style.height='100%'; win.element.style.left='0'; win.element.style.top='0'
+    win.maximized=true
+  }
+}
+
+function focusWindow(windowId) {
+  const win = windows[windowId]
+  if (!win) return
+  if (win.minimized) {
+    win.element.style.display='flex'; win.element.style.transform='scale(1)'; win.element.style.opacity='1'; win.minimized=false
+  }
+  win.element.style.zIndex = ++zIndex
+}
+
+function makeDraggable(element) {
+  const header = element.querySelector('.window-header')
+  let dragging=false, initX, initY
+  header.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return
+    dragging=true; initX=e.clientX-element.offsetLeft; initY=e.clientY-element.offsetTop
+    element.style.zIndex=++zIndex
+  })
+  document.addEventListener('mousemove', e => { if (!dragging) return; element.style.left=(e.clientX-initX)+'px'; element.style.top=(e.clientY-initY)+'px' })
+  document.addEventListener('mouseup', () => { dragging=false })
+}
+
+// ── SPOTLIGHT ────────────────────────────────────────────────────────────────
+function toggleSpotlight() {
+  const el = document.getElementById('spotlight')
+  const content = document.getElementById('spotlight-content')
+  if (el.classList.contains('hidden')) {
+    el.classList.remove('hidden'); el.classList.add('flex')
+    setTimeout(() => { el.style.opacity='1'; content.style.transform='scale(1)' }, 10)
+    document.getElementById('spotlight-input').focus()
+  } else {
+    el.style.opacity='0'; content.style.transform='scale(0.95)'
+    setTimeout(() => { el.classList.add('hidden'); el.classList.remove('flex') }, 250)
+  }
+}
+
+document.getElementById('spotlight-input').addEventListener('input', async function() {
+  const q = this.value.trim().toLowerCase()
+  const results = document.getElementById('spotlight-results')
+  if (!q) { results.innerHTML='<div class="p-4 text-center text-slate-500 text-sm">Type to search...</div>'; return }
+  results.innerHTML='<div class="p-4 text-center text-slate-500 text-sm loading-pulse">Searching...</div>'
+  try {
+    const [leads, deals] = await Promise.all([
+      sb('crm', 'leads', `select=id,name,business_name,status,lead_score&or=(name.ilike.*${q}*,business_name.ilike.*${q}*)&limit=5`),
+      sb('deals', 'pipeline', `select=id,name,lead_name,company,stage,value&or=(name.ilike.*${q}*,company.ilike.*${q}*,lead_name.ilike.*${q}*)&limit=5`)
+    ])
+    if (!leads.length && !deals.length) { results.innerHTML='<div class="p-4 text-center text-slate-500 text-sm">No results found</div>'; return }
+    results.innerHTML = [
+      ...leads.map(l => `<div class="p-3 rounded-xl hover:bg-white/5 cursor-pointer flex items-center gap-3" onclick="toggleSpotlight()"><div class="w-8 h-8 rounded-lg bg-nebula-purple/20 flex items-center justify-center"><i data-lucide="user" style="width:14px;height:14px;color:#a78bfa"></i></div><div><div class="text-sm font-medium">${l.name||'—'}</div><div class="text-xs text-slate-400">${l.business_name||'Lead'} · Score: ${l.lead_score||'—'}</div></div></div>`),
+      ...deals.map(d => `<div class="p-3 rounded-xl hover:bg-white/5 cursor-pointer flex items-center gap-3" onclick="openWindow('sales');toggleSpotlight()"><div class="w-8 h-8 rounded-lg bg-nebula-cyan/20 flex items-center justify-center"><i data-lucide="trending-up" style="width:14px;height:14px;color:#06b6d4"></i></div><div><div class="text-sm font-medium">${d.name||d.lead_name||d.company||'Deal'}</div><div class="text-xs text-slate-400">${d.stage||'—'} · $${Number(d.value||0).toLocaleString()}</div></div></div>`)
+    ].join('')
+    lucide.createIcons()
+  } catch(e) { results.innerHTML='<div class="p-4 text-center text-red-400 text-sm">Search error</div>' }
 })
 
-// Auto-refresh every 60s
-setInterval(() => {
-  const active = document.querySelector('.view.active')
-  if (active) loadView(active.id.replace('view-',''))
-}, 60000)
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { const el=document.getElementById('spotlight'); if (!el.classList.contains('hidden')) toggleSpotlight() }
+  if ((e.metaKey||e.ctrlKey) && e.key==='k') { e.preventDefault(); toggleSpotlight() }
+})
+
+// ── THEME ────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const body = document.body
+  const toggle = document.getElementById('themeToggle')
+  if (body.classList.contains('dark')) {
+    body.classList.replace('dark','light'); toggle.classList.add('light')
+    toggle.querySelector('.dark-icon').classList.add('hidden')
+    toggle.querySelector('.light-icon').classList.remove('hidden')
+  } else {
+    body.classList.replace('light','dark'); toggle.classList.remove('light')
+    toggle.querySelector('.dark-icon').classList.remove('hidden')
+    toggle.querySelector('.light-icon').classList.add('hidden')
+  }
+}
+
+// ── STARFIELD ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('starfield')
+const ctx = canvas.getContext('2d')
+let stars = []
+function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight }
+function createStars() {
+  stars=[]
+  const count = Math.floor((canvas.width*canvas.height)/4000)
+  for (let i=0;i<count;i++) stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*2,speed:Math.random()*0.4+0.1,opacity:Math.random(),twinkle:Math.random()*0.015})
+}
+function animateStars() {
+  ctx.clearRect(0,0,canvas.width,canvas.height)
+  stars.forEach(s => {
+    s.opacity+=s.twinkle; if(s.opacity>1||s.opacity<0.2) s.twinkle=-s.twinkle
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.size,0,Math.PI*2)
+    ctx.fillStyle='rgba(255,255,255,'+s.opacity+')'; ctx.fill()
+    s.y+=s.speed; if(s.y>canvas.height){s.y=0;s.x=Math.random()*canvas.width}
+  })
+  requestAnimationFrame(animateStars)
+}
+resizeCanvas(); createStars(); animateStars()
+window.addEventListener('resize',()=>{resizeCanvas();createStars()})
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+lucide.createIcons()
+loadSidebar()
+loadAlerts()
+setInterval(() => { loadSidebar(); loadAlerts() }, 60000)
 </script>
 </body>
 </html>
