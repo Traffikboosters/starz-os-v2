@@ -2513,7 +2513,7 @@ window._pdCall = async (phone, queueId) => {
     const dialRes = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'initiate_call', user_id: '4566842998267904', phone_number: e164 })
+      body: JSON.stringify({ action: 'initiate_call', phone_number: e164, rep_email: 'traffikboosters@gmail.com' })
     })
     const txt = await dialRes.text()
     const data = txt ? JSON.parse(txt) : {}
@@ -2724,7 +2724,7 @@ window._floorEndCall = async (queueId, callId, lead, bge, evt) => {
               <button onclick="window._pdStartDialer()" class="py-1.5 px-4 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all">▶ Start Session</button>
               <button onclick="window._pdStopDialer()" class="py-1.5 px-4 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition-all">⏹ Stop Session</button>
               <button onclick="window._pdDistribute()" class="py-1.5 px-4 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 text-xs font-semibold transition-all">⚡ Distribute Leads</button>
-              <div class="ml-auto text-[10px] text-slate-400">Backend: <span class="text-green-400 font-semibold">Dialpad API</span></div>
+                <div class="ml-auto text-[10px] text-slate-400">Backend: <span class="text-blue-400 font-semibold">Twilio</span></div>
             </div>
             <!-- Manual Dial Bar -->
             <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
