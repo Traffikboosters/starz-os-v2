@@ -1,8 +1,8 @@
-// STARZ-OS Extended Windows — loaded after main starz-os.html
+// STARZ-OS Extended Windows - loaded after main starz-os.html
 
 (function() {
 
-// ── GOOGLE ADS ENGINE ────────────────────────────────────────────────────────
+// -- GOOGLE ADS ENGINE --------------------------------------------------------
 window._registerLoader('ads', async function(el) {
   var camps = [];
 
@@ -35,14 +35,14 @@ window._registerLoader('ads', async function(el) {
       return '<div class="stat-card border border-white/5 hover:border-orange-500/20 transition-all mb-3">'
         + '<div class="flex items-start justify-between mb-3">'
         + '<div><div class="font-semibold text-white">' + camp.campaign_name + '</div>'
-        + '<div class="text-[10px] text-slate-400">' + camp.service_type + ' · ' + camp.match_type + ' match · Rico BGE</div></div>'
+        + '<div class="text-[10px] text-slate-400">' + camp.service_type + '  ' + camp.match_type + ' match  Rico BGE</div></div>'
         + '<div class="flex gap-2">' + bdg(camp.status)
         + '<button data-id="' + camp.id + '" data-status="' + camp.status + '" onclick="window._adsToggle(this)" class="px-2 py-1 rounded text-[10px] font-semibold ' + (camp.status==='active' ? 'bg-amber-500/20 text-amber-300' : 'bg-green-500/20 text-green-300') + '">' + (camp.status==='active' ? 'Pause' : 'Activate') + '</button>'
         + '<button data-id="' + camp.id + '" onclick="window._adsDel(this)" class="px-2 py-1 rounded bg-red-500/20 text-red-300 text-[10px]">Del</button></div></div>'
         + '<div class="grid grid-cols-3 gap-4 mb-3">'
         + '<div><div class="text-[10px] text-slate-400 mb-1">Daily Budget</div><div class="font-mono font-bold text-white">$' + (camp.daily_budget||0) + '/day</div>' + bbar(camp.spent_today||0, camp.daily_budget||1) + '</div>'
         + '<div><div class="text-[10px] text-slate-400 mb-1">Monthly</div><div class="font-mono font-bold text-white">$' + (camp.monthly_budget||0) + '/mo</div>' + bbar(camp.spent_month||0, camp.monthly_budget||1) + '</div>'
-        + '<div><div class="text-[10px] text-slate-400 mb-1">Performance</div><div class="text-xs"><span class="text-blue-400">' + (camp.impressions||0) + ' imp</span> · <span class="text-green-400">' + (camp.clicks||0) + ' clicks</span></div><div class="text-[10px] text-slate-500">CTR:' + (camp.ctr||0) + '% CPC:$' + (camp.cpc||0) + '</div></div>'
+        + '<div><div class="text-[10px] text-slate-400 mb-1">Performance</div><div class="text-xs"><span class="text-blue-400">' + (camp.impressions||0) + ' imp</span>  <span class="text-green-400">' + (camp.clicks||0) + ' clicks</span></div><div class="text-[10px] text-slate-500">CTR:' + (camp.ctr||0) + '% CPC:$' + (camp.cpc||0) + '</div></div>'
         + '</div>'
         + '<div class="flex flex-wrap gap-1 mb-1">' + kws.map(function(k){ return '<span class="px-1.5 py-0.5 rounded text-[10px] bg-orange-500/10 border border-orange-500/20 text-orange-300">' + k + '</span>'; }).join('') + '</div>'
         + '<div class="flex flex-wrap gap-1">' + locs.map(function(l){ return '<span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-300">' + l + '</span>'; }).join('') + '</div>'
@@ -51,9 +51,9 @@ window._registerLoader('ads', async function(el) {
     }).join('');
 
     el.innerHTML = '<div class="space-y-4">'
-      + '<div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center"><i data-lucide="megaphone" style="width:20px;height:20px;color:#fb923c"></i></div><div><h2 class="font-space font-bold text-lg">Google Ads Engine</h2><p class="text-xs text-slate-400">Rico Control · Budget Guard · Performance · SEO Integration</p></div></div><button onclick="window._adsForm()" class="py-2 px-4 rounded-xl text-xs font-bold text-white" style="background:linear-gradient(135deg,#fb923c,#ea580c)">+ New Campaign</button></div>'
+      + '<div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center"><i data-lucide="megaphone" style="width:20px;height:20px;color:#fb923c"></i></div><div><h2 class="font-space font-bold text-lg">Google Ads Engine</h2><p class="text-xs text-slate-400">Rico Control  Budget Guard  Performance  SEO Integration</p></div></div><button onclick="window._adsForm()" class="py-2 px-4 rounded-xl text-xs font-bold text-white" style="background:linear-gradient(135deg,#fb923c,#ea580c)">+ New Campaign</button></div>'
       + '<div class="grid grid-cols-4 gap-3"><div class="stat-card text-center"><div class="text-2xl font-bold text-orange-400 font-mono">' + camps.length + '</div><div class="text-[10px] text-slate-400 mt-1">Campaigns</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-green-400 font-mono">' + act + '</div><div class="text-[10px] text-slate-400 mt-1">Active</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-blue-400 font-mono">$' + tot.toLocaleString() + '</div><div class="text-[10px] text-slate-400 mt-1">Monthly Budget</div></div><div class="stat-card text-center"><div class="text-2xl font-bold text-purple-400 font-mono">0</div><div class="text-[10px] text-slate-400 mt-1">Conversions</div></div></div>'
-      + (rows || '<div class="text-center text-slate-500 py-12">No campaigns — click New Campaign</div>')
+      + (rows || '<div class="text-center text-slate-500 py-12">No campaigns - click New Campaign</div>')
       + '</div>';
     lucide.createIcons();
   }
