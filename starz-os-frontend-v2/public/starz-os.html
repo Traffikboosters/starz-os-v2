@@ -98,6 +98,7 @@
     @keyframes spin { to{transform:rotate(360deg)} }
   </style>
 <script>var windows={};var zIndex=1000;var windowCount=0;</script>
+  <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
 </head>
 <body>
 <script>var windows={};var zIndex=1000;var windowCount=0;</script><body class="dark bg-cosmic-900 text-white min-h-screen overflow-hidden">
@@ -2430,8 +2431,8 @@ window._pdEndCall = async (disposition) => {
   const callId = window._pdActiveCall.callId
   showRealtimeToast('✓ Call ended — ' + disposition, disposition === 'interested' ? 'green' : 'amber')
   window._pdStopHUD()
-  window._pdStopHUD()
-  // End the Twilio call server-side
+  // Disconnect Twilio Client call if active
+  if (window._twilioCall) { try { window._twilioCall.disconnect() } catch(e){} window._twilioCall = null }
   const twilioCallId = window._pdActiveCall?.twilioCallId
   if (twilioCallId) {
     await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
@@ -2504,7 +2505,126 @@ window._pdStartVideo = async () => {
   window.open('https://dialpad.com', '_blank')
 }
 
+// ── TWILIO CLIENT BROWSER DIALER ─────────────────────────────────────────────
+window._twilioDevice = null
+window._twilioCall = null
+window._twilioReady = false
+
+window._pdInitTwilio = async () => {
+  const statusEl = document.getElementById('pd-twilio-status')
+  const btnEl = document.getElementById('pd-twilio-init-btn')
+  if (statusEl) { statusEl.textContent = '● Connecting...'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-amber-500/20 text-amber-300' }
+  try {
+    // Get access token from dialpad-call edge function
+    const res = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_token', rep_email: 'traffikboosters@gmail.com', identity: 'commander_dj' })
+    })
+    const data = await res.json()
+    if (!data.token) { showRealtimeToast('✗ Could not get Twilio token', 'red'); return }
+
+    // Initialize Twilio Device
+    const Device = Twilio.Device
+    window._twilioDevice = new Device(data.token, {
+      codecPreferences: ['opus', 'pcmu'],
+      fakeLocalDTMF: true,
+      enableRingingState: true,
+      debug: false
+    })
+
+    window._twilioDevice.on('ready', () => {
+      window._twilioReady = true
+      if (statusEl) { statusEl.textContent = '● Ready'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-400' }
+      if (btnEl) { btnEl.textContent = '✓ Mic Connected'; btnEl.disabled = true }
+      showRealtimeToast('✓ Twilio softphone ready — click Dial to call', 'green')
+    })
+
+    window._twilioDevice.on('error', (err) => {
+      if (statusEl) { statusEl.textContent = '● Error'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-red-500/20 text-red-400' }
+      showRealtimeToast('✗ Twilio error: ' + err.message, 'red')
+    })
+
+    window._twilioDevice.on('disconnect', () => {
+      window._twilioCall = null
+      window._pdStopHUD()
+      if (statusEl) { statusEl.textContent = '● Ready'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-400' }
+      showRealtimeToast('Call ended', 'amber')
+      const winId = Object.keys(windows).find(k => windows[k].appId === 'powerdial')
+      if (winId) { const el = document.getElementById('content-'+winId); if(el) setTimeout(() => loadPowerDialContent(el), 1500) }
+    })
+
+    window._twilioDevice.on('connect', (conn) => {
+      window._twilioCall = conn
+      if (statusEl) { statusEl.textContent = '● Live'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-400 animate-pulse' }
+    })
+
+    window._twilioDevice.register()
+
+  } catch(e) {
+    showRealtimeToast('✗ Twilio init failed: ' + e.message, 'red')
+    if (statusEl) { statusEl.textContent = '● Failed'; statusEl.className = 'text-[10px] px-2 py-1 rounded-full bg-red-500/20 text-red-400' }
+  }
+}
+
 window._pdCall = async (phone, queueId) => {
+  if (!phone) { showRealtimeToast('⚠ No phone number', 'amber'); return }
+  const digits = phone.replace(/\D/g, '')
+  const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
+
+  // Use Twilio Client if ready
+  if (window._twilioReady && window._twilioDevice) {
+    try {
+      showRealtimeToast('📞 Dialing ' + e164 + ' via browser...', 'green')
+      const conn = await window._twilioDevice.connect({ params: { To: e164 } })
+      window._twilioCall = conn
+      window._pdStartHUD(e164, queueId)
+      if (window._pdActiveCall) window._pdActiveCall.twilioCallId = conn.parameters?.CallSid || null
+
+      // Log to dialer.calls
+      await fetch(SB_URL+'/rest/v1/calls', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ phone: e164, phone_number: e164, direction: 'outbound', call_status: 'ringing', started_at: new Date().toISOString() })
+      }).catch(()=>{})
+
+      if (queueId) await fetch(SB_URL+'/rest/v1/call_queue?id=eq.'+queueId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ last_call_at: new Date().toISOString(), call_attempts: 1, status: 'calling' })
+      }).catch(()=>{})
+
+      return
+    } catch(e) {
+      showRealtimeToast('✗ Browser call failed: ' + e.message + ' — trying fallback...', 'amber')
+    }
+  }
+
+  // Fallback: REST API call to rep phone
+  showRealtimeToast('📞 Dialing ' + e164 + ' via Twilio...', 'green')
+  try {
+    const dialRes = await fetch('https://szguizvpiiuiyugrjeks.supabase.co/functions/v1/dialpad-call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'initiate_call', phone_number: e164, rep_email: 'traffikboosters@gmail.com' })
+    })
+    const data = await dialRes.json()
+    if (dialRes.ok && data.ok) {
+      showRealtimeToast('✓ Dialing: '+e164+' — your phone will ring shortly.', 'green')
+      window._pdStartHUD(e164, queueId)
+      if (window._pdActiveCall) window._pdActiveCall.twilioCallId = data.sid || null
+      await fetch(SB_URL+'/rest/v1/calls', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ phone: e164, phone_number: e164, direction: 'outbound', call_status: 'ringing', started_at: new Date().toISOString() })
+      }).catch(()=>{})
+    } else {
+      showRealtimeToast('⚠ ' + (data?.error || 'Call error'), 'amber')
+    }
+  } catch(e) {
+    showRealtimeToast('✗ ' + e.message, 'red')
+  }
+}
   if (!phone) { showRealtimeToast('⚠ No phone number', 'amber'); return }
   const digits = phone.replace(/\D/g, '')
   const e164 = digits.length === 10 ? '+1'+digits : '+'+digits
@@ -2720,13 +2840,13 @@ window._floorEndCall = async (queueId, callId, lead, bge, evt) => {
           <!-- Dialer Controls -->
           <div class="stat-card border border-orange-500/20 bg-orange-500/5">
             <div class="flex items-center gap-3 flex-wrap">
-              <span class="text-sm font-semibold text-orange-300">⚡ Dialpad Controls</span>
-              <button onclick="window._pdStartDialer()" class="py-1.5 px-4 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all">▶ Start Session</button>
-              <button onclick="window._pdStopDialer()" class="py-1.5 px-4 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition-all">⏹ Stop Session</button>
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="text-sm font-semibold text-blue-300">📞 Twilio Softphone</span>
+              <button onclick="window._pdInitTwilio()" id="pd-twilio-init-btn" class="py-1.5 px-4 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-all border border-green-500/30">▶ Connect Mic</button>
+              <button onclick="window._pdStopDialer()" class="py-1.5 px-4 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition-all">⏹ Disconnect</button>
               <button onclick="window._pdDistribute()" class="py-1.5 px-4 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 text-xs font-semibold transition-all">⚡ Distribute Leads</button>
-                <div class="ml-auto text-[10px] text-slate-400">Backend: <span class="text-blue-400 font-semibold">Twilio</span></div>
-            </div>
-            <!-- Manual Dial Bar -->
+              <span id="pd-twilio-status" class="text-[10px] px-2 py-1 rounded-full bg-slate-700 text-slate-400">● Not Connected</span>
+              <div class="ml-auto text-[10px] text-slate-400">Backend: <span class="text-blue-400 font-semibold">Twilio Client</span></div>
             <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
               <span class="text-xs text-slate-400 shrink-0">📞 Manual Dial:</span>
               <input id="pd-manual-phone" type="text" placeholder="Enter number (e.g. 8135551234)…" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-orange-500/50" onkeydown="if(event.key==='Enter')window._pdManualDial()" />
