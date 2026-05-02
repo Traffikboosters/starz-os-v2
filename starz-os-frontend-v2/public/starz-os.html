@@ -5234,7 +5234,7 @@ window._registerLoader('fulfillment', async function(el) {
   async function loadRico() {
     try {
       var [log, sla, queue] = await Promise.all([
-        sb('rico','responsibility_log','select=*&order=created_at.desc&limit=20'),
+        sb('rico','responsibility_log','select=*&order=added_at.desc&limit=20'),
         sb('rico','sla_rules','select=*&order=priority.desc&limit=20'),
         sb('rico','action_queue','select=*&order=created_at.desc&limit=20')
       ]);
