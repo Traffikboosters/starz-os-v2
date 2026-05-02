@@ -2580,6 +2580,27 @@ async function loadPowerDialContent(el) {
 
     const liveCalls = calls.filter(c => ['ringing','in_progress','connected','active'].includes((c.call_status||c.status||'').toLowerCase()))
     const recentCalls = calls.filter(c => !['ringing','in_progress','connected','active'].includes((c.call_status||c.status||'').toLowerCase()))
+    // ── STEVE LIVE WHISPER POLLER ─────────────────────────────
+    if (liveCalls.length > 0) {
+      if (!window._steveWhisperInterval) {
+        window._steveWhisperInterval = setInterval(async () => {
+          const activeCalls = await sb('dialer','calls','select=id,call_status,ai_tip,objection,needs_assist,deal_heat_score,detected_buying_signal,proposal_ready&order=created_at.desc&limit=10').catch(()=>[])
+          const stillLive = activeCalls.filter(c => ['ringing','in_progress','connected','active'].includes((c.call_status||'').toLowerCase()))
+          if (!stillLive.length) { clearInterval(window._steveWhisperInterval); window._steveWhisperInterval = null; return }
+          stillLive.forEach(c => {
+            const tipEl = document.getElementById('steve-tip-'+c.id)
+            const heatEl = document.getElementById('steve-heat-'+c.id)
+            const objEl = document.getElementById('steve-obj-'+c.id)
+            if (tipEl && c.ai_tip) { tipEl.textContent = '💡 ' + c.ai_tip; tipEl.classList.add('animate-pulse') }
+            if (heatEl && c.deal_heat_score != null) { heatEl.textContent = c.deal_heat_score; heatEl.style.color = c.deal_heat_score >= 70 ? '#f87171' : c.deal_heat_score >= 40 ? '#fb923c' : '#94a3b8' }
+            if (objEl && c.objection) { objEl.textContent = '⚠️ ' + c.objection.slice(0,80) }
+          })
+        }, 5000)
+      }
+    } else {
+      if (window._steveWhisperInterval) { clearInterval(window._steveWhisperInterval); window._steveWhisperInterval = null }
+    }
+    // ─────────────────────────────────────────────────────────
     const hotLeads = calls.filter(c => (c.deal_heat_score||0) >= 7)
     const needsAssist = calls.filter(c => c.needs_assist)
 
@@ -2641,16 +2662,16 @@ async function loadPowerDialContent(el) {
 
           ${c.sentiment ? `<div class="text-xs mb-2"><span class="text-slate-400">Sentiment: </span><span class="${sentimentColor(c.sentiment)} font-semibold">${c.sentiment}</span></div>` : ''}
 
-          ${c.ai_tip ? `
+          ${(c.ai_tip || isLive) ? `
             <div class="p-2 rounded-lg bg-nebula-purple/10 border border-nebula-purple/20 mb-2">
               <div class="text-[9px] text-nebula-purple font-semibold mb-1">🧠 STEVE WHISPER</div>
-              <div class="text-xs text-purple-200">${c.ai_tip}</div>
+              <div id="steve-tip-${c.id}" class="text-xs text-purple-200">${c.ai_tip}</div>
             </div>` : ''}
 
           ${c.objection ? `
             <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-2">
               <div class="text-[9px] text-amber-400 font-semibold mb-1">⚠ OBJECTION DETECTED</div>
-              <div class="text-xs text-amber-200">${c.objection}</div>
+              <div id="steve-obj-${c.id}" class="text-xs text-amber-200">${c.objection}</div>
             </div>` : ''}
 
           ${c.detected_buying_signal ? `
