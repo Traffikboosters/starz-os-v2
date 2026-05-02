@@ -1385,9 +1385,9 @@ async function loadView(name) {
 async function loadDashboard() {
   const [wo, leads, queue, pipeline] = await Promise.all([
     sb('deals','work_orders','select=id,client_name,package,status,fulfillment_status,payment_status,created_at&order=created_at.desc&limit=6').catch(()=>[]),
-    sb('crm','leads','select=id,status&limit=200').catch(()=>[]),
-    sb('dialer','call_queue','select=id,status&limit=200').catch(()=>[]),
-    sb('deals','pipeline','select=id,stage&limit=200').catch(()=>[])
+    sb('crm','leads','select=id,status&limit=1000').catch(()=>[]),
+    sb('dialer','call_queue','select=id,status&limit=500').catch(()=>[]),
+    sb('deals','pipeline','select=id,stage&limit=1000').catch(()=>[])
   ])
 
   // KPIs
@@ -1405,7 +1405,6 @@ async function loadDashboard() {
   Object.keys(sparkSeeds).forEach(k => { const el=document.getElementById('m-'+k+'-spark'); if(el) el.innerHTML=sparklineSVG(sparkSeeds[k],sparkColors2[k]) })
   // Keep old lines below for subs
   document.getElementById('m-deals-sub').textContent = pipeline.filter(p=>p.stage==='won').length + ' won'
-  document.getElementById('m-leads').textContent = leads.length || '0'
   document.getElementById('m-leads-sub').textContent = leads.filter(l=>l.status==='new').length + ' new'
   document.getElementById('m-orders').textContent = wo.length || '0'
   document.getElementById('m-orders-sub').textContent = wo.filter(w=>w.fulfillment_status==='in_fulfillment').length + ' in fulfillment'
