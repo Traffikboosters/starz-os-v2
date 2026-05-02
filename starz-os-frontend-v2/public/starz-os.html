@@ -2446,7 +2446,7 @@ window._pdEndCall = async (disposition) => {
     }).catch(()=>{})
   }
   const winId = Object.keys(windows).find(k => windows[k].appId === 'powerdial')
-  if (winId) { const el = document.getElementById('content-'+winId); if(el) setTimeout(() => loadPowerDialContent(el), 1500) }
+  if (winId && disposition !== 'dialing') { const el = document.getElementById('content-'+winId); if(el) setTimeout(() => loadPowerDialContent(el), 1500) }
 }
 
 window._pdShowTransfer = () => {
@@ -2518,7 +2518,7 @@ window._pdCall = async (phone, queueId) => {
     const txt = await dialRes.text()
     const data = txt ? JSON.parse(txt) : {}
     if (dialRes.ok) {
-      showRealtimeToast('✓ Call placed: '+e164, 'green')
+      showRealtimeToast('✓ Dialing: '+e164+' — HUD active. End call when done.', 'green')
       window._pdStartHUD(e164, queueId)
       await fetch(SB_URL+'/rest/v1/calls', {
         method: 'POST',
@@ -2568,7 +2568,30 @@ function loadTraffikSiteContent(el) {
 }
 
 
-async function loadPowerDialContent(el) {
+window._floorEndCall = async (queueId, callId, lead, bge, evt) => {
+  if (evt) evt.stopPropagation()
+  if (!confirm('End call with ' + (lead||'this lead') + '?')) return
+  showRealtimeToast('🔴 Ending call...', 'red')
+  if (callId) {
+    await fetch(SB_URL+'/rest/v1/calls?id=eq.'+callId, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ call_status: 'ended', ended_at: new Date().toISOString() })
+    }).catch(()=>{})
+  }
+  if (queueId) {
+    await fetch(SB_URL+'/rest/v1/call_queue?id=eq.'+queueId, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Accept-Profile': 'dialer', 'Content-Profile': 'dialer', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: 'called' })
+    }).catch(()=>{})
+  }
+  showRealtimeToast('✓ Call ended — hang up in Dialpad app', 'amber')
+  window._pdStopHUD()
+  const winId = Object.keys(windows).find(k => windows[k].appId === 'powerdial')
+  if (winId) { const el = document.getElementById('content-'+winId); if(el) setTimeout(() => loadPowerDialContent(el), 1500) }
+}
+
   el.innerHTML = '<div class="flex items-center justify-center h-40"><div class="spinner"></div></div>'
   try {
     const [calls, queue, callFloor, repPerf] = await Promise.all([
@@ -2784,9 +2807,9 @@ async function loadPowerDialContent(el) {
                 <td class="font-mono">${r.duration ? (typeof r.duration==='string' ? r.duration : Math.floor(Number(r.duration)/60)+'m '+Number(r.duration)%60+'s') : '—'}</td>
                 <td>${r.score ? heatBar(Number(r.score)) : '—'}</td>
                 <td>${r.outcome ? `<span class="badge ${r.outcome==='closed'?'badge-green':r.outcome==='callback'?'badge-amber':'badge-gray'}">${r.outcome}</span>` : '—'}</td>
+                <td>${r.outcome ? `<span class="badge ${r.outcome==='closed'?'badge-green':r.outcome==='callback'?'badge-amber':'badge-gray'}">${r.outcome}</span>` : '—'}</td>
+                <td><button onclick="window._floorEndCall('${r.id||''}','${r.call_id||r.id||''}','${r.lead||''}','${r.assigned_bge||''}',event)" class="py-1 px-2 rounded bg-red-500/20 border border-red-500/30 text-red-300 text-[9px] font-bold hover:bg-red-500/40 transition-all">🔴 End</button></td>
               </tr>`).join('')}</tbody>
-            </table>
-          </div>` : ''}
 
           <!-- Live calls -->
           ${liveCalls.length ? `
