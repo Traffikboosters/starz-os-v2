@@ -1,7 +1,12 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: '/starz-os.html', destination: '/starz-os' },
+      ],
+    };
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

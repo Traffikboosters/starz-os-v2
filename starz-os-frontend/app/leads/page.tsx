@@ -3,49 +3,52 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
+// 🔌 Initialize Supabase (frontend-safe)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 );
 
 type Lead = {
-  id: number;
-  name: string | null;
-  company: string | null;
-  score: number | null;
-  status: string | null;
-  assigned_rep_id: string | number | null;
-  estimated_value: number | null;
-  updated_at: string | null;
+  id: string;
+  name: string;
+  company: string;
+  score: number;
+  status: string;
+  assigned_rep_id: string | null;
+  estimated_value: number;
+  updated_at: string;
 };
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 📡 Fetch Leads
   const fetchLeads = async () => {
     setLoading(true);
 
     const { data, error } = await supabase
-      .schema("leads")
       .from("prospects")
-      .select("id,name,company,score,status,assigned_rep_id,estimated_value,updated_at")
+      .select(
+        "id,name,company,score,status,assigned_rep_id,estimated_value,updated_at"
+      )
       .order("updated_at", { ascending: false });
 
     if (error) {
       console.error("FETCH ERROR:", error.message);
     } else {
-      setLeads((data || []) as Lead[]);
+      setLeads(data || []);
     }
 
     setLoading(false);
   };
 
+  // ➕ Add Lead
   const addLead = async () => {
-    console.log("ADD LEAD CLICKED");
+    console.log("BUTTON CLICKED");
 
     const { data, error } = await supabase
-      .schema("leads")
       .from("prospects")
       .insert([
         {
@@ -58,40 +61,43 @@ export default function LeadsPage() {
       ])
       .select();
 
-    console.log("INSERT DATA:", data);
+    console.log("INSERT RESULT:", data);
     console.log("INSERT ERROR:", error?.message);
 
-    if (!error) await fetchLeads();
+    if (!error) {
+      await fetchLeads();
+    }
   };
 
-  const autoAssign = async (id: number) => {
-    console.log("AUTO ASSIGN:", id);
+  // ⚙️ Auto Assign Lead
+  const autoAssign = async (leadId: string) => {
+    console.log("AUTO ASSIGN:", leadId);
 
-    const { data, error } = await supabase
-      .schema("leads")
-      .rpc("assign_best_fit_lead_guarded", {
-        p_prospect_id: Number(id),
-        p_daily_cap: 20,
-        p_load_penalty: 0.2,
-        p_fairness_boost: 0.1,
-      });
+    const { error } = await supabase.rpc(
+      "assign_best_fit_lead_guarded",
+      {
+        p_prospect_id: leadId,
+      }
+    );
 
-    console.log("ASSIGN DATA:", data);
-    console.log("ASSIGN ERROR:", error?.message);
-
-    if (!error) await fetchLeads();
+    if (error) {
+      console.error("ASSIGN ERROR:", error.message);
+    } else {
+      await fetchLeads();
+    }
   };
 
+  // 🔁 Load + Realtime Sync
   useEffect(() => {
     fetchLeads();
 
     const channel = supabase
-      .channel("leads-prospects-live")
+      .channel("realtime-leads")
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "leads",
+          schema: "public",
           table: "prospects",
         },
         () => {
@@ -108,7 +114,7 @@ export default function LeadsPage() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>STARZ-OS Leads</h1>
+      <h1>Leads</h1>
 
       <button onClick={addLead} style={{ marginBottom: 20 }}>
         Add Lead
@@ -126,7 +132,7 @@ export default function LeadsPage() {
               <th>Status</th>
               <th>Value</th>
               <th>Assigned</th>
-              <th>Updated</th>
+              <th>Last Updated</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -141,16 +147,14 @@ export default function LeadsPage() {
             ) : (
               leads.map((lead) => (
                 <tr key={lead.id}>
-                  <td>{lead.name || "—"}</td>
-                  <td>{lead.company || "—"}</td>
-                  <td>{lead.score ?? "—"}</td>
-                  <td>{lead.status || "—"}</td>
-                  <td>${lead.estimated_value ?? 0}</td>
+                  <td>{lead.name}</td>
+                  <td>{lead.company}</td>
+                  <td>{lead.score}</td>
+                  <td>{lead.status}</td>
+                  <td>${lead.estimated_value}</td>
                   <td>{lead.assigned_rep_id || "Unassigned"}</td>
                   <td>
-                    {lead.updated_at
-                      ? new Date(lead.updated_at).toLocaleString()
-                      : "—"}
+                    {new Date(lead.updated_at).toLocaleString()}
                   </td>
                   <td>
                     <button onClick={() => autoAssign(lead.id)}>
