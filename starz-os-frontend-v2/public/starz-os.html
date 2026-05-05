@@ -90,7 +90,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 // STARZ-OS SUPABASE LIVE DATA WIRING
 // ══════════════════════════════════════════════════════
 const SB_URL = 'https://spb-t4nl2t9m7hhk921t.supabase.opentrust.net';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6Z3VpenZwaWl1aXl1Z3JqZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MzkyMzIsImV4cCI6MjA2MDAxNTIzMn0.lKQMFsPP0_JoqD5snGiKgxp1qqnvW_mBpnGJlYfEmAU';
+const SB_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNwYi10NG5sMnQ5bTdoaGs5MjF0IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzc5MjAyMjEsImV4cCI6MjA5MzQ5NjIyMX0.Mq8q-iquvE1ART8HykA94WUmCdGG-JWT2oACCJZa1AA';
 
 async function sbFetch(schema, table, query = '') {
   const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
