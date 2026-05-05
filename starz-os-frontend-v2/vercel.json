@@ -1,1 +1,0 @@
-{"version":2,"builds":[{"src":"public/starz-os.html","use":"@vercel/static"}],"routes":[{"src":"/","dest":"/public/starz-os.html"},{"src":"/(.*)", "dest":"/public/$1"}]}
