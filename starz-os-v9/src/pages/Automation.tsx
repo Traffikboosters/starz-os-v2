@@ -1,128 +1,164 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, RefreshCw, CheckCircle2, XCircle, Clock, Activity, Brain, GitBranch, Shield, Globe } from 'lucide-react'
+import {
+  Zap, Settings, Play, Pause, Clock, Mail, Phone, MessageSquare, ChevronRight,
+  ArrowRight, Plus, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, X
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SUPABASE_FUNCTIONS_URL } from '@/lib/supabase'
-import { timeAgo } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/hooks/useToast'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { AnimatedCounter } from '@/components/AnimatedCounter'
 
-const ENGINES = [
-  { id: 'lead_distribution',  label: 'Lead Distribution',    engine: 'core-automation-engine', trigger: 'lead_distribution',  icon: GitBranch, color: 'text-cyan',        desc: 'Smart assignment · Daily caps · Fairness scoring' },
-  { id: 'lead_rotation',      label: 'Lead Rotation',        engine: 'core-automation-engine', trigger: 'lead_rotation',      icon: RefreshCw, color: 'text-blue-400',    desc: 'Rotate stale leads · Re-qualify · Re-assign' },
-  { id: 'payment_received',   label: 'Payment → Work Order', engine: 'core-automation-engine', trigger: 'payment_received',   icon: CheckCircle2, color: 'text-emerald-400', desc: 'Stripe paid → Rico assigns → 3-day probation' },
-  { id: 'sentinel_scan',      label: 'Sentinel Security Scan', engine: 'core-automation-engine', trigger: 'sentinel_scan',    icon: Shield,    color: 'text-red-400',     desc: 'RLS audit · Access logging · Auto-suspension' },
-  { id: 'vox_message',        label: 'Vox Broadcast',        engine: 'gizmo-vox-router',        trigger: null,               icon: Brain,     color: 'text-violet',      desc: 'Route to Steve or Vox · AI response' },
-  { id: 'outreach',           label: 'Outreach Engine',      engine: 'outreach-engine',         trigger: null,               icon: Globe,     color: 'text-amber-400',   desc: 'Revenue Engine · 7-touch sequences · Reply tracking' },
+const initialTriggers = [
+  { id: 'T-001', name: 'Hot Lead Alert', trigger: 'Lead score > 85', action: 'SMS + Email to assigned rep', status: 'active', runs: 47, lastRun: '2m ago' },
+  { id: 'T-002', name: 'Proposal Follow-up', trigger: 'Proposal viewed 3+ times', action: 'Auto-send discount offer', status: 'active', runs: 23, lastRun: '1h ago' },
+  { id: 'T-003', name: 'No Activity Warning', trigger: 'No touch in 48h', action: 'Alert manager + reassign', status: 'paused', runs: 12, lastRun: '3h ago' },
+  { id: 'T-004', name: 'New Lead Auto-assign', trigger: 'New lead created', action: 'Round-robin assign', status: 'active', runs: 89, lastRun: '5m ago' },
+  { id: 'T-005', name: 'Payment Failed', trigger: 'Stripe payment fails', action: 'Notify rep + retry in 24h', status: 'active', runs: 8, lastRun: '6h ago' },
+  { id: 'T-006', name: 'Contractor Payout', trigger: 'Deal closes', action: 'Auto-calculate 30% + schedule ACH', status: 'active', runs: 34, lastRun: '1d ago' },
 ]
 
-interface RunLog { id: string; engine: string; trigger: string; ok: boolean; msg: string; ts: string }
+const distributionRules = [
+  { name: 'Round Robin', active: true, desc: 'Fair rotation across all active reps' },
+  { name: 'Performance Weighted', active: false, desc: 'Higher close rate = more leads' },
+  { name: 'Territory Based', active: false, desc: 'Assign by geo/vertical' },
+  { name: 'Revenue Weighted', active: false, desc: 'Higher deal size = more leads' },
+]
 
 export default function Automation() {
-  const [logs, setLogs]     = useState<RunLog[]>([])
-  const [running, setRunning] = useState<string | null>(null)
+  const [triggers, setTriggers] = useLocalStorage('starz-automation', initialTriggers)
+  const [rules, setRules] = useLocalStorage('starz-dist-rules', distributionRules)
+  const { success, info } = useToast()
 
-  const fire = useCallback(async (eng: typeof ENGINES[0]) => {
-    setRunning(eng.id)
-    const start = Date.now()
-    try {
-      const body = eng.trigger ? JSON.stringify({ trigger: eng.trigger }) : JSON.stringify({ action: 'ping' })
-      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/${eng.engine}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
-      })
-      const data = await res.json()
-      const entry: RunLog = {
-        id: Math.random().toString(36).slice(2),
-        engine: eng.label, trigger: eng.trigger || 'ping',
-        ok: res.ok,
-        msg: data?.message || data?.detail || (res.ok ? `Completed in ${Date.now() - start}ms` : `Error ${res.status}`),
-        ts: new Date().toISOString(),
-      }
-      setLogs(l => [entry, ...l.slice(0, 19)])
-    } catch (e: any) {
-      setLogs(l => [{ id: Math.random().toString(36).slice(2), engine: eng.label, trigger: eng.trigger || 'ping', ok: false, msg: e.message, ts: new Date().toISOString() }, ...l.slice(0, 19)])
-    } finally { setRunning(null) }
-  }, [])
+  const toggleTrigger = (id: string) => {
+    setTriggers((prev: any[]) => prev.map((t: any) => {
+      if (t.id !== id) return t
+      const newStatus = t.status === 'active' ? 'paused' : 'active'
+      success(`Trigger ${t.name} ${newStatus}`)
+      return { ...t, status: newStatus }
+    }))
+  }
+
+  const activateRule = (name: string) => {
+    setRules((prev: any[]) => prev.map((r: any) => ({ ...r, active: r.name === name })))
+    success(`Switched to ${name}`)
+  }
+
+  const runTrigger = (id: string) => {
+    setTriggers((prev: any[]) => prev.map((t: any) => t.id === id ? { ...t, runs: t.runs + 1, lastRun: 'just now' } : t))
+    info(`Trigger ${id} executed`)
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Zap className="w-5 h-5 text-cyan" /> Automation — Orchestration Engine
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">master-router → core-automation-engine · outreach-engine · rico-engine · authority-engine · intelligence-engine</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Zap className="w-5 h-5 text-cyan" />
+            Automation Hub
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Trigger workflows, smart actions, and distribution rules</p>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 bg-emerald-500/5 rounded-lg">
+          <CheckCircle2 className="w-3 h-3 mr-1" /> {triggers.filter((t: any) => t.status === 'active').length} Active
+        </Badge>
       </div>
 
-      {/* Engine grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ENGINES.map((eng, i) => (
-          <motion.div key={eng.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            className="p-5 rounded-2xl bg-card border border-border/40 card-glow flex flex-col gap-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-space-highlight flex items-center justify-center`}>
-                  <eng.icon className={`w-5 h-5 ${eng.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{eng.label}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground">{eng.engine}</p>
-                </div>
-              </div>
-              {running === eng.id && <div className="w-4 h-4 border-2 border-cyan border-t-transparent rounded-full animate-spin" />}
+      {/* Top Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Active Triggers', value: triggers.filter((t: any) => t.status === 'active').length, icon: Zap, color: 'text-cyan' },
+          { label: 'Total Runs Today', value: triggers.reduce((a: number, b: any) => a + b.runs, 0), icon: Play, color: 'text-emerald-400' },
+          { label: 'Paused', value: triggers.filter((t: any) => t.status === 'paused').length, icon: Pause, color: 'text-amber-400' },
+          { label: 'Avg Response', value: 12, suffix: ' min', icon: Clock, color: 'text-violet' },
+        ].map((m, i) => (
+          <motion.div key={m.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="p-4 rounded-2xl bg-card border border-border/40 card-glow">
+            <div className="flex items-center gap-2 mb-2">
+              <m.icon className={`w-4 h-4 ${m.color}`} />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">{eng.desc}</p>
-            <Button size="sm" className={`w-full h-8 text-xs font-bold bg-gradient-primary text-space mt-auto`}
-              onClick={() => fire(eng)} disabled={!!running}>
-              <Zap className="w-3.5 h-3.5 mr-1.5" />
-              {running === eng.id ? 'Running...' : `Fire ${eng.trigger || 'ping'}`}
-            </Button>
+            <div className="text-xl font-bold text-foreground">
+              {m.suffix ? `${m.value}${m.suffix}` : <AnimatedCounter end={m.value} />}
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Live run log */}
-      <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-        <div className="px-4 py-3 border-b border-border/20 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-cyan" />
-          <h3 className="text-sm font-semibold text-foreground">Live Run Log</h3>
-          <span className="text-[10px] text-muted-foreground ml-auto">Session only · {logs.length} runs</span>
-        </div>
-        {logs.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">No runs yet. Fire an engine above.</div>
-        ) : (
-          <div className="divide-y divide-border/10 max-h-64 overflow-y-auto">
-            {logs.map(log => (
-              <div key={log.id} className="flex items-center gap-3 px-4 py-2.5">
-                {log.ok
-                  ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  : <XCircle    className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground">{log.engine} · <span className="font-mono text-cyan">{log.trigger}</span></p>
-                  <p className="text-[10px] text-muted-foreground truncate">{log.msg}</p>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Triggers List */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2 p-5 rounded-2xl bg-card border border-border/40 card-glow">
+          <h3 className="font-semibold text-foreground text-sm mb-4">Active Triggers</h3>
+          <div className="space-y-2">
+            {triggers.map((t: any) => (
+              <div key={t.id} className="p-4 rounded-xl bg-space-highlight/30 border border-border/20 hover:border-cyan/20 transition-all">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${t.status === 'active' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">{t.name}</span>
+                        <Badge className={`text-[10px] ${t.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>{t.status}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <span>When: <span className="text-cyan">{t.trigger}</span></span>
+                        <ArrowRight className="w-3 h-3" />
+                        <span>Then: <span className="text-violet">{t.action}</span></span>
+                      </div>
+                      <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <span>{t.runs} runs</span>
+                        <span>Last: {t.lastRun}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => runTrigger(t.id)} className="p-1.5 rounded hover:bg-card text-muted-foreground hover:text-cyan transition-colors" title="Run now">
+                      <Play className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => toggleTrigger(t.id)} className={`p-1.5 rounded transition-colors ${t.status === 'active' ? 'text-emerald-400 hover:bg-emerald-400/10' : 'text-amber-400 hover:bg-amber-400/10'}`} title="Toggle">
+                      {t.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(log.ts)}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </motion.div>
 
-      {/* Engine map */}
-      <div className="p-5 rounded-2xl bg-card border border-border/40 card-glow">
-        <h3 className="text-sm font-semibold text-foreground mb-4">STARZ-OS Engine Map</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            { name: 'master-router',          role: 'Gateway',              color: 'border-cyan/30 text-cyan' },
-            { name: 'core-automation-engine', role: 'Orchestration Engine', color: 'border-violet/30 text-violet' },
-            { name: 'outreach-engine',        role: 'Revenue Engine',       color: 'border-emerald-400/30 text-emerald-400' },
-            { name: 'rico-engine',            role: 'Delivery Engine',      color: 'border-amber-400/30 text-amber-400' },
-            { name: 'authority-engine',       role: 'Authority Engine',     color: 'border-blue-400/30 text-blue-400' },
-            { name: 'intelligence-engine',    role: 'Intelligence Engine',  color: 'border-red-400/30 text-red-400' },
-          ].map(e => (
-            <div key={e.name} className={`p-3 rounded-xl border ${e.color} bg-space-highlight/30`}>
-              <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${e.color.split(' ')[1]}`}>{e.role}</p>
-              <p className="text-[10px] font-mono text-muted-foreground">{e.name}</p>
+        {/* Distribution Rules */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl bg-card border border-border/40 card-glow">
+          <h3 className="font-semibold text-foreground text-sm mb-4">Distribution Rules</h3>
+          <div className="space-y-2">
+            {rules.map((rule: any) => (
+              <div key={rule.name} onClick={() => activateRule(rule.name)} className={`p-3 rounded-xl border transition-all cursor-pointer ${rule.active ? 'border-cyan/30 bg-cyan/5' : 'border-border/20 hover:border-cyan/20'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-foreground">{rule.name}</span>
+                  {rule.active && <div className="w-2 h-2 rounded-full bg-cyan" />}
+                </div>
+                <p className="text-[10px] text-muted-foreground">{rule.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 pt-4 border-t border-border/20">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Channel Actions</h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-space-highlight/30 transition-colors cursor-pointer" onClick={() => info('SMS templates editor')}>
+                <MessageSquare className="w-4 h-4 text-cyan" />
+                <span className="text-sm text-foreground">SMS Templates</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-space-highlight/30 transition-colors cursor-pointer" onClick={() => info('Email sequences editor')}>
+                <Mail className="w-4 h-4 text-violet" />
+                <span className="text-sm text-foreground">Email Sequences</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-space-highlight/30 transition-colors cursor-pointer" onClick={() => info('Voicemail scripts editor')}>
+                <Phone className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm text-foreground">Voicemail Scripts</span>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   )

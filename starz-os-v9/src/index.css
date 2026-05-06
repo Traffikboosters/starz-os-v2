@@ -199,7 +199,14 @@
   background: rgba(148, 163, 184, 0.5);
 }
 
-/* Animations */
+/* Flash animation for HOT lead status */
+@keyframes flash-red {
+  0%, 100% { background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+  50% { background-color: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.6); }
+}
+.animate-flash-red {
+  animation: flash-red 1.5s ease-in-out infinite;
+}
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }

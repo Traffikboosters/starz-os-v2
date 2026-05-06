@@ -21,9 +21,9 @@ import {
   Wifi,
   ChevronRight,
 } from 'lucide-react'
+import { StarField } from '@/components/StarField'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { MagneticButton } from '@/components/MagneticButton'
-import { StarField } from '@/components/StarField'
 import { AnimatedCounter } from '@/components/AnimatedCounter'
 import { Button } from '@/components/ui/button'
 
@@ -61,9 +61,8 @@ function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Star className="w-6 h-6 text-cyan fill-cyan group-hover:rotate-12 transition-transform duration-300" />
-              <div className="absolute inset-0 w-6 h-6 bg-cyan/30 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative w-8 h-8 rounded overflow-hidden">
+              <img src="/logo-starz.png" alt="STARZ-OS" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-bold tracking-tight text-foreground">
               STARZ<span className="text-cyan">-OS</span>
@@ -75,6 +74,12 @@ function Navigation() {
             <a href="#showcase" className={navLink}>Showcase</a>
             <a href="#pricing" className={navLink}>Pricing</a>
             <a href="#testimonials" className={navLink}>About</a>
+            <button
+              onClick={() => navigate('/bge')}
+              className="text-sm text-cyan hover:text-cyan/80 transition-colors duration-200 font-medium"
+            >
+              Contractor Portal
+            </button>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -151,7 +156,6 @@ function Hero() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <StarField />
       <motion.div style={{ y: heroY, opacity }} className="absolute inset-0 z-0">
         <img
           src="/hero-cosmos-bg.jpg"
@@ -774,17 +778,21 @@ function Footer() {
 /* ─── Page ─── */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-space text-foreground noise-overlay">
-      <Navigation />
-      <Hero />
-      <TrustBar />
-      <StatsBand />
-      <BentoFeatures />
-      <DashboardShowcase />
-      <Testimonials />
-      <Pricing />
-      <CTASection />
-      <Footer />
+    <div className="min-h-screen bg-space text-foreground noise-overlay relative">
+      <StarField />
+      <div className="fixed inset-0 bg-space/80 z-[5] pointer-events-none" />
+      <div className="relative z-10">
+        <Navigation />
+        <Hero />
+        <TrustBar />
+        <StatsBand />
+        <BentoFeatures />
+        <DashboardShowcase />
+        <Testimonials />
+        <Pricing />
+        <CTASection />
+        <Footer />
+      </div>
     </div>
   )
 }

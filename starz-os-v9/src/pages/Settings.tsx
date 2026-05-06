@@ -1,52 +1,55 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Settings as SettingsIcon, Bell, Shield, Globe, Save, CheckCircle2, ChevronRight, Users, CreditCard, Palette, Smartphone, RotateCcw, AlertCircle} from 'lucide-react'
+  Settings as SettingsIcon, Bell, Shield, Globe, Save, CheckCircle2, ChevronRight, Users, CreditCard, Palette, Smartphone, RotateCcw, AlertCircle, X} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-
-const settingSections = [
-  {
-    title: 'General',
-    icon: SettingsIcon,
-    settings: [
-      { label: 'Company Name', value: 'STARZ-OS Inc.', type: 'text' },
-      { label: 'Timezone', value: 'America/New_York', type: 'select' },
-      { label: 'Currency', value: 'USD ($)', type: 'select' },
-    ]},
-  {
-    title: 'Notifications',
-    icon: Bell,
-    settings: [
-      { label: 'Email alerts for new leads', value: true, type: 'toggle' },
-      { label: 'SMS for high-value deals', value: true, type: 'toggle' },
-      { label: 'Slack webhook on closes', value: false, type: 'toggle' },
-      { label: 'Daily summary report', value: true, type: 'toggle' },
-    ]},
-  {
-    title: 'Security',
-    icon: Shield,
-    settings: [
-      { label: 'Require MFA for admins', value: true, type: 'toggle' },
-      { label: 'Session timeout (mins)', value: '30', type: 'number' },
-      { label: 'IP whitelist mode', value: false, type: 'toggle' },
-      { label: 'Auto-suspend after violations', value: true, type: 'toggle' },
-    ]},
-  {
-    title: 'Integrations',
-    icon: Globe,
-    settings: [
-      { label: 'Stripe account', value: 'Connected', type: 'status' },
-      { label: 'Twilio SID', value: 'AC_••••••••••••••', type: 'text' },
-      { label: 'SerpAPI key', value: '••••••••••••••', type: 'password' },
-      { label: 'OpenAI API', value: 'Connected', type: 'status' },
-    ]},
-]
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useToast } from '@/hooks/useToast'
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('General')
+  const { success, info } = useToast()
+
+  // General
+  const [companyName, setCompanyName] = useLocalStorage('starz-company-name', 'STARZ-OS Inc.')
+  const [timezone, setTimezone] = useLocalStorage('starz-timezone', 'America/New_York')
+  const [currency, setCurrency] = useLocalStorage('starz-currency', 'USD ($)')
+
+  // Notifications
+  const [emailAlerts, setEmailAlerts] = useLocalStorage('starz-email-alerts', true)
+  const [smsHighValue, setSmsHighValue] = useLocalStorage('starz-sms-highvalue', true)
+  const [slackWebhook, setSlackWebhook] = useLocalStorage('starz-slack-webhook', false)
+  const [dailySummary, setDailySummary] = useLocalStorage('starz-daily-summary', true)
+
+  // Security
+  const [requireMFA, setRequireMFA] = useLocalStorage('starz-require-mfa', true)
+  const [sessionTimeout, setSessionTimeout] = useLocalStorage('starz-session-timeout', '30')
+  const [ipWhitelist, setIpWhitelist] = useLocalStorage('starz-ip-whitelist', false)
+  const [autoSuspend, setAutoSuspend] = useLocalStorage('starz-auto-suspend', true)
+
+  // Integrations
+  const [stripeAccount] = useLocalStorage('starz-stripe', 'Connected')
+  const [twilioSid, setTwilioSid] = useLocalStorage('starz-twilio-sid', 'AC_••••••••••••••')
+  const [serpKey, setSerpKey] = useLocalStorage('starz-serp-key', '••••••••••••••')
+  const [openaiStatus] = useLocalStorage('starz-openai', 'Connected')
+
+  const handleSave = () => {
+    success('Settings saved successfully')
+  }
+
+  const handleReset = () => {
+    info('Settings reset to defaults')
+  }
+
+  const tabs = [
+    { title: 'General', icon: SettingsIcon },
+    { title: 'Notifications', icon: Bell },
+    { title: 'Security', icon: Shield },
+    { title: 'Integrations', icon: Globe },
+  ]
 
   return (
     <div className="space-y-6">
@@ -59,10 +62,10 @@ export default function Settings() {
           <p className="text-xs text-muted-foreground mt-0.5">Configure your STARZ-OS environment</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="border-border/40 text-xs h-8">
+          <Button variant="outline" size="sm" className="border-border/40 text-xs h-8" onClick={handleReset}>
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Reset
           </Button>
-          <Button size="sm" className="bg-gradient-primary text-space text-xs h-8 font-semibold">
+          <Button size="sm" className="bg-gradient-primary text-space text-xs h-8 font-semibold" onClick={handleSave}>
             <Save className="w-3.5 h-3.5 mr-1.5" /> Save Changes
           </Button>
         </div>
@@ -71,7 +74,7 @@ export default function Settings() {
       <div className="grid lg:grid-cols-4 gap-5">
         {/* Sidebar Tabs */}
         <div className="space-y-1">
-          {settingSections.map((section) => (
+          {tabs.map((section) => (
             <button
               key={section.title}
               onClick={() => setActiveTab(section.title)}
@@ -97,37 +100,92 @@ export default function Settings() {
         >
           <h3 className="text-lg font-semibold text-foreground mb-6">{activeTab}</h3>
           <div className="space-y-5">
-            {settingSections.find((s) => s.title === activeTab)?.settings.map((setting, i) => (
-              <div key={i} className="flex items-center justify-between py-3 border-b border-border/10 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{setting.label}</p>
-                  {setting.type === 'toggle' && (
-                    <p className="text-[10px] text-muted-foreground">
-                      {setting.value ? 'Enabled' : 'Disabled'}
-                    </p>
-                  )}
+            {activeTab === 'General' && (
+              <>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Company Name</p></div>
+                  <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="w-64 bg-card border-border/40 h-8 text-sm" />
                 </div>
-                <div>
-                  {setting.type === 'text' && (
-                    <Input value={setting.value as string} className="w-64 bg-card border-border/40 h-8 text-sm" readOnly />
-                  )}
-                  {setting.type === 'number' && (
-                    <Input value={setting.value as string} type="number" className="w-24 bg-card border-border/40 h-8 text-sm" />
-                  )}
-                  {setting.type === 'password' && (
-                    <Input value={setting.value as string} type="password" className="w-64 bg-card border-border/40 h-8 text-sm" readOnly />
-                  )}
-                  {setting.type === 'toggle' && (
-                    <Switch checked={setting.value as boolean} />
-                  )}
-                  {setting.type === 'status' && (
-                    <Badge className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                      <CheckCircle2 className="w-3 h-3 mr-1" /> {setting.value as string}
-                    </Badge>
-                  )}
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Timezone</p></div>
+                  <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-64 h-8 rounded-md bg-card border border-border/40 text-sm px-3 text-foreground">
+                    <option value="America/New_York">Eastern (ET)</option>
+                    <option value="America/Chicago">Central (CT)</option>
+                    <option value="America/Denver">Mountain (MT)</option>
+                    <option value="America/Los_Angeles">Pacific (PT)</option>
+                  </select>
                 </div>
-              </div>
-            ))}
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Currency</p></div>
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-64 h-8 rounded-md bg-card border border-border/40 text-sm px-3 text-foreground">
+                    <option value="USD ($)">USD ($)</option>
+                    <option value="EUR (€)">EUR (€)</option>
+                    <option value="GBP (£)">GBP (£)</option>
+                    <option value="CAD ($)">CAD ($)</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {activeTab === 'Notifications' && (
+              <>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Email alerts for new leads</p><p className="text-[10px] text-muted-foreground">{emailAlerts ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={emailAlerts} onCheckedChange={setEmailAlerts} />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">SMS for high-value deals</p><p className="text-[10px] text-muted-foreground">{smsHighValue ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={smsHighValue} onCheckedChange={setSmsHighValue} />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Slack webhook on closes</p><p className="text-[10px] text-muted-foreground">{slackWebhook ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={slackWebhook} onCheckedChange={setSlackWebhook} />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Daily summary report</p><p className="text-[10px] text-muted-foreground">{dailySummary ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={dailySummary} onCheckedChange={setDailySummary} />
+                </div>
+              </>
+            )}
+            {activeTab === 'Security' && (
+              <>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Require MFA for admins</p><p className="text-[10px] text-muted-foreground">{requireMFA ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={requireMFA} onCheckedChange={setRequireMFA} />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Session timeout (mins)</p></div>
+                  <Input value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)} type="number" className="w-24 bg-card border-border/40 h-8 text-sm" />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">IP whitelist mode</p><p className="text-[10px] text-muted-foreground">{ipWhitelist ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={ipWhitelist} onCheckedChange={setIpWhitelist} />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Auto-suspend after violations</p><p className="text-[10px] text-muted-foreground">{autoSuspend ? 'Enabled' : 'Disabled'}</p></div>
+                  <Switch checked={autoSuspend} onCheckedChange={setAutoSuspend} />
+                </div>
+              </>
+            )}
+            {activeTab === 'Integrations' && (
+              <>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Stripe account</p></div>
+                  <Badge className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30"><CheckCircle2 className="w-3 h-3 mr-1" /> {stripeAccount}</Badge>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">Twilio SID</p></div>
+                  <Input value={twilioSid} onChange={(e) => setTwilioSid(e.target.value)} className="w-64 bg-card border-border/40 h-8 text-sm" />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">SerpAPI key</p></div>
+                  <Input value={serpKey} onChange={(e) => setSerpKey(e.target.value)} type="password" className="w-64 bg-card border-border/40 h-8 text-sm" />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-border/10">
+                  <div><p className="text-sm font-medium text-foreground">OpenAI API</p></div>
+                  <Badge className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30"><CheckCircle2 className="w-3 h-3 mr-1" /> {openaiStatus}</Badge>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
