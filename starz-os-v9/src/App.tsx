@@ -1,9 +1,9 @@
-import { Routes, Route } from 'react-router'
+import { Routes, Route, Navigate } from 'react-router'
 import { Suspense, lazy } from 'react'
 import { StarField } from '@/components/StarField'
 import { Layout } from '@/components/Layout'
 
-// ─── SALES DIVISION ─────────────────────────────────────────────────
+// --- SALES DIVISION ---
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Leads = lazy(() => import('@/pages/Leads'))
 const PowerDial = lazy(() => import('@/pages/PowerDial'))
@@ -12,23 +12,33 @@ const Proposals = lazy(() => import('@/pages/Proposals'))
 const Billing = lazy(() => import('@/pages/Billing'))
 const AISteve = lazy(() => import('@/pages/AISteve'))
 
-// ─── FULFILLMENT DIVISION ───────────────────────────────────────────
+// --- FULFILLMENT DIVISION ---
 const WorkOrders = lazy(() => import('@/pages/WorkOrders'))
 const DeveloperWorkspace = lazy(() => import('@/pages/DeveloperWorkspace'))
 const SeoOperations = lazy(() => import('@/pages/SeoOperations'))
 const Deliverables = lazy(() => import('@/pages/Deliverables'))
 const Reports = lazy(() => import('@/pages/Reports'))
 
-// ─── SYSTEM ─────────────────────────────────────────────────────────
+// --- SYSTEM ---
 const CommandCenter = lazy(() => import('@/pages/CommandCenter'))
 const Automation = lazy(() => import('@/pages/Automation'))
 const Security = lazy(() => import('@/pages/Security'))
 const Settings = lazy(() => import('@/pages/Settings'))
 
-// ─── AUTH & LANDING ─────────────────────────────────────────────────
+// --- AUTH & LANDING ---
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
 const Login = lazy(() => import('@/pages/Login'))
 const Register = lazy(() => import('@/pages/Register'))
+
+// --- BGE CONTRACTOR PORTAL ---
+const BgeDashboard = lazy(() => import('@/pages/bge/Dashboard'))
+const BgeEarnings = lazy(() => import('@/pages/bge/Earnings'))
+const BgeLeads = lazy(() => import('@/pages/bge/Leads'))
+const BgePipeline = lazy(() => import('@/pages/bge/Pipeline'))
+const BgePowerDial = lazy(() => import('@/pages/bge/PowerDial'))
+const BgeProposals = lazy(() => import('@/pages/bge/Proposals'))
+const BgeSettings = lazy(() => import('@/pages/bge/Settings'))
+const BgeSteve = lazy(() => import('@/pages/bge/Steve'))
 
 function PageLoader() {
   return (
@@ -82,6 +92,17 @@ export default function App() {
         <Route path="/automation" element={<AppLayout><Automation /></AppLayout>} />
         <Route path="/security" element={<AppLayout><Security /></AppLayout>} />
         <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+
+        {/* BGE Contractor Portal */}
+        <Route path="/bge" element={<Navigate to="/bge/dashboard" replace />} />
+        <Route path="/bge/dashboard" element={<AppLayout><BgeDashboard /></AppLayout>} />
+        <Route path="/bge/earnings" element={<AppLayout><BgeEarnings /></AppLayout>} />
+        <Route path="/bge/leads" element={<AppLayout><BgeLeads /></AppLayout>} />
+        <Route path="/bge/pipeline" element={<AppLayout><BgePipeline /></AppLayout>} />
+        <Route path="/bge/powerdial" element={<AppLayout><BgePowerDial /></AppLayout>} />
+        <Route path="/bge/proposals" element={<AppLayout><BgeProposals /></AppLayout>} />
+        <Route path="/bge/settings" element={<AppLayout><BgeSettings /></AppLayout>} />
+        <Route path="/bge/steve" element={<AppLayout><BgeSteve /></AppLayout>} />
       </Routes>
     </div>
   )
