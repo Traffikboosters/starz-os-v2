@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -7,13 +7,7 @@ import { Lead } from "@/lib/leads";
 const supabase = getSupabaseBrowserClient();
 const STATUS_OPTIONS = ["all", "new", "contacted", "qualified", "won", "lost"];
 
-export default function LeadsClient({
-  initialLeads, initialError, initialCount, initialPage,
-  initialQ, initialStatus, pageSize,
-}: {
-  initialLeads: Lead[]; initialError: string | null; initialCount: number;
-  initialPage: number; initialQ: string; initialStatus: string; pageSize: number;
-}) {
+export default function LeadsClient({ initialLeads, initialError, initialCount, initialPage, initialQ, initialStatus, pageSize }: { initialLeads: Lead[]; initialError: string | null; initialCount: number; initialPage: number; initialQ: string; initialStatus: string; pageSize: number; }) {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [errorMsg, setErrorMsg] = useState<string | null>(initialError);
@@ -36,7 +30,7 @@ export default function LeadsClient({
     if (nextQ) params.set("q", nextQ);
     if (nextStatus && nextStatus !== "all") params.set("status", nextStatus);
     if (nextPage > 1) params.set("page", String(nextPage));
-    return `/leads${params.toString() ? `?${params.toString()}` : ""}`;
+    return "/leads" + (params.toString() ? "?" + params.toString() : "");
   }, [page, qInput, statusInput]);
 
   const refreshFromServer = useCallback(async () => {
@@ -55,10 +49,7 @@ export default function LeadsClient({
 
   const scheduleRefresh = useCallback(() => {
     if (refreshTimerRef.current) return;
-    refreshTimerRef.current = setTimeout(() => {
-      refreshTimerRef.current = null;
-      refreshFromServer();
-    }, 250);
+    refreshTimerRef.current = setTimeout(() => { refreshTimerRef.current = null; refreshFromServer(); }, 250);
   }, [refreshFromServer]);
 
   const runSearch = useCallback(() => { router.push(buildUrl({ page: 1 })); }, [router, buildUrl]);
@@ -66,25 +57,14 @@ export default function LeadsClient({
 
   const addLead = useCallback(async () => {
     setErrorMsg(null);
-    const { error } = await supabase.from("leads").insert([{
-      name: "Test Lead",
-      business_name: "Test Company",
-      status: "new",
-      score: 50,
-      revenue_tier: "over_5k",
-    }]);
+    const { error } = await supabase.from("leads").insert([{ name: "Test Lead", business_name: "Test Company", status: "new", score: 50, revenue_tier: "over_5k" }]);
     if (error) { setErrorMsg(error.message); return; }
     await refreshFromServer();
   }, [refreshFromServer]);
 
   const autoAssign = useCallback(async (id: string) => {
     setErrorMsg(null);
-    const { error } = await supabase.rpc("assign_best_fit_lead_guarded", {
-      p_prospect_id: id,
-      p_daily_cap: 20,
-      p_load_penalty: 0.2,
-      p_fairness_boost: 0.1,
-    });
+    const { error } = await supabase.rpc("assign_best_fit_lead_guarded", { p_prospect_id: id, p_daily_cap: 20, p_load_penalty: 0.2, p_fairness_boost: 0.1 });
     if (error) { setErrorMsg(error.message); return; }
     await refreshFromServer();
   }, [refreshFromServer]);
@@ -98,8 +78,7 @@ export default function LeadsClient({
 
   useEffect(() => {
     isMountedRef.current = true;
-    const channel = supabase
-      .channel("leads-live")
+    const channel = supabase.channel("leads-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => scheduleRefresh())
       .subscribe((status) => setRealtimeStatus(status));
     return () => {
@@ -111,13 +90,13 @@ export default function LeadsClient({
 
   const rows = useMemo(() => leads.map((lead) => (
     <tr key={lead.id}>
-      <td>{lead.name || "—"}</td>
-      <td>{lead.company || "—"}</td>
-      <td>{lead.score ?? "—"}</td>
-      <td>{lead.status || "—"}</td>
-      <td>{lead.estimated_value ?? "—"}</td>
+      <td>{lead.name || "---"}</td>
+      <td>{lead.company || "---"}</td>
+      <td>{lead.score ?? "---"}</td>
+      <td>{lead.status || "---"}</td>
+      <td>{lead.estimated_value ?? "---"}</td>
       <td>{lead.assigned_rep_id || "Unassigned"}</td>
-      <td>{lead.updated_at ? new Date(lead.updated_at).toLocaleString() : "—"}</td>
+      <td>{lead.updated_at ? new Date(lead.updated_at).toLocaleString() : "---"}</td>
       <td><button onClick={() => autoAssign(lead.id as string)}>Assign</button></td>
     </tr>
   )), [leads, autoAssign]);
@@ -138,14 +117,8 @@ export default function LeadsClient({
       {errorMsg && <p style={{ color: "crimson" }}>Error: {errorMsg}</p>}
       {loading && <p>Refreshing...</p>}
       <table border={1} cellPadding={10} style={{ width: "100%" }}>
-        <thead>
-          <tr><th>Name</th><th>Company</th><th>Score</th><th>Status</th><th>Value</th><th>Assigned</th><th>Updated</th><th>Action</th></tr>
-        </thead>
-        <tbody>
-          {leads.length === 0
-            ? <tr><td colSpan={8} style={{ textAlign: "center" }}>No leads found</td></tr>
-            : rows}
-        </tbody>
+        <thead><tr><th>Name</th><th>Company</th><th>Score</th><th>Status</th><th>Value</th><th>Assigned</th><th>Updated</th><th>Action</th></tr></thead>
+        <tbody>{leads.length === 0 ? <tr><td colSpan={8} style={{ textAlign: "center" }}>No leads found</td></tr> : rows}</tbody>
       </table>
       <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
         <button disabled={page <= 1} onClick={() => goToPage(page - 1)}>Prev</button>
