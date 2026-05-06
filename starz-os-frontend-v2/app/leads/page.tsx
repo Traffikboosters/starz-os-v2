@@ -32,9 +32,20 @@ export default async function LeadsPage({
 
   const { data, error, count } = await query;
 
+  const initialLeads: Lead[] = (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.name ?? row.business_name ?? null,
+    company: row.business_name ?? null,
+    score: row.score ?? null,
+    status: row.status ?? null,
+    assigned_rep_id: row.assigned_to ?? null,
+    estimated_value: row.revenue_tier ?? null,
+    updated_at: row.updated_at ?? null,
+  }));
+
   return (
     <LeadsClient
-      initialLeads={(data ?? []) as Lead[]}
+      initialLeads={initialLeads}
       initialError={error?.message ?? null}
       initialCount={count ?? 0}
       initialPage={page}
