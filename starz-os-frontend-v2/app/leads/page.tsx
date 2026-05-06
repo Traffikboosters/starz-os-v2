@@ -13,24 +13,22 @@ export default async function LeadsPage({
   const q = (sp.q ?? "").trim();
   const status = (sp.status ?? "").trim();
   const page = Math.max(Number(sp.page ?? "1") || 1, 1);
-
   const from = (page - 1) * DEFAULT_PAGE_SIZE;
   const to = from + DEFAULT_PAGE_SIZE - 1;
 
   const supabase = await getSupabaseServerClient();
 
   let query = supabase
-    .schema("leads")
-    .from("prospects")
+    .from("leads")
     .select(
-      "id,name,company,score,status,assigned_rep_id,estimated_value,updated_at",
+      "id,name,business_name,score,status,assigned_to,revenue_tier,updated_at",
       { count: "exact" }
     )
     .order("updated_at", { ascending: false })
     .range(from, to);
 
   if (status && status !== "all") query = query.eq("status", status);
-  if (q) query = query.or(`name.ilike.%${q}%,company.ilike.%${q}%`);
+  if (q) query = query.or("name.ilike.%" + q + "%,business_name.ilike.%" + q + "%");
 
   const { data, error, count } = await query;
 
