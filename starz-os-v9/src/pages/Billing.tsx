@@ -1,197 +1,310 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { DollarSign, CreditCard, RefreshCw, CheckCircle2, Clock, AlertCircle, Zap, TrendingUp, FileText } from 'lucide-react'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  CreditCard, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight,
+  CheckCircle2, Clock, AlertCircle, FileText, Download, Send,
+  ChevronRight, Zap, Shield, BarChart3, Star, Plus, MoreHorizontal,
+  Wallet, Receipt, PiggyBank, Banknote, X, Loader2
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { AnimatedCounter } from '@/components/AnimatedCounter'
-import { db, SUPABASE_FUNCTIONS_URL } from '@/lib/supabase'
-import { formatCurrency, timeAgo } from '@/lib/utils'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useToast } from '@/hooks/useToast'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from 'recharts'
 
-const statusStyle: Record<string, string> = {
-  paid:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  pending:  'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  in_fulfillment: 'bg-cyan/10 text-cyan border-cyan/30',
-  failed:   'bg-red-500/10 text-red-400 border-red-500/30',
-  refunded: 'bg-violet/10 text-violet border-violet/30',
+const revenueData = [
+  { name: 'Jan', revenue: 42000, expenses: 28000 },
+  { name: 'Feb', revenue: 58000, expenses: 32000 },
+  { name: 'Mar', revenue: 49000, expenses: 30000 },
+  { name: 'Apr', revenue: 72000, expenses: 38000 },
+  { name: 'May', revenue: 68000, expenses: 35000 },
+  { name: 'Jun', revenue: 91000, expenses: 42000 },
+  { name: 'Jul', revenue: 85000, expenses: 40000 },
+]
+
+const initialTransactions = [
+  { id: 'PAY-001', client: 'Miami Auto Group', amount: 8400, status: 'completed', method: 'Stripe', date: 'Jul 24, 2025', type: 'incoming' },
+  { id: 'PAY-002', client: 'NYC Dental', amount: 12200, status: 'completed', method: 'Stripe', date: 'Jul 23, 2025', type: 'incoming' },
+  { id: 'PAY-003', client: 'Phoenix Roofing', amount: 5600, status: 'pending', method: 'Stripe', date: 'Jul 23, 2025', type: 'incoming' },
+  { id: 'PAY-004', client: 'SF Tech Startup', amount: 15000, status: 'completed', method: 'Wire', date: 'Jul 22, 2025', type: 'incoming' },
+  { id: 'PAY-005', client: 'Chicago Law Firm', amount: 9200, status: 'failed', method: 'Stripe', date: 'Jul 22, 2025', type: 'incoming' },
+  { id: 'PAY-006', client: 'Platform Payout', amount: 45000, status: 'completed', method: 'ACH', date: 'Jul 21, 2025', type: 'outgoing' },
+]
+
+const statusStyles: Record<string, string> = {
+  completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  pending: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  failed: 'bg-red-500/10 text-red-400 border-red-500/30',
+}
+
+const ChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="px-3 py-2 rounded-lg bg-card border border-border/50 shadow-card">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="text-sm font-semibold" style={{ color: p.color }}>{p.name}: ${p.value?.toLocaleString()}</p>
+      ))}
+    </div>
+  )
 }
 
 export default function Billing() {
-  const [orders, setOrders] = useState<any[]>([])
-  const [stripeEvents, setStripeEvents] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [triggering, setTriggering] = useState(false)
-  const [triggerResult, setTriggerResult] = useState<{ok:boolean;msg:string}|null>(null)
-  const [activeTab, setActiveTab] = useState<'orders'|'stripe'>('orders')
+  const [period, setPeriod] = useState('month')
+  const [transactions, setTransactions] = useLocalStorage('starz-transactions', initialTransactions)
+  const [showInvoice, setShowInvoice] = useState(false)
+  const [newInvoice, setNewInvoice] = useState({ client: '', amount: '', description: '' })
+  const [processing, setProcessing] = useState(false)
+  const { success, info, warning } = useToast()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [ordersRes, stripeRes] = await Promise.allSettled([
-        db.deals.from('work_orders')
-          .select('id,client_name,business_name,email,package,total_amount,deposit_amount,monthly_amount,status,payment_status,paid_at,signed_at,fulfillment_status,execution_status,proposal_id,service_type,created_at,cancellation_deadline,probation_ends_at')
-          .order('created_at', { ascending: false }).limit(50),
-        db.deals.from('stripe_webhook_events')
-          .select('id,event_type,amount,currency,status,customer_email,created_at')
-          .order('created_at', { ascending: false }).limit(30),
-      ])
-      if (ordersRes.status === 'fulfilled') setOrders(ordersRes.value.data || [])
-      if (stripeRes.status === 'fulfilled') setStripeEvents(stripeRes.value.data || [])
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const triggerStripeTest = async () => {
-    setTriggering(true)
-    setTriggerResult(null)
-    try {
-      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/stripe-webhook`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'payment_intent.succeeded', data: { object: { amount: 75000, currency: 'usd' } } }),
-      })
-      const data = await res.json()
-      setTriggerResult({ ok: res.ok, msg: data?.message || (res.ok ? 'Stripe test event fired' : 'Error') })
-      if (res.ok) setTimeout(load, 1500)
-    } catch (e: any) { setTriggerResult({ ok: false, msg: e.message }) }
-    finally { setTriggering(false) }
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'invoice':
+        setShowInvoice(true)
+        break
+      case 'payout':
+        info('Payout form opening...')
+        break
+      case 'statements':
+        info('Generating monthly statement...')
+        break
+      case 'savings':
+        success('Savings goal updated: $500K by Q4')
+        break
+    }
   }
 
-  const stats = {
-    total: orders.length,
-    paid: orders.filter(o => o.payment_status === 'paid').length,
-    pending: orders.filter(o => o.payment_status === 'pending').length,
-    mrr: orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + parseFloat(o.monthly_amount || o.total_amount || 0), 0),
+  const handleCreateInvoice = () => {
+    if (!newInvoice.client || !newInvoice.amount) {
+      warning('Client and amount are required')
+      return
+    }
+    const id = `PAY-${String(transactions.length + 1).padStart(3, '0')}`
+    setTransactions((prev: any[]) => [{
+      id,
+      client: newInvoice.client,
+      amount: Number(newInvoice.amount),
+      status: 'pending',
+      method: 'Stripe',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      type: 'incoming',
+    }, ...prev])
+    setShowInvoice(false)
+    setNewInvoice({ client: '', amount: '', description: '' })
+    success(`Invoice ${id} created`)
   }
-
-  const chartData = (() => {
-    const byDay: Record<string, number> = {}
-    orders.filter(o => o.paid_at).forEach(o => {
-      const d = new Date(o.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      byDay[d] = (byDay[d] || 0) + parseFloat(o.monthly_amount || o.total_amount || 0)
-    })
-    return Object.entries(byDay).slice(-7).map(([name, revenue]) => ({ name, revenue }))
-  })()
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-cyan" /> Billing & Payments
+            <CreditCard className="w-5 h-5 text-cyan" />
+            Billing & Revenue
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">deals.work_orders · Stripe webhook events</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Payment tracking, payouts, and revenue analytics</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="border-border/40 text-xs h-8" onClick={load} disabled={loading}>
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />Refresh
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="border-border/40 text-xs h-8" onClick={() => info('Exporting data...')}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Export
           </Button>
-          <Button size="sm" className="bg-gradient-primary text-space font-bold text-xs h-8" onClick={triggerStripeTest} disabled={triggering}>
-            <Zap className="w-3.5 h-3.5 mr-1.5" />{triggering ? 'Firing...' : 'Test Stripe Event'}
+          <Button size="sm" className="bg-gradient-primary text-space text-xs h-8 font-semibold" onClick={() => setShowInvoice(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> New Invoice
           </Button>
         </div>
       </div>
 
-      {triggerResult && (
-        <div className={`p-3 rounded-xl border text-xs ${triggerResult.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-          {triggerResult.ok ? '✓' : '✗'} {triggerResult.msg}
-        </div>
-      )}
+      {/* New Invoice Modal */}
+      <AnimatePresence>
+        {showInvoice && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowInvoice(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-card border border-border/40 rounded-2xl p-6 w-full max-w-md shadow-card" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">Create Invoice</h3>
+                <button onClick={() => setShowInvoice(false)} className="p-1 rounded hover:bg-card text-muted-foreground"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-3">
+                <Input placeholder="Client name" value={newInvoice.client} onChange={(e) => setNewInvoice({ ...newInvoice, client: e.target.value })} className="bg-card border-border/40" />
+                <Input placeholder="Amount ($)" type="number" value={newInvoice.amount} onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })} className="bg-card border-border/40" />
+                <Input placeholder="Description" value={newInvoice.description} onChange={(e) => setNewInvoice({ ...newInvoice, description: e.target.value })} className="bg-card border-border/40" />
+                <Button className="w-full bg-gradient-primary text-space font-semibold" onClick={handleCreateInvoice}>
+                  {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Invoice'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Work Orders', value: stats.total,   icon: FileText,    color: 'text-cyan' },
-          { label: 'Paid',        value: stats.paid,    icon: CheckCircle2, color: 'text-emerald-400' },
-          { label: 'Pending',     value: stats.pending, icon: Clock,       color: 'text-amber-400' },
-          { label: 'Est. MRR',    value: stats.mrr,     icon: TrendingUp,  color: 'text-violet', isCurrency: true },
+          { label: 'Total Revenue', value: 468200, prefix: '$', change: '+24.3%', up: true, icon: DollarSign },
+          { label: 'MRR', value: 84200, prefix: '$', change: '+8.7%', up: true, icon: TrendingUp },
+          { label: 'Pending', value: 20800, prefix: '$', change: '+3', up: true, icon: Clock },
+          { label: 'Payouts', value: 45000, prefix: '$', change: '-5.2%', up: false, icon: Wallet },
         ].map((m, i) => (
-          <motion.div key={m.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-2xl bg-card border border-border/40 card-glow">
+          <motion.div
+            key={m.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="p-4 rounded-2xl bg-card border border-border/40 card-glow"
+          >
             <div className="flex items-center gap-2 mb-2">
-              <m.icon className={`w-4 h-4 ${m.color}`} />
+              <m.icon className="w-4 h-4 text-cyan" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</span>
             </div>
-            <div className={`text-2xl font-bold font-mono ${m.color}`}>
-              {loading ? <div className="h-8 w-16 bg-muted/30 rounded animate-pulse" /> :
-                m.isCurrency ? `$${(m.value/1000).toFixed(1)}K` : <AnimatedCounter end={m.value} />}
+            <div className="text-xl font-bold text-foreground">
+              <AnimatedCounter end={m.value} prefix={m.prefix} />
+            </div>
+            <div className={`flex items-center gap-1 text-xs mt-1 ${m.up ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {m.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {m.change}
             </div>
           </motion.div>
         ))}
       </div>
 
-      {chartData.length > 0 && (
-        <div className="p-5 rounded-2xl bg-card border border-border/40 card-glow">
-          <h3 className="font-semibold text-foreground text-sm mb-4">Revenue Activity</h3>
-          <ResponsiveContainer width="100%" height={140}>
-            <AreaChart data={chartData}>
-              <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00F0FF" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#00F0FF" stopOpacity={0} />
-              </linearGradient></defs>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Revenue Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-2 p-5 rounded-2xl bg-card border border-border/40 card-glow"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="font-semibold text-foreground text-sm">Revenue vs Expenses</h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Monthly financial overview</p>
+            </div>
+            <div className="flex gap-1">
+              {['week', 'month', 'quarter'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1 rounded-lg text-xs capitalize transition-all ${
+                    period === p ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-muted-foreground hover:text-foreground border border-transparent'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={revenueData}>
+              <defs>
+                <linearGradient id="revG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00F0FF" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#00F0FF" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#EF4444" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v/1000}K`} />
-              <Tooltip formatter={(v: any) => formatCurrency(v)} />
-              <Area type="monotone" dataKey="revenue" stroke="#00F0FF" strokeWidth={2} fill="url(#revGrad)" />
+              <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} dy={8} />
+              <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v/1000}k`} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#00F0FF" strokeWidth={2} fill="url(#revG)" />
+              <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#EF4444" strokeWidth={2} fill="url(#expG)" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-      )}
+        </motion.div>
 
-      <div className="flex gap-1 p-1 bg-card border border-border/40 rounded-xl w-fit">
-        {[['orders', 'Work Orders'], ['stripe', 'Stripe Events']] .map(([id, label]) => (
-          <button key={id} onClick={() => setActiveTab(id as any)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === id ? 'bg-cyan/10 text-cyan border border-cyan/20' : 'text-muted-foreground hover:text-foreground'}`}>
-            {label}
-          </button>
-        ))}
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="p-5 rounded-2xl bg-card border border-border/40 card-glow"
+        >
+          <h3 className="font-semibold text-foreground text-sm mb-4">Quick Actions</h3>
+          <div className="space-y-2">
+            {[
+              { icon: FileText, label: 'Create Invoice', desc: 'Generate new client invoice', action: 'invoice' },
+              { icon: Send, label: 'Send Payout', desc: 'Process partner payment', action: 'payout' },
+              { icon: Receipt, label: 'View Statements', desc: 'Monthly financial reports', action: 'statements' },
+              { icon: PiggyBank, label: 'Set Savings Goal', desc: 'Target: $500K by Q4', action: 'savings' },
+            ].map((a) => (
+              <button
+                key={a.label}
+                onClick={() => handleQuickAction(a.action)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-space-highlight/40 transition-colors text-left"
+              >
+                <div className="w-9 h-9 rounded-lg bg-cyan/10 flex items-center justify-center flex-shrink-0">
+                  <a.icon className="w-4 h-4 text-cyan" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{a.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{a.desc}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {activeTab === 'orders' && (
-        <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-2 border-b border-border/20 text-[10px] text-muted-foreground uppercase tracking-wider">
-            <span>Client</span><span>Package</span><span>Amount</span><span>Status</span><span>Date</span>
+      {/* Transactions Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden"
+      >
+        <div className="p-5 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-foreground text-sm">Recent Transactions</h3>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Last 30 days</p>
           </div>
-          {loading ? <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div> :
-            <div className="divide-y divide-border/10 max-h-96 overflow-y-auto">
-              {orders.map((o, i) => (
-                <div key={o.id} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-2.5 hover:bg-space-highlight/20 transition-colors items-center">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{o.business_name || o.client_name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{o.email}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{o.package || o.service_type || '—'}</p>
-                  <p className="text-sm font-mono font-bold text-foreground">{formatCurrency(parseFloat(o.monthly_amount || o.total_amount || 0))}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded border ${statusStyle[o.payment_status] || statusStyle.pending}`}>
-                    {o.payment_status}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(o.created_at)}</span>
-                </div>
-              ))}
-            </div>}
+          <Button variant="ghost" size="sm" className="text-xs text-cyan hover:text-cyan hover:bg-cyan/5 h-7" onClick={() => info('Viewing all transactions...')}>
+            View all
+          </Button>
         </div>
-      )}
-
-      {activeTab === 'stripe' && (
-        <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/20"><h3 className="text-sm font-semibold text-foreground">deals.stripe_webhook_events</h3></div>
-          {stripeEvents.length === 0 ? <div className="p-8 text-center text-muted-foreground text-sm">No Stripe events yet. Fire a test event above.</div> :
-            <div className="divide-y divide-border/10 max-h-96 overflow-y-auto">
-              {stripeEvents.map((e, i) => (
-                <div key={e.id || i} className="flex items-center gap-4 px-4 py-2.5 hover:bg-space-highlight/20 transition-colors">
-                  <CreditCard className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground">{e.event_type}</p>
-                    <p className="text-[10px] text-muted-foreground">{e.customer_email || '—'}</p>
-                  </div>
-                  {e.amount && <p className="text-sm font-mono text-cyan">{formatCurrency(e.amount / 100)}</p>}
-                  <span className="text-[10px] text-muted-foreground">{timeAgo(e.created_at)}</span>
-                </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-t border-border/20">
+                {['ID', 'Client', 'Amount', 'Status', 'Method', 'Date', ''].map((h) => (
+                  <th key={h} className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((t: any) => (
+                <tr key={t.id} className="border-t border-border/10 hover:bg-space-highlight/20 transition-colors">
+                  <td className="px-5 py-3"><span className="text-xs font-mono text-muted-foreground">{t.id}</span></td>
+                  <td className="px-5 py-3"><span className="text-sm font-medium text-foreground">{t.client}</span></td>
+                  <td className="px-5 py-3">
+                    <span className={`text-sm font-semibold ${t.type === 'incoming' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {t.type === 'incoming' ? '+' : '-'}${t.amount.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge className={`text-[10px] ${statusStyles[t.status]}`}>{t.status}</Badge>
+                  </td>
+                  <td className="px-5 py-3"><span className="text-xs text-muted-foreground">{t.method}</span></td>
+                  <td className="px-5 py-3"><span className="text-xs text-muted-foreground">{t.date}</span></td>
+                  <td className="px-5 py-3">
+                    <button className="p-1 rounded hover:bg-card text-muted-foreground hover:text-foreground transition-colors" onClick={() => info(`Details for ${t.id}`)}>
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </div>}
+            </tbody>
+          </table>
         </div>
-      )}
+      </motion.div>
     </div>
   )
 }

@@ -1,356 +1,243 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Shield, AlertTriangle, CheckCircle2, XCircle, RefreshCw,
-  ShieldAlert, ShieldCheck, Users, Activity, Eye, Lock,
-  AlertCircle, Zap, Terminal, BarChart3,
-} from 'lucide-react'
+  Shield, Lock, AlertTriangle, CheckCircle2, XCircle, UserX, Activity, BarChart3, Users, Globe, Zap, Terminal,
+  ChevronRight, ShieldAlert, ShieldCheck, Ban, Eye} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AnimatedCounter } from '@/components/AnimatedCounter'
-import { db, SUPABASE_FUNCTIONS_URL } from '@/lib/supabase'
-import { timeAgo } from '@/lib/utils'
+import { useToast } from '@/hooks/useToast'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 
-interface Violation {
-  fingerprint: string
-  category: string
-  subject: string
-  message: string
-  severity: string
-  occurrence_count: number
-  first_seen_at: string
-  last_seen_at: string
-}
+const securityStats = [
+  { label: 'Threats Blocked', value: 1247, change: '+23', icon: ShieldAlert, color: 'text-cyan' },
+  { label: 'Active Users', value: 84, icon: Users, color: 'text-emerald-400' },
+  { label: 'Violations', value: 3, icon: AlertTriangle, color: 'text-amber-400' },
+  { label: 'Suspensions', value: 1, icon: Ban, color: 'text-red-400' },
+]
 
-interface AccessEvent {
-  id?: string
-  type?: string
-  payload?: any
-  created_at: string
-  tenant_id_text?: string
-}
+const accessLogData = [
+  { user: 'sarah@starz-os.com', action: 'login', ip: '192.168.1.45', time: '2m ago', status: 'success', method: 'SSO' },
+  { user: 'marcus@starz-os.com', action: 'api_call', ip: '192.168.1.47', time: '5m ago', status: 'success', method: 'API Key' },
+  { user: 'unknown', action: 'login_attempt', ip: '45.23.11.89', time: '12m ago', status: 'blocked', method: 'Password' },
+  { user: 'elena@starz-os.com', action: 'data_export', ip: '192.168.1.52', time: '18m ago', status: 'success', method: 'SSO' },
+  { user: 'guest_4421', action: 'login_attempt', ip: '103.44.12.6', time: '34m ago', status: 'blocked', method: 'Password' },
+  { user: 'james@starz-os.com', action: 'permission_change', ip: '192.168.1.60', time: '1h ago', status: 'success', method: 'SSO' },
+]
 
-interface HighRiskUser {
-  id?: string
-  user_id?: string
-  risk_score?: number
-  reason?: string
-  status?: string
-  created_at?: string
-}
+const initialAlerts = [
+  { id: 'ALT-001', severity: 'medium', message: 'Unusual login pattern from IP 45.23.11.x', time: '12m ago', resolved: false },
+  { id: 'ALT-002', severity: 'low', message: 'API rate limit approaching for key sk_live_...', time: '1h ago', resolved: true },
+  { id: 'ALT-003', severity: 'high', message: 'Failed login burst (15 attempts in 60s)', time: '2h ago', resolved: true },
+  { id: 'ALT-004', severity: 'low', message: 'SSL cert expires in 14 days', time: '3h ago', resolved: false },
+]
 
-const severityStyle = (s: string) => {
-  switch ((s || '').toLowerCase()) {
-    case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/40'
-    case 'high':     return 'bg-red-500/10 text-red-400 border-red-500/30'
-    case 'medium':   return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-    case 'low':      return 'bg-cyan/10 text-cyan border-cyan/30'
-    default:         return 'bg-muted/20 text-muted-foreground border-border/30'
-  }
-}
+const userStatuses = [
+  { name: 'Sarah Chen', role: 'Admin', status: 'active', lastActive: 'Now', mfa: true },
+  { name: 'Elena Rossi', role: 'Manager', status: 'active', lastActive: '2m ago', mfa: true },
+  { name: 'Marcus Webb', role: 'Rep', status: 'active', lastActive: '5m ago', mfa: false },
+  { name: 'Aisha Patel', role: 'Rep', status: 'suspended', lastActive: '2d ago', mfa: true },
+  { name: 'James Park', role: 'Viewer', status: 'active', lastActive: '1h ago', mfa: false },
+]
 
-const severityIcon = (s: string) => {
-  switch ((s || '').toLowerCase()) {
-    case 'critical':
-    case 'high':   return <AlertTriangle className="w-4 h-4 text-red-400" />
-    case 'medium': return <AlertCircle className="w-4 h-4 text-amber-400" />
-    default:       return <ShieldAlert className="w-4 h-4 text-cyan" />
+const severityBadge = (severity: string) => {
+  switch (severity) {
+    case 'high': return 'bg-red-500/10 text-red-400 border-red-500/30'
+    case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+    case 'low': return 'bg-cyan/10 text-cyan border-cyan/30'
+    default: return 'bg-muted text-muted-foreground'
   }
 }
 
 export default function Security() {
-  const [violations, setViolations]       = useState<Violation[]>([])
-  const [activeViolations, setActiveViolations] = useState<Violation[]>([])
-  const [accessEvents, setAccessEvents]   = useState<AccessEvent[]>([])
-  const [highRisk, setHighRisk]           = useState<HighRiskUser[]>([])
-  const [loading, setLoading]             = useState(true)
-  const [scanRunning, setScanRunning]     = useState(false)
-  const [scanResult, setScanResult]       = useState<{ok:boolean;msg:string}|null>(null)
-  const [activeTab, setActiveTab]         = useState<'violations'|'access'|'highrisk'>('violations')
+  const [showResolved, setShowResolved] = useState(false)
+  const [alerts, setAlerts] = useLocalStorage('starz-alerts', initialAlerts)
+  const [logFilter, setLogFilter] = useState('all')
+  const { success, info } = useToast()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [violRes, activeRes, eventsRes, riskRes] = await Promise.allSettled([
-        db.security.from('violations')
-          .select('fingerprint,category,subject,message,severity,occurrence_count,first_seen_at,last_seen_at')
-          .order('last_seen_at', { ascending: false })
-          .limit(50),
-        db.security.from('v_active_violations')
-          .select('fingerprint,category,subject,message,severity,occurrence_count,first_seen_at,last_seen_at')
-          .limit(20),
-        db.security.from('events')
-          .select('id,type,payload,created_at,tenant_id_text')
-          .order('created_at', { ascending: false })
-          .limit(30),
-        db.security.from('high_risk_users')
-          .select('*')
-          .limit(20),
-      ])
-      if (violRes.status === 'fulfilled') setViolations(violRes.value.data || [])
-      if (activeRes.status === 'fulfilled') setActiveViolations(activeRes.value.data || [])
-      if (eventsRes.status === 'fulfilled') setAccessEvents(eventsRes.value.data || [])
-      if (riskRes.status === 'fulfilled') setHighRisk(riskRes.value.data || [])
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const runSentinelScan = async () => {
-    setScanRunning(true)
-    setScanResult(null)
-    try {
-      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/core-automation-engine`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger: 'sentinel_scan' }),
-      })
-      const data = await res.json()
-      setScanResult({ ok: res.ok, msg: data?.message || data?.detail || (res.ok ? 'Sentinel scan completed' : 'Scan error') })
-      if (res.ok) setTimeout(load, 2000)
-    } catch (e: any) {
-      setScanResult({ ok: false, msg: e.message })
-    } finally {
-      setScanRunning(false)
-    }
+  const handleResolve = (id: string) => {
+    setAlerts((prev: any[]) => prev.map((a: any) => a.id === id ? { ...a, resolved: true } : a))
+    success(`Alert ${id} resolved`)
   }
 
-  // Stats
-  const criticalCount = violations.filter(v => ['critical','high'].includes((v.severity||'').toLowerCase())).length
-  const mediumCount   = violations.filter(v => (v.severity||'').toLowerCase() === 'medium').length
-  const lowCount      = violations.filter(v => (v.severity||'').toLowerCase() === 'low').length
+  const filteredLog = accessLogData.filter((e) => {
+    if (logFilter === 'all') return true
+    return e.status === logFilter
+  })
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Shield className="w-5 h-5 text-cyan" /> Sentinel Security
+            <Shield className="w-5 h-5 text-cyan" />
+            Sentinel Security
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            RLS enforcement · Access logging · Auto-suspension · Violation tracking
-          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">Access control, anomaly detection, and audit logging</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="border-border/40 text-xs h-8" onClick={load} disabled={loading}>
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />Refresh
-          </Button>
-          <Button size="sm" className="bg-gradient-primary text-space font-bold text-xs h-8" onClick={runSentinelScan} disabled={scanRunning}>
-            <Zap className="w-3.5 h-3.5 mr-1.5" />
-            {scanRunning ? 'Scanning...' : 'Run Sentinel Scan'}
-          </Button>
-        </div>
+        <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 bg-emerald-500/5 rounded-lg">
+          <ShieldCheck className="w-3 h-3 mr-1" /> Protected
+        </Badge>
       </div>
 
-      {/* Scan Result */}
-      {scanResult && (
-        <div className={`p-3 rounded-xl border text-xs ${scanResult.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-          {scanResult.ok ? '✓' : '✗'} {scanResult.msg}
-        </div>
-      )}
-
-      {/* KPI Row */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Violations', value: violations.length,      icon: ShieldAlert,  color: 'text-cyan' },
-          { label: 'Active / Open',    value: activeViolations.length, icon: AlertTriangle,color: 'text-red-400' },
-          { label: 'High Severity',    value: criticalCount,           icon: XCircle,      color: 'text-red-400' },
-          { label: 'High Risk Users',  value: highRisk.length,         icon: Users,        color: 'text-amber-400' },
-        ].map((m, i) => (
-          <motion.div key={m.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-2xl bg-card border border-border/40 card-glow">
+        {securityStats.map((m, i) => (
+          <motion.div
+            key={m.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="p-4 rounded-2xl bg-card border border-border/40 card-glow"
+          >
             <div className="flex items-center gap-2 mb-2">
               <m.icon className={`w-4 h-4 ${m.color}`} />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</span>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono">
-              {loading ? <div className="h-8 w-16 bg-muted/30 rounded animate-pulse" /> : <AnimatedCounter end={m.value} />}
+            <div className="text-xl font-bold text-foreground">
+              <AnimatedCounter end={m.value} />
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Severity Breakdown */}
-      {violations.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Critical / High', value: criticalCount, color: 'text-red-400',   bar: 'bg-red-500' },
-            { label: 'Medium',          value: mediumCount,   color: 'text-amber-400', bar: 'bg-amber-400' },
-            { label: 'Low / Info',      value: lowCount,      color: 'text-cyan',       bar: 'bg-cyan' },
-          ].map(s => (
-            <div key={s.label} className="p-4 rounded-2xl bg-card border border-border/40 card-glow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</span>
-                <span className={`text-lg font-bold font-mono ${s.color}`}>{s.value}</span>
-              </div>
-              <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${s.bar}`}
-                  style={{ width: violations.length > 0 ? `${Math.round((s.value / violations.length) * 100)}%` : '0%' }} />
-              </div>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Sentinel Alerts */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-2 p-5 rounded-2xl bg-card border border-border/40 card-glow"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-cyan" />
+              <h3 className="font-semibold text-foreground text-sm">Sentinel Alerts</h3>
             </div>
-          ))}
-        </div>
-      )}
+            <button
+              onClick={() => setShowResolved(!showResolved)}
+              className="text-xs text-cyan hover:text-cyan/80 transition-colors"
+            >
+              {showResolved ? 'Hide resolved' : 'Show resolved'}
+            </button>
+          </div>
+          <div className="space-y-2">
+            {alerts.filter((a: any) => showResolved || !a.resolved).map((alert: any) => (
+              <div
+                key={alert.id}
+                className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                  alert.resolved ? 'border-border/20 opacity-50' : 'border-border/30 hover:border-cyan/20'
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                  alert.severity === 'high' ? 'bg-red-400' : alert.severity === 'medium' ? 'bg-amber-400' : 'bg-cyan'
+                }`} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-mono text-muted-foreground">{alert.id}</span>
+                    <Badge className={`text-[10px] ${severityBadge(alert.severity)}`}>{alert.severity}</Badge>
+                    {alert.resolved && <Badge className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">Resolved</Badge>}
+                  </div>
+                  <p className="text-sm text-foreground">{alert.message}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{alert.time}</p>
+                </div>
+                {!alert.resolved && (
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] border-cyan/30 text-cyan hover:bg-cyan/5 px-2" onClick={() => handleResolve(alert.id)}>
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Resolve
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-card border border-border/40 rounded-xl w-fit">
-        {([
-          { id: 'violations', label: `Violations (${violations.length})` },
-          { id: 'access',     label: `Events (${accessEvents.length})` },
-          { id: 'highrisk',   label: `High Risk (${highRisk.length})` },
-        ] as const).map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === tab.id ? 'bg-cyan/10 text-cyan border border-cyan/20' : 'text-muted-foreground hover:text-foreground'}`}>
-            {tab.label}
-          </button>
-        ))}
+        {/* User Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="p-5 rounded-2xl bg-card border border-border/40 card-glow"
+        >
+          <h3 className="font-semibold text-foreground text-sm mb-4">User Status</h3>
+          <div className="space-y-2">
+            {userStatuses.map((u) => (
+              <div key={u.name} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-space-highlight/30 transition-colors">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${u.status === 'active' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{u.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{u.role} · {u.lastActive}</p>
+                </div>
+                {u.mfa ? (
+                  <Lock className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Unlock className="w-3 h-3 text-amber-400" />
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {/* Tab: Violations */}
-      {activeTab === 'violations' && (
-        <div className="space-y-3">
-          {activeViolations.length > 0 && (
-            <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                <p className="text-sm font-semibold text-red-400">{activeViolations.length} Active Violations — Require Attention</p>
-              </div>
-              <div className="space-y-2">
-                {activeViolations.map((v, i) => (
-                  <div key={v.fingerprint || i} className="flex items-start gap-3 p-3 rounded-xl bg-card/60">
-                    {severityIcon(v.severity)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">{v.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{v.subject} · {v.category}</p>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded border capitalize flex-shrink-0 ${severityStyle(v.severity)}`}>
-                      {v.severity}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">security.violations</h3>
-              <span className="text-[10px] text-muted-foreground">{violations.length} total</span>
-            </div>
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-4 py-2 text-[10px] text-muted-foreground uppercase tracking-wider border-b border-border/10">
-              <span></span><span>Message / Subject</span><span>Category</span><span>Severity</span><span>Last Seen</span>
-            </div>
-            {loading ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">Loading violations...</div>
-            ) : violations.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">
-                <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                No violations detected. System is clean.
-              </div>
-            ) : (
-              <div className="divide-y divide-border/10 max-h-96 overflow-y-auto">
-                {violations.map((v, i) => (
-                  <motion.div key={v.fingerprint || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-                    className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-4 py-2.5 hover:bg-space-highlight/20 transition-colors items-center">
-                    {severityIcon(v.severity)}
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{v.message}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{v.subject}</p>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground capitalize">{v.category?.replace(/_/g, ' ')}</p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded border capitalize ${severityStyle(v.severity)}`}>
-                      {v.severity}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(v.last_seen_at)}</span>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+      {/* Access Log */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden"
+      >
+        <div className="p-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-cyan" />
+            <h3 className="font-semibold text-foreground text-sm">Access Log</h3>
           </div>
-        </div>
-      )}
-
-      {/* Tab: Access Events */}
-      {activeTab === 'access' && (
-        <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">security.events</h3>
-            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 bg-emerald-500/5 flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Live
-            </Badge>
-          </div>
-          {loading ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">Loading events...</div>
-          ) : accessEvents.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">No security events logged yet</div>
-          ) : (
-            <div className="divide-y divide-border/10 max-h-96 overflow-y-auto">
-              {accessEvents.map((e, i) => (
-                <div key={e.id || i} className="flex items-center gap-3 px-4 py-2.5 hover:bg-space-highlight/20 transition-colors">
-                  <div className="w-7 h-7 rounded-lg bg-cyan/10 flex items-center justify-center flex-shrink-0">
-                    <Activity className="w-3.5 h-3.5 text-cyan" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{e.type || 'event'}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {e.tenant_id_text ? `tenant: ${e.tenant_id_text}` : '—'}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(e.created_at)}</span>
-                </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {['all', 'success', 'blocked'].map((f) => (
+                <button key={f} onClick={() => setLogFilter(f)} className={`px-2 py-1 rounded-lg text-[10px] capitalize transition-all ${logFilter === f ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-muted-foreground hover:text-foreground border border-transparent'}`}>{f}</button>
               ))}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab: High Risk Users */}
-      {activeTab === 'highrisk' && (
-        <div className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/20">
-            <h3 className="text-sm font-semibold text-foreground">security.high_risk_users</h3>
+            <Button variant="ghost" size="sm" className="text-xs text-cyan hover:text-cyan hover:bg-cyan/5 h-7" onClick={() => info('Exporting CSV...')}>
+              Export CSV
+            </Button>
           </div>
-          {loading ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : highRisk.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              No high-risk users flagged.
-            </div>
-          ) : (
-            <div className="divide-y divide-border/10 max-h-96 overflow-y-auto">
-              {highRisk.map((u, i) => (
-                <div key={u.id || i} className="flex items-center gap-4 px-4 py-3 hover:bg-space-highlight/20 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate font-mono">
-                      {u.user_id ? u.user_id.slice(0, 12) + '...' : u.id || 'Unknown'}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{u.reason || '—'}</p>
-                  </div>
-                  {u.risk_score !== undefined && (
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${u.risk_score > 80 ? 'text-red-400' : u.risk_score > 50 ? 'text-amber-400' : 'text-cyan'}`}>
-                        {u.risk_score}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">risk score</p>
-                    </div>
-                  )}
-                  {u.status && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded border capitalize ${u.status === 'suspended' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
-                      {u.status}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      )}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-t border-border/20">
+                {['User', 'Action', 'Method', 'IP Address', 'Time', 'Status'].map((h) => (
+                  <th key={h} className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLog.map((entry, i) => (
+                <tr key={i} className="border-t border-border/10 hover:bg-space-highlight/20 transition-colors">
+                  <td className="px-5 py-3"><span className="text-sm text-foreground font-mono">{entry.user}</span></td>
+                  <td className="px-5 py-3"><span className="text-sm text-muted-foreground">{entry.action}</span></td>
+                  <td className="px-5 py-3"><Badge variant="outline" className="text-[10px] border-border/40">{entry.method}</Badge></td>
+                  <td className="px-5 py-3"><span className="text-xs font-mono text-muted-foreground">{entry.ip}</span></td>
+                  <td className="px-5 py-3"><span className="text-xs text-muted-foreground">{entry.time}</span></td>
+                  <td className="px-5 py-3">
+                    <Badge className={`text-[10px] ${entry.status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
+                      {entry.status}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
+  )
+}
+
+function Unlock({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </svg>
   )
 }
