@@ -68,7 +68,7 @@ function formatTimer(s: number) {
 }
 
 function timeAgo(ts: string | null) {
-  if (!ts) return "â€”"
+  if (!ts) return "Ã¢â‚¬â€"
   const diff = Date.now() - new Date(ts).getTime()
   const m = Math.floor(diff / 60000)
   if (m < 1) return "just now"
@@ -147,14 +147,14 @@ export default function PowerDialPage() {
   async function dialLead(lead: QueueLead) {
     const e164 = toE164(lead.phone || "")
     if (!e164 || e164.length < 10) {
-      showToast("âš  No valid phone number", "amber")
+      showToast("Ã¢Å¡Â  No valid phone number", "amber")
       return
     }
 
     setCurrentLead(lead)
     setCallState("dialing")
     startTimer()
-    showToast(`ðŸ“ž Dialing ${formatPhone(lead.phone || "")}â€¦`, "green")
+    showToast(`Ã°Å¸â€œÅ¾ Dialing ${formatPhone(lead.phone || "")}Ã¢â‚¬Â¦`, "green")
     setLoading(true)
 
     try {
@@ -174,7 +174,7 @@ export default function PowerDialPage() {
       const data = await res.json()
 
       if (data?.error) {
-        showToast(`âœ— Dialpad error: ${data.error}`, "red")
+        showToast(`Ã¢Å“â€” Dialpad error: ${data.error}`, "red")
         setCallState("idle")
         stopTimer()
         return
@@ -210,11 +210,11 @@ export default function PowerDialPage() {
         .eq("id", lead.id)
 
       setCallState("connected")
-      showToast(`âœ“ Connected: ${lead.name}`, "green")
+      showToast(`Ã¢Å“â€œ Connected: ${lead.name}`, "green")
       loadQueue()
 
     } catch (err) {
-      showToast(`âœ— Failed: ${String(err)}`, "red")
+      showToast(`Ã¢Å“â€” Failed: ${String(err)}`, "red")
       setCallState("idle")
       stopTimer()
     } finally {
@@ -247,7 +247,7 @@ export default function PowerDialPage() {
   async function endCall(disposition: Disposition) {
     stopTimer()
     setCallState("ended")
-    showToast(`Call ended â€” ${disposition}`, disposition === "interested" ? "green" : "amber")
+    showToast(`Call ended Ã¢â‚¬â€ ${disposition}`, disposition === "interested" ? "green" : "amber")
 
     // Update call record
     if (activeCallRecord?.id) {
@@ -279,7 +279,7 @@ export default function PowerDialPage() {
         .insert({
           call_id: activeCallRecord.id,
           action: "disposition",
-          notes: `${disposition} â€” ${notes}`,
+          notes: `${disposition} Ã¢â‚¬â€ ${notes}`,
           metadata: { disposition, duration: timer, notes },
         })
     }
@@ -309,7 +309,7 @@ export default function PowerDialPage() {
     if (data) {
       setTimeout(() => dialLead(data as QueueLead), 2000)
     } else {
-      showToast("âœ“ Queue complete!", "green")
+      showToast("Ã¢Å“â€œ Queue complete!", "green")
       setIsAutoDialing(false)
       autoDialRef.current = false
     }
@@ -322,7 +322,7 @@ export default function PowerDialPage() {
       return
     }
 
-    showToast(`â†— Transferring to ${transferTarget}â€¦`, "amber")
+    showToast(`Ã¢â€ â€” Transferring to ${transferTarget}Ã¢â‚¬Â¦`, "amber")
 
     const res = await fetch(EDGE_FN, {
       method: "POST",
@@ -336,9 +336,9 @@ export default function PowerDialPage() {
 
     const data = await res.json()
     if (data?.error) {
-      showToast(`âœ— Transfer failed: ${data.error}`, "red")
+      showToast(`Ã¢Å“â€” Transfer failed: ${data.error}`, "red")
     } else {
-      showToast("âœ“ Call transferred!", "green")
+      showToast("Ã¢Å“â€œ Call transferred!", "green")
       setShowTransfer(false)
       endCall("connected")
     }
@@ -347,7 +347,7 @@ export default function PowerDialPage() {
   // ===== CONFERENCE =====
   async function startConference() {
     if (!conferenceNumber) return
-    showToast(`ðŸ“ž Adding ${formatPhone(conferenceNumber)} to callâ€¦`, "amber")
+    showToast(`Ã°Å¸â€œÅ¾ Adding ${formatPhone(conferenceNumber)} to callÃ¢â‚¬Â¦`, "amber")
 
     await fetch(EDGE_FN, {
       method: "POST",
@@ -359,7 +359,7 @@ export default function PowerDialPage() {
       }),
     })
 
-    showToast("âœ“ 3rd party dialed â€” merge in Dialpad app", "green")
+    showToast("Ã¢Å“â€œ 3rd party dialed Ã¢â‚¬â€ merge in Dialpad app", "green")
     setShowConference(false)
     setConferenceNumber("")
   }
@@ -367,7 +367,7 @@ export default function PowerDialPage() {
   // ===== VIDEO SESSION =====
   async function startVideoSession() {
     if (!currentLead) return
-    showToast("ðŸŽ¥ Creating video sessionâ€¦", "amber")
+    showToast("Ã°Å¸Å½Â¥ Creating video sessionÃ¢â‚¬Â¦", "amber")
 
     const { data } = await supabase
       .from("video_sessions")
@@ -382,9 +382,9 @@ export default function PowerDialPage() {
 
     if (data?.join_url) {
       window.open(data.join_url, "_blank")
-      showToast("âœ“ Video session started!", "green")
+      showToast("Ã¢Å“â€œ Video session started!", "green")
     } else {
-      showToast("Video session created â€” check Dialpad for join link", "amber")
+      showToast("Video session created Ã¢â‚¬â€ check Dialpad for join link", "amber")
     }
   }
 
@@ -395,7 +395,7 @@ export default function PowerDialPage() {
       .from("call_queue")
       .update({ status: disposition })
       .eq("id", leadId)
-    showToast(`âœ“ Marked as ${disposition}`, "green")
+    showToast(`Ã¢Å“â€œ Marked as ${disposition}`, "green")
     loadQueue()
   }
 
@@ -456,7 +456,7 @@ export default function PowerDialPage() {
       {/* HEADER */}
       <div className="flex items-center gap-4 px-6 py-3 border-b border-white/5 bg-black/40">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-sm">âš¡</div>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-sm">Ã¢Å¡Â¡</div>
           <span className="font-bold text-sm tracking-wider">POWERDIAL</span>
           <span className="text-[10px] text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded px-1.5 py-0.5 ml-1">CALL CENTER</span>
         </div>
@@ -484,19 +484,19 @@ export default function PowerDialPage() {
               setIsAutoDialing(next)
               autoDialRef.current = next
               if (next && callState === "idle") autoDialNext()
-              showToast(next ? "â–¶ Auto-dial ON" : "â¹ Auto-dial OFF", next ? "green" : "amber")
+              showToast(next ? "Ã¢â€“Â¶ Auto-dial ON" : "Ã¢ÂÂ¹ Auto-dial OFF", next ? "green" : "amber")
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border
               ${isAutoDialing
                 ? "bg-green-500/20 border-green-500/40 text-green-300 hover:bg-green-500/30"
                 : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"}`}>
-            {isAutoDialing ? "â¹ Stop Auto-Dial" : "â–¶ Start Auto-Dial"}
+            {isAutoDialing ? "Ã¢ÂÂ¹ Stop Auto-Dial" : "Ã¢â€“Â¶ Start Auto-Dial"}
           </button>
 
           <button
             onClick={() => { loadQueue(); loadActiveCalls() }}
             className="px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 transition-all">
-            â†» Refresh
+            Ã¢â€ Â» Refresh
           </button>
         </div>
       </div>
@@ -523,14 +523,14 @@ export default function PowerDialPage() {
               value={manualPhone}
               onChange={e => setManualPhone(e.target.value)}
               onKeyDown={e => e.key === "Enter" && manualDial()}
-              placeholder="Enter number to dialâ€¦"
+              placeholder="Enter number to dialÃ¢â‚¬Â¦"
               className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-orange-500/50"
             />
             <button
               onClick={manualDial}
               disabled={!manualPhone || loading}
               className="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 text-xs font-semibold hover:bg-green-500/30 disabled:opacity-40 transition-all">
-              ðŸ“ž Dial
+              Ã°Å¸â€œÅ¾ Dial
             </button>
           </div>
 
@@ -565,22 +565,22 @@ export default function PowerDialPage() {
                     onClick={() => dialLead(lead)}
                     disabled={callState !== "idle" || loading}
                     className="p-1 rounded bg-green-500/20 text-green-300 text-[9px] hover:bg-green-500/30 disabled:opacity-30 transition-all">
-                    ðŸ“ž
+                    Ã°Å¸â€œÅ¾
                   </button>
                   <button
                     onClick={() => setDisposition(lead.id, "interested")}
                     className="p-1 rounded bg-cyan-500/20 text-cyan-300 text-[9px] hover:bg-cyan-500/30 transition-all">
-                    ðŸ”¥
+                    Ã°Å¸â€Â¥
                   </button>
                   <button
                     onClick={() => setDisposition(lead.id, "callback")}
                     className="p-1 rounded bg-amber-500/20 text-amber-300 text-[9px] hover:bg-amber-500/30 transition-all">
-                    ðŸ“…
+                    Ã°Å¸â€œâ€¦
                   </button>
                   <button
                     onClick={() => setDisposition(lead.id, "dnc")}
                     className="p-1 rounded bg-red-500/20 text-red-300 text-[9px] hover:bg-red-500/30 transition-all">
-                    âœ•
+                    Ã¢Å“â€¢
                   </button>
                 </div>
               </div>
@@ -595,7 +595,7 @@ export default function PowerDialPage() {
                 </div>
                 {call.ai_tip && (
                   <div className="text-[10px] text-orange-300 bg-orange-500/10 rounded px-2 py-1 mt-1">
-                    ðŸ’¡ {call.ai_tip}
+                    Ã°Å¸â€™Â¡ {call.ai_tip}
                   </div>
                 )}
                 {call.sentiment && (
@@ -620,7 +620,7 @@ export default function PowerDialPage() {
           {callState === "idle" && !currentLead && (
             <div className="flex-1 flex flex-col items-center justify-center gap-6">
               <div className="text-center">
-                <div className="text-6xl mb-4">ðŸ“ž</div>
+                <div className="text-6xl mb-4">Ã°Å¸â€œÅ¾</div>
                 <div className="text-xl font-bold text-slate-300 mb-2">PowerDial Ready</div>
                 <div className="text-sm text-slate-600 mb-6">{readyCount} leads in queue</div>
                 <button
@@ -631,7 +631,7 @@ export default function PowerDialPage() {
                   }}
                   disabled={readyCount === 0}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-sm hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition-all shadow-lg shadow-orange-500/25">
-                  â–¶ Start Auto-Dial Session
+                  Ã¢â€“Â¶ Start Auto-Dial Session
                 </button>
               </div>
 
@@ -652,7 +652,7 @@ export default function PowerDialPage() {
                 <span className={`w-2.5 h-2.5 rounded-full animate-pulse
                   ${callState === "dialing" ? "bg-amber-400" : "bg-green-400"}`}></span>
                 <span className="text-sm font-semibold">
-                  {callState === "dialing" ? "Dialingâ€¦" : "Connected"}
+                  {callState === "dialing" ? "DialingÃ¢â‚¬Â¦" : "Connected"}
                 </span>
                 <span className="ml-auto font-mono text-2xl font-bold text-white">
                   {formatTimer(timer)}
@@ -665,17 +665,17 @@ export default function PowerDialPage() {
                 <div className="text-lg text-slate-400 font-mono">{formatPhone(currentLead.phone)}</div>
                 {activeCallRecord?.ai_tip && (
                   <div className="mt-3 text-xs text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
-                    ðŸ’¡ Steve: {activeCallRecord.ai_tip}
+                    Ã°Å¸â€™Â¡ Steve: {activeCallRecord.ai_tip}
                   </div>
                 )}
                 {activeCallRecord?.objection && (
                   <div className="mt-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                    âš  Objection: {activeCallRecord.objection}
+                    Ã¢Å¡Â  Objection: {activeCallRecord.objection}
                   </div>
                 )}
                 {activeCallRecord?.detected_buying_signal && (
                   <div className="mt-2 text-xs text-green-300 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2 animate-pulse">
-                    ðŸ”¥ BUYING SIGNAL DETECTED â€” Push close now!
+                    Ã°Å¸â€Â¥ BUYING SIGNAL DETECTED Ã¢â‚¬â€ Push close now!
                   </div>
                 )}
               </div>
@@ -685,12 +685,12 @@ export default function PowerDialPage() {
                 <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-3">Disposition</div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { label: "ðŸ”¥ Interested", value: "interested" as Disposition, color: "green" },
-                    { label: "ðŸ“… Callback", value: "callback" as Disposition, color: "blue" },
-                    { label: "âœ— Not Interested", value: "not_interested" as Disposition, color: "red" },
-                    { label: "ðŸ“¬ Voicemail", value: "voicemail" as Disposition, color: "purple" },
-                    { label: "ðŸ“µ No Answer", value: "no_answer" as Disposition, color: "amber" },
-                    { label: "âœ“ Connected", value: "connected" as Disposition, color: "cyan" },
+                    { label: "Ã°Å¸â€Â¥ Interested", value: "interested" as Disposition, color: "green" },
+                    { label: "Ã°Å¸â€œâ€¦ Callback", value: "callback" as Disposition, color: "blue" },
+                    { label: "Ã¢Å“â€” Not Interested", value: "not_interested" as Disposition, color: "red" },
+                    { label: "Ã°Å¸â€œÂ¬ Voicemail", value: "voicemail" as Disposition, color: "purple" },
+                    { label: "Ã°Å¸â€œÂµ No Answer", value: "no_answer" as Disposition, color: "amber" },
+                    { label: "Ã¢Å“â€œ Connected", value: "connected" as Disposition, color: "cyan" },
                   ].map(btn => (
                     <button key={btn.value}
                       onClick={() => endCall(btn.value)}
@@ -714,22 +714,22 @@ export default function PowerDialPage() {
                   <button
                     onClick={() => setShowTransfer(!showTransfer)}
                     className="px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all">
-                    â†— Transfer
+                    Ã¢â€ â€” Transfer
                   </button>
                   <button
                     onClick={() => setShowConference(!showConference)}
                     className="px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all">
-                    ðŸ‘¥ Conference
+                    Ã°Å¸â€˜Â¥ Conference
                   </button>
                   <button
                     onClick={startVideoSession}
                     className="px-3 py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all">
-                    ðŸŽ¥ Video
+                    Ã°Å¸Å½Â¥ Video
                   </button>
                   <button
                     onClick={() => endCall("no_answer")}
                     className="px-3 py-2 rounded-lg text-xs bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25 transition-all ml-auto">
-                    ðŸ”´ End Call
+                    Ã°Å¸â€Â´ End Call
                   </button>
                 </div>
 
@@ -739,7 +739,7 @@ export default function PowerDialPage() {
                     <input
                       value={transferTarget}
                       onChange={e => setTransferTarget(e.target.value)}
-                      placeholder="Transfer to number or extâ€¦"
+                      placeholder="Transfer to number or extÃ¢â‚¬Â¦"
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-orange-500/50"
                     />
                     <button
@@ -756,7 +756,7 @@ export default function PowerDialPage() {
                     <input
                       value={conferenceNumber}
                       onChange={e => setConferenceNumber(e.target.value)}
-                      placeholder="Add number to conferenceâ€¦"
+                      placeholder="Add number to conferenceÃ¢â‚¬Â¦"
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-orange-500/50"
                     />
                     <button
@@ -774,7 +774,7 @@ export default function PowerDialPage() {
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="Type notes during callâ€¦"
+                  placeholder="Type notes during callÃ¢â‚¬Â¦"
                   className="w-full h-full min-h-[80px] bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-700 outline-none focus:border-orange-500/30 resize-none"
                 />
               </div>
@@ -783,11 +783,11 @@ export default function PowerDialPage() {
 
           {callState === "ended" && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3">
-              <div className="text-4xl">âœ“</div>
+              <div className="text-4xl">Ã¢Å“â€œ</div>
               <div className="text-sm font-semibold text-slate-300">Call logged</div>
               <div className="text-xs text-slate-600">Duration: {formatTimer(timer)}</div>
               {isAutoDialing && (
-                <div className="text-xs text-orange-400 animate-pulse">Next call in 2sâ€¦</div>
+                <div className="text-xs text-orange-400 animate-pulse">Next call in 2sÃ¢â‚¬Â¦</div>
               )}
             </div>
           )}
@@ -800,20 +800,20 @@ export default function PowerDialPage() {
           <div className="p-4 border-b border-white/5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[10px]">S</div>
-              <span className="text-xs font-semibold">Steve BGE â€” AI Assist</span>
+              <span className="text-xs font-semibold">Steve BGE Ã¢â‚¬â€ AI Assist</span>
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 ml-auto"></span>
             </div>
 
             {currentLead && callState === "connected" ? (
               <div className="space-y-2">
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-[11px] text-purple-200">
-                  ðŸ’¡ <strong>Opening:</strong> "Hey {currentLead.name?.split(" ")[0]}, I noticed your business has room to grow online â€” I wanted to reach out directly."
+                  Ã°Å¸â€™Â¡ <strong>Opening:</strong> "Hey {currentLead.name?.split(" ")[0]}, I noticed your business has room to grow online Ã¢â‚¬â€ I wanted to reach out directly."
                 </div>
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-[11px] text-blue-200">
-                  ðŸŽ¯ <strong>Pitch:</strong> Focus on ROI and measurable results. Push for discovery call or proposal within 3 min.
+                  Ã°Å¸Å½Â¯ <strong>Pitch:</strong> Focus on ROI and measurable results. Push for discovery call or proposal within 3 min.
                 </div>
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-[11px] text-orange-200">
-                  âš¡ <strong>Close:</strong> "If I could show you 5 new clients in 30 days, would you want to see how?"
+                  Ã¢Å¡Â¡ <strong>Close:</strong> "If I could show you 5 new clients in 30 days, would you want to see how?"
                 </div>
               </div>
             ) : (
@@ -863,13 +863,13 @@ export default function PowerDialPage() {
             <div className="space-y-2">
               {[
                 { obj: "Too expensive", rebuttal: "What's the cost of NOT getting new clients?" },
-                { obj: "Not interested", rebuttal: "Totally get it â€” what's your current plan for growth?" },
+                { obj: "Not interested", rebuttal: "Totally get it Ã¢â‚¬â€ what's your current plan for growth?" },
                 { obj: "Already have someone", rebuttal: "Are they getting you results? I can show benchmarks." },
-                { obj: "Call me later", rebuttal: "I have one slot left this week â€” what works for you?" },
+                { obj: "Call me later", rebuttal: "I have one slot left this week Ã¢â‚¬â€ what works for you?" },
               ].map(item => (
                 <div key={item.obj} className="text-[10px]">
                   <div className="text-red-400 font-semibold">"{item.obj}"</div>
-                  <div className="text-slate-400 ml-2">â†’ {item.rebuttal}</div>
+                  <div className="text-slate-400 ml-2">Ã¢â€ â€™ {item.rebuttal}</div>
                 </div>
               ))}
             </div>
@@ -883,17 +883,17 @@ export default function PowerDialPage() {
                 onClick={startVideoSession}
                 disabled={!currentLead}
                 className="w-full py-2 rounded-lg text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/20 disabled:opacity-30 transition-all">
-                ðŸŽ¥ Start Video Session
+                Ã°Å¸Å½Â¥ Start Video Session
               </button>
               <button
                 onClick={() => window.open("https://dialpad.com", "_blank")}
                 className="w-full py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 transition-all">
-                â†— Open Dialpad App
+                Ã¢â€ â€” Open Dialpad App
               </button>
               <button
                 onClick={loadQueue}
                 className="w-full py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 transition-all">
-                â†» Reload Queue
+                Ã¢â€ Â» Reload Queue
               </button>
             </div>
           </div>
