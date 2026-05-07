@@ -63,7 +63,7 @@ export default function PowerDial() {
     const SB_URL = "https://spb-t4nl2t9m7hhk921t.supabase.opentrust.net"
     const SB_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNwYi10NG5sMnQ5bTdoaGs5MjF0IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzc5MjAyMjEsImV4cCI6MjA5MzQ5NjIyMX0.Mq8q-iquvE1ART8HykA94WUmCdGG-JWT2oACCJZa1AA"
     const script = document.createElement("script")
-    script.src = "https://media.twiliocdn.com/sdk/js/voice/releases/2.11.0/twilio.min.js"
+    script.src = "https://sdk.twilio.com/js/voice/releases/2.11.0/twilio.min.js"
     script.async = true
     script.onload = async () => {
       try {
