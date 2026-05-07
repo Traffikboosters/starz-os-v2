@@ -37,6 +37,10 @@ export default function PowerDial() {
   const [callHistory, setCallHistory] = useState<any[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { success, info } = useToast()
+  const deviceRef = useRef<any>(null)
+  const callRef = useRef<any>(null)
+  const [deviceReady, setDeviceReady] = useState(false)
+  const [dialNumber, setDialNumber] = useState('')
 
   const currentLead = leadQueue[currentLeadIndex]
 
@@ -55,17 +59,49 @@ export default function PowerDial() {
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
   }
 
-  const startCall = () => {
-    setCallState('calling')
+  useEffect(() => {
+    const SB_URL = (import.meta as any).env?.VITE_SUPABASE_URL || "https://eeiqgmpqkwrqzqrdamxg.supabase.co"
+    const SB_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || ""
+    const script = document.createElement("script")
+    script.src = "https://media.twiliocdn.com/sdk/js/voice/releases/2.11.0/twilio.min.js"
+    script.async = true
+    script.onload = async () => {
+      try {
+        const resp = await fetch(`${SB_URL}/functions/v1/twilio-token`, { headers: { Authorization: `Bearer ${SB_KEY}` } })
+        const { token } = await resp.json()
+        const TwilioSDK = (window as any).Twilio
+        if (!TwilioSDK?.Device) return
+        const device = new TwilioSDK.Device(token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] })
+        device.on("registered", () => { setDeviceReady(true); console.log("Twilio ready") })
+        device.on("error", (e: any) => console.error("Twilio error:", e.message))
+        device.register()
+        deviceRef.current = device
+      } catch (err) { console.error("Twilio init failed:", err) }
+    }
+    document.head.appendChild(script)
+    return () => { try { document.head.removeChild(script) } catch {} }
+  }, [])
+
+  const startCall = async () => {
+    const phone = dialNumber.trim()
+    if (!phone) { info("Enter a phone number to dial"); return }
+    if (!deviceRef.current) { info("Phone device not ready - please wait..."); return }
+    const digits = phone.replace(/\D/g, "")
+    const e164 = digits.length === 10 ? `+1${digits}` : `+${digits}`
+    setCallState("calling")
     setCallTime(0)
-    info(`Calling ${currentLead.name}...`)
-    setTimeout(() => {
-      setCallState('connected')
-      success(`Connected to ${currentLead.name}`)
-    }, 2500)
+    info(`Calling ${currentLead.name} at ${phone}...`)
+    try {
+      const call = await deviceRef.current.connect({ params: { To: e164 } })
+      callRef.current = call
+      call.on("accept", () => { setCallState("connected"); success(`Connected to ${currentLead.name}`) })
+      call.on("disconnect", () => { callRef.current = null })
+      call.on("error", (err: any) => { info(`Call error: ${err.message}`); setCallState("idle") })
+    } catch (err) { info(`Failed: ${String(err)}`); setCallState("idle") }
   }
 
   const endCall = (outcome: 'completed' | 'skipped' = 'completed') => {
+    if (callRef.current) { try { callRef.current.disconnect() } catch {} callRef.current = null }
     if (timerRef.current) clearInterval(timerRef.current)
     setCallHistory((prev) => [{
       lead: currentLead.name,
@@ -133,12 +169,16 @@ export default function PowerDial() {
                     <Phone className="w-10 h-10 text-cyan" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">Ready to dial</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{leadQueue.length - currentLeadIndex} leads remaining</p>
+                  <p className="text-sm text-muted-foreground mb-3">{leadQueue.length - currentLeadIndex} leads remaining</p>
+                  <div className="flex gap-2 justify-center mb-3 max-w-xs mx-auto">
+                    <input value={dialNumber} onChange={e => setDialNumber(e.target.value)} onKeyDown={e => e.key === "Enter" && startCall()} placeholder="Enter phone number to dial..." className="flex-1 bg-card border border-border/40 rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-cyan/50" />
+                  </div>
+                  <p className={`text-xs mb-3 ${deviceReady ? "text-emerald-400" : "text-amber-400 animate-pulse"}`}>{deviceReady ? "Phone device connected" : "Connecting phone device..."}</p>
                   <div className="flex items-center gap-3 justify-center mb-4">
                     <Button size="sm" variant="outline" onClick={prevLead} disabled={currentLeadIndex === 0} className="border-border/40">
                       <RotateCcw className="w-4 h-4 mr-1" /> Previous
                     </Button>
-                    <Button size="lg" onClick={startCall} className="bg-gradient-primary text-space font-bold px-8 glow-cyan">
+                    <Button size="lg" onClick={startCall} disabled={!deviceReady || !dialNumber.trim()} className="bg-gradient-primary text-space font-bold px-8 glow-cyan disabled:opacity-50">
                       <Play className="w-4 h-4 mr-2" /> Start Call
                     </Button>
                     <Button size="sm" variant="outline" onClick={skipLead} className="border-border/40">
