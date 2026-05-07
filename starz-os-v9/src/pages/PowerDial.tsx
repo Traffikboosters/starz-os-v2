@@ -62,24 +62,22 @@ export default function PowerDial() {
   useEffect(() => {
     const SB_URL = "https://spb-t4nl2t9m7hhk921t.supabase.opentrust.net"
     const SB_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNwYi10NG5sMnQ5bTdoaGs5MjF0IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzc5MjAyMjEsImV4cCI6MjA5MzQ5NjIyMX0.Mq8q-iquvE1ART8HykA94WUmCdGG-JWT2oACCJZa1AA"
-    const script = document.createElement("script")
-    script.src = "https://sdk.twilio.com/js/voice/releases/2.11.0/twilio.min.js"
-    script.async = true
-    script.onload = async () => {
+    let cancelled = false
+    const init = async () => {
       try {
         const resp = await fetch(`${SB_URL}/functions/v1/twilio-token`, { headers: { Authorization: `Bearer ${SB_KEY}` } })
         const { token } = await resp.json()
-        const TwilioSDK = (window as any).Twilio
-        if (!TwilioSDK?.Device) return
-        const device = new TwilioSDK.Device(token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] })
-        device.on("registered", () => { setDeviceReady(true); console.log("Twilio ready") })
+        if (cancelled) return
+        const { Device } = await import("@twilio/voice-sdk")
+        const device = new Device(token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] })
+        device.on("registered", () => { if (!cancelled) { setDeviceReady(true); console.log("Twilio ready") } })
         device.on("error", (e: any) => console.error("Twilio error:", e.message))
-        device.register()
-        deviceRef.current = device
+        await device.register()
+        if (!cancelled) deviceRef.current = device
       } catch (err) { console.error("Twilio init failed:", err) }
     }
-    document.head.appendChild(script)
-    return () => { try { document.head.removeChild(script) } catch {} }
+    init()
+    return () => { cancelled = true; deviceRef.current?.disconnect?.() }
   }, [])
 
   const startCall = async () => {
