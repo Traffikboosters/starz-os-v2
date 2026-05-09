@@ -1,0 +1,1 @@
+export default function StarzMail() { return <div className='p-6'><h2 className='text-xl font-bold text-foreground'>StarzMail</h2></div> }

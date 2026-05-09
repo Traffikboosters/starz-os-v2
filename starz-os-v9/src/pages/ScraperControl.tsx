@@ -1,0 +1,1 @@
+export default function ScraperControl() { return <div className='p-6'><h2 className='text-xl font-bold text-foreground'>Scraper Control</h2></div> }
