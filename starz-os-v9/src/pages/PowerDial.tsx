@@ -22,9 +22,9 @@ const leadQueue = [
 ]
 
 const steveScripts = [
-  { type: 'insight', text: 'Lead has visited pricing page 4x in last 24h — high intent signal', icon: Target },
-  { type: 'objection', text: 'Common objection: "Need to talk to my partner" — Use partner-close script', icon: AlertCircle },
-  { type: 'tip', text: 'This company closed $12K deal last month with Elena — reference available', icon: Star },
+  { type: 'insight', text: 'Lead has visited pricing page 4x in last 24h - high intent signal', icon: Target },
+  { type: 'objection', text: 'Common objection: "Need to talk to my partner" - Use partner-close script', icon: AlertCircle },
+  { type: 'tip', text: 'This company closed $12K deal last month with Elena - reference available', icon: Star },
   { type: 'alert', text: 'Lead score dropped 8pts after visiting cancellation page', icon: AlertCircle },
 ]
 
@@ -37,13 +37,10 @@ export default function PowerDial() {
   const [callHistory, setCallHistory] = useState<any[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { success, info } = useToast()
-<<<<<<< HEAD
-=======
   const deviceRef = useRef<any>(null)
   const callRef = useRef<any>(null)
   const [deviceReady, setDeviceReady] = useState(false)
   const [dialNumber, setDialNumber] = useState('')
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 
   const currentLead = leadQueue[currentLeadIndex]
 
@@ -60,41 +57,11 @@ export default function PowerDial() {
     const m = Math.floor(s / 60)
     const sec = s % 60
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-<<<<<<< HEAD
-  }
-
-  const startCall = () => {
-    setCallState('calling')
-    setCallTime(0)
-    info(`Calling ${currentLead.name}...`)
-    setTimeout(() => {
-      setCallState('connected')
-      success(`Connected to ${currentLead.name}`)
-    }, 2500)
-  }
-
-  const endCall = (outcome: 'completed' | 'skipped' = 'completed') => {
-    if (timerRef.current) clearInterval(timerRef.current)
-    setCallHistory((prev) => [{
-      lead: currentLead.name,
-      outcome: outcome === 'completed' ? (callTime > 60 ? 'Interested' : 'Short Call') : 'Skipped',
-      amount: 0,
-      duration: formatTime(callTime),
-      time: 'Just now',
-      type: 'outbound'
-    }, ...prev])
-    setCallState('ended')
-    setOnHold(false)
-    setMuted(false)
-    if (outcome === 'completed') success(`Call ended. Duration: ${formatTime(callTime)}`)
-  }
-
-=======
   }
 
   useEffect(() => {
-    const SB_URL = "https://spb-t4nl2t9m7hhk921t.supabase.opentrust.net"
-    const SB_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiIsInJlZiI6InNwYi10NG5sMnQ5bTdoaGs5MjF0IiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzc5MjAyMjEsImV4cCI6MjA5MzQ5NjIyMX0.Mq8q-iquvE1ART8HykA94WUmCdGG-JWT2oACCJZa1AA"
+    const SB_URL = "https://szguizvpiiuiyugrjeks.supabase.co"
+    const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
     let cancelled = false
     const init = async () => {
       try {
@@ -148,10 +115,7 @@ export default function PowerDial() {
     if (outcome === 'completed') success(`Call ended. Duration: ${formatTime(callTime)}`)
   }
 
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
-  const skipLead = () => {
-    endCall('skipped')
-  }
+  const skipLead = () => { endCall('skipped') }
 
   const nextLead = () => {
     setCallState('idle')
@@ -185,7 +149,6 @@ export default function PowerDial() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
-        {/* Main Dialer */}
         <div className="lg:col-span-2 space-y-5">
           <AnimatePresence mode="wait">
             <motion.div
@@ -201,24 +164,16 @@ export default function PowerDial() {
                     <Phone className="w-10 h-10 text-cyan" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">Ready to dial</h3>
-<<<<<<< HEAD
-                  <p className="text-sm text-muted-foreground mb-6">{leadQueue.length - currentLeadIndex} leads remaining</p>
-=======
                   <p className="text-sm text-muted-foreground mb-3">{leadQueue.length - currentLeadIndex} leads remaining</p>
                   <div className="flex gap-2 justify-center mb-3 max-w-xs mx-auto">
                     <input value={dialNumber} onChange={e => setDialNumber(e.target.value)} onKeyDown={e => e.key === "Enter" && startCall()} placeholder="Enter phone number to dial..." className="flex-1 bg-card border border-border/40 rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-cyan/50" />
                   </div>
                   <p className={`text-xs mb-3 ${deviceReady ? "text-emerald-400" : "text-amber-400 animate-pulse"}`}>{deviceReady ? "Phone device connected" : "Connecting phone device..."}</p>
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
                   <div className="flex items-center gap-3 justify-center mb-4">
                     <Button size="sm" variant="outline" onClick={prevLead} disabled={currentLeadIndex === 0} className="border-border/40">
                       <RotateCcw className="w-4 h-4 mr-1" /> Previous
                     </Button>
-<<<<<<< HEAD
-                    <Button size="lg" onClick={startCall} className="bg-gradient-primary text-space font-bold px-8 glow-cyan">
-=======
                     <Button size="lg" onClick={startCall} disabled={!deviceReady || !dialNumber.trim()} className="bg-gradient-primary text-space font-bold px-8 glow-cyan disabled:opacity-50">
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
                       <Play className="w-4 h-4 mr-2" /> Start Call
                     </Button>
                     <Button size="sm" variant="outline" onClick={skipLead} className="border-border/40">
@@ -269,7 +224,6 @@ export default function PowerDial() {
 
                   {callState === 'connected' && (
                     <>
-                      {/* Steve Whisper */}
                       <div className="rounded-xl bg-space-highlight/50 border border-border/30 p-4 mb-5">
                         <div className="flex items-center gap-2 mb-3">
                           <Sparkles className="w-4 h-4 text-cyan" />
@@ -286,7 +240,6 @@ export default function PowerDial() {
                         </div>
                       </div>
 
-                      {/* Controls */}
                       <div className="flex items-center justify-center gap-3">
                         <button onClick={() => setMuted(!muted)} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${muted ? 'bg-red-500/20 text-red-400' : 'bg-card border border-border/40 text-foreground hover:bg-space-highlight'}`}>
                           {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -311,7 +264,7 @@ export default function PowerDial() {
                           import('@/components/SalesVictoryPopup').then(({ broadcastVictory }) => {
                             broadcastVictory({
                               repName: 'DJ Martinez', repRole: 'Business Growth Expert',
-                              saleAmount: currentLead.value, clientName: currentLead.company,
+                              saleAmount: (currentLead as any).value, clientName: currentLead.company,
                               city: 'Miami', state: 'FL', service: 'full_stack', tier: 'medium',
                             });
                           });
@@ -319,14 +272,12 @@ export default function PowerDial() {
                           <FileText className="w-4 h-4 mr-2" /> Generate Proposal
                         </Button>
                         <Button variant="outline" onClick={() => {
-                          success('Deal marked as Closed Won!');
-                          endCall();
-                          const tier = currentLead.value >= 10000 ? 'enterprise' : currentLead.value >= 2500 ? 'medium' : 'small';
+                          success('Deal marked as Closed Won!'); endCall();
                           import('@/components/SalesVictoryPopup').then(({ broadcastVictory }) => {
                             broadcastVictory({
                               repName: 'DJ Martinez', repRole: 'Business Growth Expert',
-                              saleAmount: currentLead.value, clientName: currentLead.company,
-                              city: 'Miami', state: 'FL', service: 'seo', tier: tier as any,
+                              saleAmount: (currentLead as any).value, clientName: currentLead.company,
+                              city: 'Miami', state: 'FL', service: 'seo', tier: 'medium',
                             });
                           });
                         }} className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
@@ -351,7 +302,6 @@ export default function PowerDial() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Call History */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="rounded-2xl bg-card border border-border/40 card-glow p-5">
             <h3 className="font-semibold text-foreground text-sm mb-4">Session History</h3>
@@ -376,7 +326,6 @@ export default function PowerDial() {
           </motion.div>
         </div>
 
-        {/* Lead Queue */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="p-5 rounded-2xl bg-card border border-border/40 card-glow">
           <h3 className="font-semibold text-foreground text-sm mb-4">Lead Queue</h3>

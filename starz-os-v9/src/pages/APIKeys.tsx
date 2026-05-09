@@ -10,17 +10,10 @@ import { useToast } from '@/hooks/useToast'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 const initialApiKeys = [
-<<<<<<< HEAD
-  { id: 'key-1', name: 'Production App', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
-  { id: 'key-2', name: 'Staging Test', key: 'sk_test_••••••••••••••••••••••••', fullKey: 'sk_test_YOUR_KEY_HERE', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
-  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
-  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
-=======
-  { id: 'key-1', name: 'Production App', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
-  { id: 'key-2', name: 'Staging Test', key: 'sk_test_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_test_••••••••••••••••••••••••', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
-  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
-  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
+  { id: 'key-1', name: 'Production App', key: 'sk_live_************************', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
+  { id: 'key-2', name: 'Staging Test', key: 'sk_test_************************', fullKey: 'sk_test_YOUR_KEY_HERE', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
+  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_************************', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
+  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_************************', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
 ]
 
 const webhookEndpoints = [
@@ -54,20 +47,13 @@ export default function APIKeys() {
   }
 
   const handleCreateKey = () => {
-    if (!newKey.name) {
-      warning('Key name is required')
-      return
-    }
+    if (!newKey.name) { warning('Key name is required'); return }
     const id = `key-${apiKeys.length + 1}`
     const fullKey = `sk_live_${Math.random().toString(36).substring(2, 30)}`
     setApiKeys((prev: any[]) => [...prev, {
       id,
       name: newKey.name,
-<<<<<<< HEAD
-      key: 'sk_live_••••••••••••••••••••••••',
-=======
-      key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
+      key: 'sk_live_************************',
       fullKey,
       created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       lastUsed: 'never',
@@ -103,7 +89,6 @@ export default function APIKeys() {
         </Button>
       </div>
 
-      {/* New Key Modal */}
       <AnimatePresence>
         {showNew && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNew(false)}>
@@ -131,12 +116,7 @@ export default function APIKeys() {
         )}
       </AnimatePresence>
 
-      {/* API Keys */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden"
-      >
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden">
         <div className="p-5">
           <h3 className="font-semibold text-foreground text-sm mb-4">API Keys</h3>
           <div className="space-y-3">
@@ -145,9 +125,7 @@ export default function APIKeys() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-foreground">{k.name}</span>
-                    <Badge className={`text-[10px] ${k.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
-                      {k.status}
-                    </Badge>
+                    <Badge className={`text-[10px] ${k.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>{k.status}</Badge>
                   </div>
                   <div className="flex items-center gap-1">
                     <button onClick={() => handleCopy(k.id, k.fullKey)} className="p-1.5 rounded hover:bg-card text-muted-foreground hover:text-cyan transition-colors" title="Copy">
@@ -162,10 +140,7 @@ export default function APIKeys() {
                   <code className="text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded">
                     {revealed === k.id ? k.fullKey : k.key}
                   </code>
-                  <button
-                    onClick={() => setRevealed(revealed === k.id ? null : k.id)}
-                    className="p-1 rounded hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <button onClick={() => setRevealed(revealed === k.id ? null : k.id)} className="p-1 rounded hover:bg-card text-muted-foreground hover:text-foreground transition-colors">
                     {revealed === k.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -184,13 +159,7 @@ export default function APIKeys() {
         </div>
       </motion.div>
 
-      {/* Webhooks */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden"
-      >
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl bg-card border border-border/40 card-glow overflow-hidden">
         <div className="p-5">
           <h3 className="font-semibold text-foreground text-sm mb-4">Webhook Endpoints</h3>
           <div className="space-y-3">
