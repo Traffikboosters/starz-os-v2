@@ -1,17 +1,10 @@
-<<<<<<< HEAD
 import { Routes, Route } from 'react-router'
-=======
-import { Routes, Route, Navigate } from 'react-router'
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 import { Suspense, lazy } from 'react'
 import { StarField } from '@/components/StarField'
 import { Layout } from '@/components/Layout'
+import { BGELayout } from '@/components/BGELayout'
 
-<<<<<<< HEAD
 // ─── SALES DIVISION ─────────────────────────────────────────────────
-=======
-// --- SALES DIVISION ---
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Leads = lazy(() => import('@/pages/Leads'))
 const PowerDial = lazy(() => import('@/pages/PowerDial'))
@@ -20,49 +13,44 @@ const Proposals = lazy(() => import('@/pages/Proposals'))
 const Billing = lazy(() => import('@/pages/Billing'))
 const AISteve = lazy(() => import('@/pages/AISteve'))
 
-<<<<<<< HEAD
 // ─── FULFILLMENT DIVISION ───────────────────────────────────────────
-=======
-// --- FULFILLMENT DIVISION ---
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 const WorkOrders = lazy(() => import('@/pages/WorkOrders'))
 const DeveloperWorkspace = lazy(() => import('@/pages/DeveloperWorkspace'))
 const SeoOperations = lazy(() => import('@/pages/SeoOperations'))
 const Deliverables = lazy(() => import('@/pages/Deliverables'))
 const Reports = lazy(() => import('@/pages/Reports'))
 
-<<<<<<< HEAD
+// ─── HR / WORKFORCE DIVISION ────────────────────────────────────────
+const ZaraHR = lazy(() => import('@/pages/ZaraHR'))
+
+// ─── COMMUNICATIONS DIVISION ────────────────────────────────────────
+const StarzMail = lazy(() => import('@/pages/StarzMail'))
+
+// ─── DATA / INTELLIGENCE DIVISION ───────────────────────────────────
+const ScraperControl = lazy(() => import('@/pages/ScraperControl'))
+const LinkedInOps = lazy(() => import('@/pages/LinkedInOps'))
+
 // ─── SYSTEM ─────────────────────────────────────────────────────────
-=======
-// --- SYSTEM ---
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 const CommandCenter = lazy(() => import('@/pages/CommandCenter'))
 const Automation = lazy(() => import('@/pages/Automation'))
 const Security = lazy(() => import('@/pages/Security'))
 const Settings = lazy(() => import('@/pages/Settings'))
 
-<<<<<<< HEAD
+// ─── BGE CONTRACTOR PORTAL ──────────────────────────────────────────
+const BGEDashboard = lazy(() => import('@/pages/bge/Dashboard'))
+const BGEPipeline = lazy(() => import('@/pages/bge/Pipeline'))
+const BGEPowerDial = lazy(() => import('@/pages/bge/PowerDial'))
+const BGEProposals = lazy(() => import('@/pages/bge/Proposals'))
+const BGELeads = lazy(() => import('@/pages/bge/Leads'))
+const BGEEarnings = lazy(() => import('@/pages/bge/Earnings'))
+const BGESettings = lazy(() => import('@/pages/bge/Settings'))
+const BGESteve = lazy(() => import('@/pages/bge/Steve'))
+
 // ─── AUTH & LANDING ─────────────────────────────────────────────────
-=======
-// --- AUTH & LANDING ---
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
 const Login = lazy(() => import('@/pages/Login'))
 const Register = lazy(() => import('@/pages/Register'))
 
-<<<<<<< HEAD
-=======
-// --- BGE CONTRACTOR PORTAL ---
-const BgeDashboard = lazy(() => import('@/pages/bge/Dashboard'))
-const BgeEarnings = lazy(() => import('@/pages/bge/Earnings'))
-const BgeLeads = lazy(() => import('@/pages/bge/Leads'))
-const BgePipeline = lazy(() => import('@/pages/bge/Pipeline'))
-const BgePowerDial = lazy(() => import('@/pages/bge/PowerDial'))
-const BgeProposals = lazy(() => import('@/pages/bge/Proposals'))
-const BgeSettings = lazy(() => import('@/pages/bge/Settings'))
-const BgeSteve = lazy(() => import('@/pages/bge/Steve'))
-
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-full min-h-[50vh]">
@@ -94,6 +82,16 @@ export default function App() {
         <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
         <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
 
+        {/* BGE Contractor Portal */}
+        <Route path="/bge" element={<BGELayout><BGEDashboard /></BGELayout>} />
+        <Route path="/bge/pipeline" element={<BGELayout><BGEPipeline /></BGELayout>} />
+        <Route path="/bge/powdial" element={<BGELayout><BGEPowerDial /></BGELayout>} />
+        <Route path="/bge/proposals" element={<BGELayout><BGEProposals /></BGELayout>} />
+        <Route path="/bge/leads" element={<BGELayout><BGELeads /></BGELayout>} />
+        <Route path="/bge/earnings" element={<BGELayout><BGEEarnings /></BGELayout>} />
+        <Route path="/bge/settings" element={<BGELayout><BGESettings /></BGELayout>} />
+        <Route path="/bge/steve" element={<BGELayout><BGESteve /></BGELayout>} />
+
         {/* Sales Division */}
         <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
         <Route path="/leads" element={<AppLayout><Leads /></AppLayout>} />
@@ -110,25 +108,21 @@ export default function App() {
         <Route path="/deliverables" element={<AppLayout><Deliverables /></AppLayout>} />
         <Route path="/reports" element={<AppLayout><Reports /></AppLayout>} />
 
+        {/* HR / Workforce Division */}
+        <Route path="/zara" element={<AppLayout><ZaraHR /></AppLayout>} />
+
+        {/* Communications Division */}
+        <Route path="/mail" element={<AppLayout><StarzMail /></AppLayout>} />
+
+        {/* Data / Intelligence Division */}
+        <Route path="/scraper" element={<AppLayout><ScraperControl /></AppLayout>} />
+        <Route path="/linkedin" element={<AppLayout><LinkedInOps /></AppLayout>} />
+
         {/* System */}
         <Route path="/command-center" element={<AppLayout><CommandCenter /></AppLayout>} />
         <Route path="/automation" element={<AppLayout><Automation /></AppLayout>} />
         <Route path="/security" element={<AppLayout><Security /></AppLayout>} />
         <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
-<<<<<<< HEAD
-=======
-
-        {/* BGE Contractor Portal */}
-        <Route path="/bge" element={<Navigate to="/bge/dashboard" replace />} />
-        <Route path="/bge/dashboard" element={<AppLayout><BgeDashboard /></AppLayout>} />
-        <Route path="/bge/earnings" element={<AppLayout><BgeEarnings /></AppLayout>} />
-        <Route path="/bge/leads" element={<AppLayout><BgeLeads /></AppLayout>} />
-        <Route path="/bge/pipeline" element={<AppLayout><BgePipeline /></AppLayout>} />
-        <Route path="/bge/powerdial" element={<AppLayout><BgePowerDial /></AppLayout>} />
-        <Route path="/bge/proposals" element={<AppLayout><BgeProposals /></AppLayout>} />
-        <Route path="/bge/settings" element={<AppLayout><BgeSettings /></AppLayout>} />
-        <Route path="/bge/steve" element={<AppLayout><BgeSteve /></AppLayout>} />
->>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
       </Routes>
     </div>
   )
