@@ -10,10 +10,17 @@ import { useToast } from '@/hooks/useToast'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 const initialApiKeys = [
-  { id: 'key-1', name: 'Production App', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_51Fx9a2B4cD8eF0gH1iJ2kL3mN4oP5qR', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
-  { id: 'key-2', name: 'Staging Test', key: 'sk_test_••••••••••••••••••••••••', fullKey: 'sk_test_9Xy8Z7w6V5u4T3s2R1q0P9o8N7m6L5k', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
-  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_aB3cD4eF5gH6iJ7kL8mN9oP0qR1s2T3', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
-  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_0Z9y8X7w6V5u4T3s2R1q0P9o', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
+<<<<<<< HEAD
+  { id: 'key-1', name: 'Production App', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
+  { id: 'key-2', name: 'Staging Test', key: 'sk_test_••••••••••••••••••••••••', fullKey: 'sk_test_YOUR_KEY_HERE', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
+  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
+  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_••••••••••••••••••••••••', fullKey: 'sk_live_YOUR_KEY_HERE', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
+=======
+  { id: 'key-1', name: 'Production App', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'Jul 1, 2025', lastUsed: '2m ago', status: 'active', permissions: ['read', 'write', 'billing'] },
+  { id: 'key-2', name: 'Staging Test', key: 'sk_test_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_test_••••••••••••••••••••••••', created: 'Jun 15, 2025', lastUsed: '1h ago', status: 'active', permissions: ['read', 'write'] },
+  { id: 'key-3', name: 'SEO Scraper', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'Jun 20, 2025', lastUsed: '30m ago', status: 'active', permissions: ['read', 'scraper'] },
+  { id: 'key-4', name: 'Legacy Integration', key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢', fullKey: 'sk_live_••••••••••••••••••••••••', created: 'May 1, 2025', lastUsed: '2d ago', status: 'revoked', permissions: ['read'] },
+>>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
 ]
 
 const webhookEndpoints = [
@@ -56,7 +63,11 @@ export default function APIKeys() {
     setApiKeys((prev: any[]) => [...prev, {
       id,
       name: newKey.name,
+<<<<<<< HEAD
       key: 'sk_live_••••••••••••••••••••••••',
+=======
+      key: 'sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+>>>>>>> ff7fe20f4356f5226335b3e2f57df25f76fcbcd2
       fullKey,
       created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       lastUsed: 'never',
