@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Phone, CreditCard, FileText, Target,
   Briefcase, Settings, Shield, Zap, Globe, Bot, BarChart3,
-  Send, Code2, Package, Radio, ChevronLeft, ChevronRight,
-  Users, Mail, Database, Crosshair} from 'lucide-react'
+  Send, Code2, Package, Radio, ChevronLeft, ChevronRight} from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { StarField } from './StarField'
 import { SalesVictoryFeed } from './SalesVictoryPopup'
@@ -13,8 +12,6 @@ import { SalesVictoryFeed } from './SalesVictoryPopup'
 // ─── SALES DIVISION NAV ────────────────────────────────────────────
 const salesNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/crm-war-room', icon: Crosshair, label: 'CRM War Room' },
-  { to: '/linkedin', icon: Database, label: 'LinkedIn' },
   { to: '/leads', icon: Target, label: 'Leads' },
   { to: '/powerdial', icon: Phone, label: 'PowerDial' },
   { to: '/outreach', icon: Send, label: 'Outreach' },
@@ -35,7 +32,6 @@ const fulfillmentNav = [
 // ─── SYSTEM NAV ────────────────────────────────────────────────────
 const systemNav = [
   { to: '/command-center', icon: Radio, label: 'Command Center' },
-  { to: '/scraper-control', icon: Database, label: 'Scraper Center' },
   { to: '/automation', icon: Zap, label: 'Automation' },
   { to: '/security', icon: Shield, label: 'Security' },
   { to: '/settings', icon: Settings, label: 'Settings' },
