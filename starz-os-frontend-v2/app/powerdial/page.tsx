@@ -1,11 +1,12 @@
 "use client"
+export const dynamic = "force-dynamic"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { createClient } from "@supabase/supabase-js"
 import Script from "next/script"
 
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(SB_URL, SB_KEY)
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = (SB_URL && SB_KEY) ? createClient(SB_URL, SB_KEY) : null as any
 const DIALPAD_USER_ID = "4566842998267904"
 const EDGE_FN = `${SB_URL}/functions/v1/dialpad-call`
 
@@ -480,7 +481,7 @@ export default function PowerDialPage() {
                 ].map(item => (
                   <div key={item.obj} className="text-[10px]">
                     <div className="text-red-400 font-semibold">"{item.obj}"</div>
-                    <div className="text-slate-400 ml-2">-> {item.rebuttal}</div>
+                    <div className="text-slate-400 ml-2">{"-> "}{item.rebuttal}</div>
                   </div>
                 ))}
               </div>

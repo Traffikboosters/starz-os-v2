@@ -2,65 +2,22 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Phone, Users, DollarSign, TrendingUp, CheckCircle2, Award,
-  Zap, Wifi, Sparkles, ArrowUpRight, ArrowDownRight, Star,
+  Zap, Wifi, ArrowUpRight, ArrowDownRight,
   CloudSun, PhoneIncoming, CheckCircle2 as CheckIcon,
-  FolderKanban, Clock
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { AnimatedCounter } from '@/components/AnimatedCounter'
-import { useToast } from '@/hooks/useToast'
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
+import { supabase } from '@/lib/supabase/client'
 
-const revData = [
-  { name: 'Mon', value: 4200 }, { name: 'Tue', value: 5800 },
-  { name: 'Wed', value: 8900 }, { name: 'Thu', value: 7200 },
-  { name: 'Fri', value: 12500 }, { name: 'Sat', value: 6800 },
-  { name: 'Sun', value: 9100 },
-]
-const closeData = [
-  { name: 'Mon', closed: 12, lost: 3 }, { name: 'Tue', closed: 18, lost: 5 },
-  { name: 'Wed', closed: 22, lost: 2 }, { name: 'Thu', closed: 15, lost: 4 },
-  { name: 'Fri', closed: 28, lost: 6 }, { name: 'Sat', closed: 10, lost: 1 },
-  { name: 'Sun', closed: 14, lost: 3 },
-]
 const pieData = [
   { name: 'Closed', value: 68, color: '#00F0FF' },
   { name: 'Pending', value: 22, color: '#7C3AED' },
   { name: 'Lost', value: 10, color: '#EF4444' },
 ]
-const liveReps = [
-  { name: 'Sarah Chen', status: 'on-call', time: '4:32', deals: 3, avatar: '/avatar-1.jpg' },
-  { name: 'Marcus Webb', status: 'available', time: '-', deals: 2, avatar: '/avatar-2.jpg' },
-  { name: 'Elena Rossi', status: 'on-call', time: '2:15', deals: 5, avatar: '/avatar-3.jpg' },
-  { name: 'James Park', status: 'break', time: '-', deals: 1, avatar: '/avatar-1.jpg' },
-  { name: 'Aisha Patel', status: 'available', time: '-', deals: 4, avatar: '/avatar-2.jpg' },
-]
-const leaderboard = [
-  { rank: 1, name: 'Elena Rossi', deals: 24, revenue: 186400, closeRate: 68 },
-  { rank: 2, name: 'Sarah Chen', deals: 21, revenue: 162800, closeRate: 62 },
-  { rank: 3, name: 'Aisha Patel', deals: 19, revenue: 148200, closeRate: 58 },
-  { rank: 4, name: 'Marcus Webb', deals: 16, revenue: 124600, closeRate: 54 },
-  { rank: 5, name: 'James Park', deals: 14, revenue: 108400, closeRate: 51 },
-]
-const recentDeals = [
-  { rep: 'Sarah Chen', client: 'Miami Auto Group', amount: 8400, service: 'SEO Premium', time: '12m ago', type: 'close' },
-  { rep: 'Elena Rossi', client: 'NYC Dental', amount: 12200, service: 'Full Stack', time: '34m ago', type: 'close' },
-  { rep: 'Marcus Webb', client: 'Phoenix Roofing', amount: 5600, service: 'PPC Management', time: '1h ago', type: 'close' },
-  { rep: 'System', client: 'Lead #8921', amount: 0, service: 'Auto-assigned to Sarah', time: '2m ago', type: 'assign' },
-]
-
-const statusBadge = (status: string) => {
-  switch (status) {
-    case 'on-call': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-    case 'available': return 'bg-cyan/10 text-cyan border-cyan/30'
-    case 'break': return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-    default: return 'bg-muted text-muted-foreground'
-  }
-}
 
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
@@ -68,7 +25,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
     <div className="px-3 py-2 rounded-lg bg-card border border-border/50 shadow-card">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
-        <p key={i} className="text-sm font-semibold text-foreground" style={{ color: p.color }}>{p.name}: {p.value?.toLocaleString?.() || p.value}</p>
+        <p key={i} className="text-sm font-semibold" style={{ color: p.color }}>{p.name}: {p.value?.toLocaleString?.() || p.value}</p>
       ))}
     </div>
   )
@@ -77,12 +34,113 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 export default function Dashboard() {
   const [now, setNow] = useState(new Date())
   const [sortBy, setSortBy] = useState<'deals' | 'revenue'>('revenue')
-  const { success } = useToast()
+  const [loading, setLoading] = useState(true)
+
+  // KPI state
+  const [revenue, setRevenue] = useState(0)
+  const [leadsCount, setLeadsCount] = useState(0)
+  const [closeRate, setCloseRate] = useState(0)
+  const [avgDeal, setAvgDeal] = useState(0)
+  const [workOrders, setWorkOrders] = useState(0)
+  const [recentDeals, setRecentDeals] = useState<any[]>([])
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [revData, setRevData] = useState<any[]>([])
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    loadDashboard()
+  }, [])
+
+  async function loadDashboard() {
+    setLoading(true)
+    try {
+      // Load leads from crm schema
+      const { data: leads } = await supabase
+        .schema('crm' as any)
+        .from('leads')
+        .select('id, name, business_name, estimated_revenue, status, ai_score, created_at, source')
+        .order('created_at', { ascending: false })
+        .limit(500)
+
+      // Load work orders
+      const { data: wos } = await supabase
+        .from('work_orders')
+        .select('id, status, total_amount, client_name, project_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      const l = leads || []
+      const w = wos || []
+
+      // KPIs
+      const totalRev = w.reduce((a: number, o: any) => a + (parseFloat(o.total_amount) || 0), 0)
+      const qualified = l.filter((x: any) => (x.ai_score || 0) >= 60).length
+      const won = l.filter((x: any) => x.status === 'won').length
+      const cr = l.length > 0 ? Math.round((won / l.length) * 100) : 0
+      const avg = w.length > 0 ? totalRev / w.length : 0
+      const activeWOs = w.filter((x: any) => x.status === 'active' || x.status === 'in_progress').length
+
+      setRevenue(totalRev)
+      setLeadsCount(qualified)
+      setCloseRate(cr)
+      setAvgDeal(avg)
+      setWorkOrders(activeWOs)
+
+      // Recent deals from work orders
+      const recent = w.slice(0, 5).map((o: any) => ({
+        rep: 'Rico BGE',
+        client: o.client_name || 'Unknown',
+        amount: parseFloat(o.total_amount) || 0,
+        service: o.project_type || 'General',
+        time: timeAgo(o.created_at),
+        type: 'close',
+      }))
+      setRecentDeals(recent)
+
+      // Revenue by day (last 7 days)
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const revByDay: Record<string, number> = {}
+      w.forEach((o: any) => {
+        const d = days[new Date(o.created_at).getDay()]
+        revByDay[d] = (revByDay[d] || 0) + (parseFloat(o.total_amount) || 0)
+      })
+      const revChart = days.map(d => ({ name: d, value: revByDay[d] || 0 }))
+      setRevData(revChart)
+
+      // Leaderboard from leads by source
+      const sourceMap: Record<string, { deals: number; revenue: number }> = {}
+      l.forEach((lead: any) => {
+        const src = lead.source || 'Direct'
+        if (!sourceMap[src]) sourceMap[src] = { deals: 0, revenue: 0 }
+        sourceMap[src].deals++
+        sourceMap[src].revenue += lead.estimated_revenue || 0
+      })
+      const lb = Object.entries(sourceMap)
+        .map(([name, v], i) => ({ rank: i + 1, name, ...v, closeRate: Math.round(Math.random() * 30 + 50) }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5)
+        .map((x, i) => ({ ...x, rank: i + 1 }))
+      setLeaderboard(lb)
+
+    } catch (e) {
+      console.error('Dashboard load error:', e)
+    }
+    setLoading(false)
+  }
+
+  function timeAgo(ts: string) {
+    if (!ts) return '—'
+    const diff = Date.now() - new Date(ts).getTime()
+    const m = Math.floor(diff / 60000)
+    if (m < 60) return `${m}m ago`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h ago`
+    return `${Math.floor(h / 24)}d ago`
+  }
 
   const greeting = () => {
     const h = now.getHours()
@@ -93,7 +151,6 @@ export default function Dashboard() {
 
   const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-
   const sortedLeaderboard = [...leaderboard].sort((a, b) => sortBy === 'revenue' ? b.revenue - a.revenue : b.deals - a.deals)
 
   return (
@@ -109,24 +166,20 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
             {dateStr} · <span className="text-cyan font-mono">{timeStr}</span>
           </p>
-          <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
-            {greeting()} DJ
-          </h2>
-          <p className="text-base text-cyan font-semibold mt-0.5">
-            Business Growth Expert <span className="text-foreground">&ldquo;BGE&rdquo;</span>
-          </p>
+          <h2 className="text-2xl font-extrabold text-foreground tracking-tight">{greeting()} Commander DJ</h2>
+          <p className="text-base text-cyan font-semibold mt-0.5">Business Growth Expert <span className="text-foreground">"BGE"</span></p>
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <CloudSun className="w-4 h-4 text-amber-400" />
-            <span>Miami, FL — <span className="text-amber-400 font-medium">84°F</span> Partly Cloudy</span>
+            <span>Tamarac, FL — <span className="text-amber-400 font-medium">84°F</span> Partly Cloudy</span>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            5 Active Reps
+            {workOrders} Active WOs
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan/10 border border-cyan/20 text-cyan text-xs font-medium">
-            <Wifi className="w-3 h-3" /> Call Floor Live
+            <Wifi className="w-3 h-3" /> Live Sync
           </div>
         </div>
       </motion.div>
@@ -134,16 +187,16 @@ export default function Dashboard() {
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Revenue Today', value: 12500, prefix: '$', change: '+18.4%', up: true, icon: DollarSign, color: 'text-cyan' },
-          { label: 'Leads Assigned', value: 47, change: '+12', up: true, icon: Users, color: 'text-emerald-400' },
-          { label: 'Close Rate', value: 64, suffix: '%', change: '+3.2%', up: true, icon: CheckCircle2, color: 'text-violet' },
-          { label: 'Avg Deal Size', value: 8400, prefix: '$', change: '-2.1%', up: false, icon: TrendingUp, color: 'text-amber-400' },
+          { label: 'Total Revenue', value: revenue, prefix: '$', change: 'Live', up: true, icon: DollarSign },
+          { label: 'Qualified Leads', value: leadsCount, change: 'AI Scored ≥60', up: true, icon: Users },
+          { label: 'Close Rate', value: closeRate, suffix: '%', change: 'Won/Total', up: true, icon: CheckCircle2 },
+          { label: 'Avg Deal Size', value: Math.round(avgDeal), prefix: '$', change: 'Per work order', up: true, icon: TrendingUp },
         ].map((m, i) => (
           <motion.div
             key={m.label}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.07, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: i * 0.07, duration: 0.4 }}
             className="p-5 rounded-2xl bg-card border border-border/40 card-glow"
           >
             <div className="flex items-center gap-2 mb-3">
@@ -152,18 +205,22 @@ export default function Dashboard() {
               </div>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{m.label}</span>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono tracking-tight">
-              <AnimatedCounter end={m.value} prefix={m.prefix || ''} suffix={m.suffix || ''} />
-            </div>
-            <div className={`flex items-center gap-1 text-xs mt-1 ${m.up ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {m.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            {loading ? (
+              <div className="h-8 w-24 bg-space-highlight/30 rounded animate-pulse" />
+            ) : (
+              <div className="text-2xl font-bold text-foreground font-mono tracking-tight">
+                <AnimatedCounter end={m.value} prefix={m.prefix || ''} suffix={m.suffix || ''} />
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-xs mt-1 text-emerald-400">
+              <ArrowUpRight className="w-3 h-3" />
               {m.change}
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Charts + Live Floor */}
+      {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-5">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -173,8 +230,8 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="font-semibold text-foreground text-sm">Revenue This Week</h3>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Daily revenue across all reps</p>
+              <h3 className="font-semibold text-foreground text-sm">Revenue by Day</h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Work order revenue breakdown</p>
             </div>
             <Badge variant="outline" className="text-[10px] border-cyan/30 text-cyan bg-cyan/5 rounded-lg">Live</Badge>
           </div>
@@ -190,7 +247,7 @@ export default function Dashboard() {
               <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} dy={8} />
               <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v/1000}k`} />
               <Tooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="value" stroke="#00F0FF" strokeWidth={2} fill="url(#revGrad)" />
+              <Area type="monotone" dataKey="value" name="Revenue" stroke="#00F0FF" strokeWidth={2} fill="url(#revGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
@@ -203,7 +260,7 @@ export default function Dashboard() {
         >
           <div className="mb-4">
             <h3 className="font-semibold text-foreground text-sm">Deal Pipeline</h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Current deal status breakdown</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Current status breakdown</p>
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -224,7 +281,7 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Leaderboard + Recent Deals */}
+      {/* Leaderboard + Recent Activity */}
       <div className="grid lg:grid-cols-2 gap-5">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -235,38 +292,32 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-cyan" />
-              <h3 className="font-semibold text-foreground text-sm">Leaderboard</h3>
+              <h3 className="font-semibold text-foreground text-sm">Lead Sources</h3>
             </div>
             <div className="flex gap-1">
               {(['revenue', 'deals'] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSortBy(s)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium capitalize transition-all ${
-                    sortBy === s ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-muted-foreground hover:text-foreground border border-transparent'
-                  }`}
-                >
+                <button key={s} onClick={() => setSortBy(s)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium capitalize transition-all ${sortBy === s ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-muted-foreground border border-transparent'}`}>
                   {s}
                 </button>
               ))}
             </div>
           </div>
           <div className="space-y-2">
-            {sortedLeaderboard.map((rep) => (
+            {loading ? (
+              Array(5).fill(0).map((_, i) => <div key={i} className="h-10 bg-space-highlight/20 rounded-xl animate-pulse" />)
+            ) : sortedLeaderboard.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
+            ) : sortedLeaderboard.map((rep) => (
               <div key={rep.name} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-space-highlight/30 transition-colors">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
-                  rep.rank === 1 ? 'bg-cyan/20 text-cyan' : rep.rank === 2 ? 'bg-violet/20 text-violet' : rep.rank === 3 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-muted text-muted-foreground'
-                }`}>{rep.rank}</div>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${rep.rank === 1 ? 'bg-cyan/20 text-cyan' : rep.rank === 2 ? 'bg-violet/20 text-violet' : 'bg-muted text-muted-foreground'}`}>{rep.rank}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{rep.name}</p>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{rep.deals} deals</span>
-                    <span className="text-[10px] text-muted-foreground">{rep.closeRate}% close</span>
-                  </div>
+                  <p className="text-sm font-medium text-foreground truncate">{rep.name}</p>
+                  <span className="text-[10px] text-muted-foreground">{rep.deals} leads</span>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-foreground">${(rep.revenue / 1000).toFixed(1)}k</p>
-                  <p className="text-[10px] text-muted-foreground">revenue</p>
+                  <p className="text-[10px] text-muted-foreground">pipeline</p>
                 </div>
               </div>
             ))}
@@ -282,17 +333,21 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-cyan" />
-              <h3 className="font-semibold text-foreground text-sm">Recent Activity</h3>
+              <h3 className="font-semibold text-foreground text-sm">Recent Work Orders</h3>
             </div>
           </div>
           <div className="space-y-2">
-            {recentDeals.map((deal, i) => (
+            {loading ? (
+              Array(4).fill(0).map((_, i) => <div key={i} className="h-12 bg-space-highlight/20 rounded-xl animate-pulse" />)
+            ) : recentDeals.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent orders</p>
+            ) : recentDeals.map((deal, i) => (
               <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-space-highlight/30 transition-colors">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${deal.type === 'close' ? 'bg-emerald-500/10' : 'bg-cyan/10'}`}>
-                  {deal.type === 'close' ? <CheckIcon className="w-4 h-4 text-emerald-400" /> : <PhoneIncoming className="w-4 h-4 text-cyan" />}
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-500/10">
+                  <CheckIcon className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground"><span className="font-medium">{deal.rep}</span> <span className="text-muted-foreground">{deal.type === 'close' ? 'closed' : 'assigned'}</span> <span className="font-medium">{deal.client}</span></p>
+                  <p className="text-sm text-foreground font-medium truncate">{deal.client}</p>
                   <p className="text-[10px] text-muted-foreground">{deal.service}</p>
                 </div>
                 {deal.amount > 0 && <p className="text-sm font-semibold text-emerald-400">+${deal.amount.toLocaleString()}</p>}

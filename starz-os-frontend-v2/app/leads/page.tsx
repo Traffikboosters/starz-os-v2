@@ -1,5 +1,5 @@
 import LeadsClient from "./LeadsClient";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient as getSupabaseServerClient } from "@/lib/supabase/server";
 import { DEFAULT_PAGE_SIZE, Lead } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
