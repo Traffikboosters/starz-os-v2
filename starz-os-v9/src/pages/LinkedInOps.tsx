@@ -9,7 +9,7 @@ import {
   Users, DollarSign, Target, BarChart2, Zap, Bot, SlidersHorizontal
 } from 'lucide-react'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Campaign {
   id: string
   campaign_id: string
@@ -39,7 +39,7 @@ interface Vendor {
   status: 'active' | 'paused'
 }
 
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Stat Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
   return (
     <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1 min-w-[160px]">
@@ -52,7 +52,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
   )
 }
 
-// ─── Campaign Card ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Campaign Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CampaignCard({ c, onToggle }: { c: Campaign; onToggle: (id: string, status: string) => void }) {
   const budgetUsed = c.budget > 0 ? Math.round((c.spend / c.budget) * 100) : 0
   const statusColor = c.status === 'active' ? 'bg-emerald-500' : c.status === 'paused' ? 'bg-yellow-500' : 'bg-zinc-500'
@@ -64,7 +64,7 @@ function CampaignCard({ c, onToggle }: { c: Campaign; onToggle: (id: string, sta
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-semibold text-foreground text-sm">{c.name}</div>
-          <div className="text-xs text-muted-foreground">{c.campaign_id} · {c.owner}</div>
+          <div className="text-xs text-muted-foreground">{c.campaign_id} Â· {c.owner}</div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`w-2 h-2 rounded-full ${statusColor}`} />
@@ -80,7 +80,7 @@ function CampaignCard({ c, onToggle }: { c: Campaign; onToggle: (id: string, sta
 
       {/* Date */}
       <div className="text-xs text-muted-foreground">
-        {new Date(c.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} –{' '}
+        {new Date(c.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} â€“{' '}
         {new Date(c.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
       </div>
 
@@ -112,14 +112,14 @@ function CampaignCard({ c, onToggle }: { c: Campaign; onToggle: (id: string, sta
         </div>
         <Progress value={budgetUsed} className="h-1.5" />
         <div className="text-right text-xs text-muted-foreground mt-0.5">
-          Budget: ${c.budget.toLocaleString()} · {budgetUsed}% used
+          Budget: ${c.budget.toLocaleString()} Â· {budgetUsed}% used
         </div>
       </div>
     </div>
   )
 }
 
-// ─── New Campaign Modal (simple) ───────────────────────────────────────────────
+// â”€â”€â”€ New Campaign Modal (simple) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NewCampaignModal({ onClose, onSave }: { onClose: () => void; onSave: (data: Partial<Campaign>) => void }) {
   const [form, setForm] = useState({ name: '', owner: '', budget: '', start_date: '', end_date: '' })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -157,7 +157,7 @@ function NewCampaignModal({ onClose, onSave }: { onClose: () => void; onSave: (d
   )
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function LinkedInOps() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
@@ -166,13 +166,13 @@ export default function LinkedInOps() {
   const [activeTab, setActiveTab] = useState('campaigns')
   const [fetching, setFetching] = useState(false)
 
-  // ── Load data ────────────────────────────────────────────────────────────────
+  // â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const loadData = async () => {
     setLoading(true)
     try {
       const [{ data: camps }, { data: vends }] = await Promise.all([
-        supabase.from('linkedin_campaigns').select('*').order('created_at', { ascending: false }),
-        supabase.from('linkedin_vendors').select('*').order('quality_score', { ascending: false }),
+        supabase.schema('linkedin').from('linkedin_campaigns').select('*').order('created_at', { ascending: false }),
+        supabase.schema('linkedin').from('linkedin_vendors').select('*').order('quality_score', { ascending: false }),
       ])
       if (camps) setCampaigns(camps)
       if (vends) setVendors(vends)
@@ -185,7 +185,7 @@ export default function LinkedInOps() {
 
   useEffect(() => { loadData() }, [])
 
-  // ── Stats ─────────────────────────────────────────────────────────────────────
+  // â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const totalLeads = campaigns.reduce((s, c) => s + (c.leads || 0), 0)
   const activeCampaigns = campaigns.filter(c => c.status === 'active').length
   const avgCPL = campaigns.length > 0
@@ -201,14 +201,14 @@ export default function LinkedInOps() {
   const fetchersActive = vendors.reduce((s, v) => s + (v.fetchers_active || 0), 0)
   const campaignsLive = vendors.reduce((s, v) => s + (v.campaigns_live || 0), 0)
 
-  // ── Toggle campaign status ─────────────────────────────────────────────────
+  // â”€â”€ Toggle campaign status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleToggle = async (id: string, status: string) => {
     const next = status === 'active' ? 'paused' : 'active'
-    await supabase.from('linkedin_campaigns').update({ status: next }).eq('id', id)
+    await supabase.schema('linkedin').from('linkedin_campaigns').update({ status: next }).eq('id', id)
     setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: next as Campaign['status'] } : c))
   }
 
-  // ── Create campaign ───────────────────────────────────────────────────────
+  // â”€â”€ Create campaign â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleCreate = async (data: Partial<Campaign>) => {
     const newCamp = {
       ...data,
@@ -216,11 +216,11 @@ export default function LinkedInOps() {
       status: 'draft',
       leads: 0, cpl: 0, close_rate: 0, roi: 0, spend: 0, revenue: 0,
     }
-    const { data: inserted } = await supabase.from('linkedin_campaigns').insert([newCamp]).select().single()
+    const { data: inserted } = await supabase.schema('linkedin').from('linkedin_campaigns').insert([newCamp]).select().single()
     if (inserted) setCampaigns(prev => [inserted, ...prev])
   }
 
-  // ── Live fetch simulation ──────────────────────────────────────────────────
+  // â”€â”€ Live fetch simulation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleLiveFetch = async () => {
     setFetching(true)
     await new Promise(r => setTimeout(r, 2000))
@@ -232,7 +232,7 @@ export default function LinkedInOps() {
     <div className="p-6 flex flex-col gap-6 min-h-screen">
       {showModal && <NewCampaignModal onClose={() => setShowModal(false)} onSave={handleCreate} />}
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
@@ -259,7 +259,7 @@ export default function LinkedInOps() {
         </Button>
       </div>
 
-      {/* ── Stats Bar ── */}
+      {/* â”€â”€ Stats Bar â”€â”€ */}
       <div className="flex gap-3 flex-wrap">
         <StatCard label="Total LinkedIn Leads" value={totalLeads.toLocaleString()} icon={Users} />
         <StatCard label="Avg CPL" value={`$${avgCPL}`} icon={DollarSign} />
@@ -269,7 +269,7 @@ export default function LinkedInOps() {
         <StatCard label="ROI" value={`${overallROI}x`} icon={Zap} />
       </div>
 
-      {/* ── Tabs ── */}
+      {/* â”€â”€ Tabs â”€â”€ */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-card border border-border">
           <TabsTrigger value="campaigns" className="gap-1.5"><Target size={13} /> Campaigns</TabsTrigger>
@@ -279,7 +279,7 @@ export default function LinkedInOps() {
           <TabsTrigger value="budget" className="gap-1.5"><SlidersHorizontal size={13} /> Budget Scaler</TabsTrigger>
         </TabsList>
 
-        {/* ── Campaigns Tab ── */}
+        {/* â”€â”€ Campaigns Tab â”€â”€ */}
         <TabsContent value="campaigns" className="mt-4">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -304,7 +304,7 @@ export default function LinkedInOps() {
           )}
         </TabsContent>
 
-        {/* ── Live Fetch Tab ── */}
+        {/* â”€â”€ Live Fetch Tab â”€â”€ */}
         <TabsContent value="livefetch" className="mt-4">
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-5">
             <div className="flex items-center justify-between">
@@ -358,7 +358,7 @@ export default function LinkedInOps() {
                       </td>
                       <td className="px-4 py-3 text-cyan-400 font-medium">{c.leads.toLocaleString()}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">
-                        {c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}
+                        {c.created_at ? new Date(c.created_at).toLocaleDateString() : 'â€”'}
                       </td>
                     </tr>
                   ))}
@@ -371,7 +371,7 @@ export default function LinkedInOps() {
           </div>
         </TabsContent>
 
-        {/* ── Vendors Tab ── */}
+        {/* â”€â”€ Vendors Tab â”€â”€ */}
         <TabsContent value="vendors" className="mt-4">
           {vendors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
@@ -417,7 +417,7 @@ export default function LinkedInOps() {
           )}
         </TabsContent>
 
-        {/* ── AI Scoring Tab ── */}
+        {/* â”€â”€ AI Scoring Tab â”€â”€ */}
         <TabsContent value="scoring" className="mt-4">
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-5">
             <div className="flex items-center gap-3">
@@ -453,7 +453,7 @@ export default function LinkedInOps() {
           </div>
         </TabsContent>
 
-        {/* ── Budget Scaler Tab ── */}
+        {/* â”€â”€ Budget Scaler Tab â”€â”€ */}
         <TabsContent value="budget" className="mt-4">
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-5">
             <div className="flex items-center gap-3">
