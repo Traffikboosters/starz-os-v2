@@ -1,0 +1,1 @@
+import{r as n}from"./index-DBI-BsB9.js";function i(r,e){const[s,c]=n.useState(()=>{try{const t=window.localStorage.getItem(r);return t?JSON.parse(t):e}catch{return e}}),a=n.useCallback(t=>{c(u=>{const o=t instanceof Function?t(u):t;try{window.localStorage.setItem(r,JSON.stringify(o))}catch{}return o})},[r]);return[s,a]}export{i as u};

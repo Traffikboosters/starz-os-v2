@@ -1,1 +1,6 @@
-export default function LinkedInOps() { return <div>loading...</div> }
+import { useState, useEffect } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Linkedin, Play, Pause, Plus, RefreshCw, TrendingUp, Users, DollarSign, Target, BarChart2, Zap, Bot, SlidersHorizontal } from 'lucide-react'
