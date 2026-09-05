@@ -176,25 +176,65 @@ export default function PowerDial() {
   }
 
   useEffect(() => {
-    const SB_URL = "https://szguizvpiiuiyugrjeks.supabase.co"
-    const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
     let cancelled = false
+
     const init = async () => {
       try {
-        const resp = await fetch(`${SB_URL}/functions/v1/twilio-token`, { headers: { Authorization: `Bearer ${SB_KEY}` } })
-        const { token } = await resp.json()
-        if (cancelled) return
-        const { Device } = await import("@twilio/voice-sdk")
-        const device = new Device(token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] })
-        device.on("registered", () => { if (!cancelled) { setDeviceReady(true); console.log("Twilio ready") } })
-        device.on("error", (e: any) => console.error("Twilio error:", e.message))
+        setDeviceReady(false)
+
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (sessionError || !accessToken) {
+          throw new Error('Sign in as an authorized Power Dial user')
+        }
+
+        const { data, error } = await supabase.functions.invoke('twilio-token', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        if (error || !data?.token) {
+          throw new Error(data?.error || error?.message || 'Unable to obtain Twilio access token')
+        }
+
+        const { Device } = await import('@twilio/voice-sdk')
+        const device = new Device(data.token, {
+          logLevel: 1,
+          codecPreferences: ['opus', 'pcmu'],
+        })
+
+        device.on('registered', () => {
+          if (!cancelled) setDeviceReady(true)
+        })
+        device.on('unregistered', () => {
+          if (!cancelled) setDeviceReady(false)
+        })
+        device.on('error', (error: any) => {
+          console.error('Twilio error:', error.message)
+          if (!cancelled) {
+            setDeviceReady(false)
+            info(`PowerDial unavailable: ${error.message}`)
+          }
+        })
+
         await device.register()
         if (!cancelled) deviceRef.current = device
-      } catch (err) { console.error("Twilio init failed:", err) }
+      } catch (error) {
+        console.error('Twilio init failed:', error)
+        if (!cancelled) {
+          setDeviceReady(false)
+          info(`PowerDial unavailable: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
     }
+
     init()
-    return () => { cancelled = true; deviceRef.current?.disconnect?.() }
-  }, [])
+    return () => {
+      cancelled = true
+      setDeviceReady(false)
+      deviceRef.current?.destroy?.()
+      deviceRef.current = null
+    }
+  }, [info])
 
   const startCall = async () => {
     const phone = dialNumber.trim()
@@ -311,12 +351,14 @@ export default function PowerDial() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs mb-3 text-emerald-400">Phone device connected</p>
+                  <p className={`text-xs mb-3 ${deviceReady ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {deviceReady ? 'Phone device connected' : 'Phone device unavailable'}
+                  </p>
                   <div className="flex items-center gap-3 justify-center mb-4">
                     <Button size="sm" variant="outline" onClick={prevLead} disabled={currentLeadIndex === 0} className="border-border/40">
                       <RotateCcw className="w-4 h-4 mr-1" /> Previous
                     </Button>
-                    <Button size="lg" onClick={startCall} disabled={!dialNumber.trim()} className="bg-gradient-primary text-space font-bold px-8 glow-cyan disabled:opacity-50">
+                    <Button size="lg" onClick={startCall} disabled={!dialNumber.trim() || !deviceReady} className="bg-gradient-primary text-space font-bold px-8 glow-cyan disabled:opacity-50">
                       <Play className="w-4 h-4 mr-2" /> Start Call
                     </Button>
                     <Button size="sm" variant="outline" onClick={skipLead} className="border-border/40">
